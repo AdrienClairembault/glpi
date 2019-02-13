@@ -632,9 +632,9 @@ class Item_Disk extends CommonDBChild {
     */
    static function getAllEncryptionStatus() {
       return [
-         self::ENCRYPTION_STATUS_NO,
-         self::ENCRYPTION_STATUS_YES,
-         self::ENCRYPTION_STATUS_PARTIALLY
+         self::ENCRYPTION_STATUS_NO          => __('Encrypted'),
+         self::ENCRYPTION_STATUS_YES         => __('Partially encrypted'),
+         self::ENCRYPTION_STATUS_PARTIALLY   => __('Not encrypted')
       ];
    }
 
@@ -644,14 +644,16 @@ class Item_Disk extends CommonDBChild {
     * @return string The appropriate label
     */
    static function getEncryptionStatus($status) {
-      switch ($status) {
-         case self::ENCRYPTION_STATUS_YES:
-            return __("Encrypted");
-         case self::ENCRYPTION_STATUS_PARTIALLY:
-            return __("Partially encrypted");
-         default:
-            return __("Not encrypted");
+      $all = self::getAllEncryptionStatus();
+      if (!isset($all[$status])) {
+         Toolbox::logWarning(
+            sprintf(
+               'Encryption status %1$s does not exixts!'
+            )
+         );
+         return NOT_AVAILABLE;
       }
+      return $all[$status];
    }
 
    /**
@@ -668,16 +670,15 @@ class Item_Disk extends CommonDBChild {
       if (isset($options['name'])) {
          $name = $options['name'];
       }
-      $values = [];
+      $values = self::getAllEncryptionStatus();
 
-      foreach (self::getAllEncryptionStatus() as $status) {
-         $values[$status] = self::getEncryptionStatus($status);
-      }
-
-      return Dropdown::showFromArray($name, $values, [
-         'value'   => $value,
-         'display' => false
-      ]);
+      return Dropdown::showFromArray(
+         $name,
+         $values, [
+            'value'   => $value,
+            'display' => false
+         ]
+      );
    }
 
    /**
