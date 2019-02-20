@@ -1120,6 +1120,8 @@ class Computer extends CommonDBTM {
          ]
       ];
 
+      $tab = array_merge($tab, Item_Disk::rawSearchOptionsToAdd(get_class($this)));
+
       $name = _n('Virtual machine', 'Virtual machines', Session::getPluralNumber());
       $tab[] = [
          'id'                 => 'virtualmachine',
@@ -1231,8 +1233,6 @@ class Computer extends CommonDBTM {
             'jointype'           => 'child'
          ]
       ];
-
-      $tab = array_merge($tab, Item_Disk::rawSearchOptionsToAdd(get_class($this)));
 
       $tab = array_merge($tab, ComputerAntivirus::rawSearchOptionsToAdd());
 
