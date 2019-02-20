@@ -73,6 +73,37 @@ function update931to932() {
    $migration->addKey('glpi_states', 'is_visible_enclosure');
    $migration->addKey('glpi_states', 'is_visible_pdu');
 
+    /** Encrypted FS support  */
+   if (!$DB->fieldExists("glpi_items_disks", "encryption_status")) {
+      $migration->addField("glpi_items_disks", "encryption_status", "integer", [
+            'after'  => "is_dynamic",
+            'value'  => 0
+         ]
+      );
+   }
+
+   if (!$DB->fieldExists("glpi_items_disks", "encryption_tool")) {
+      $migration->addField("glpi_items_disks", "encryption_tool", "string", [
+            'after'  => "encryption_status"
+         ]
+      );
+   }
+
+   if (!$DB->fieldExists("glpi_items_disks", "encryption_algorithm")) {
+      $migration->addField("glpi_items_disks", "encryption_algorithm", "string", [
+            'after'  => "encryption_tool"
+         ]
+      );
+   }
+
+   if (!$DB->fieldExists("glpi_items_disks", "encryption_type")) {
+      $migration->addField("glpi_items_disks", "encryption_type", "string", [
+            'after'  => "encryption_algorithm"
+         ]
+      );
+   }
+   /** /Encrypted FS support  */
+
    // ************ Keep it at the end **************
    $migration->executeMigration();
 
