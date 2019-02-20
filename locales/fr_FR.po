@@ -19662,3 +19662,27 @@ msgid ""
 msgstr ""
 "La connexion à la base de données a échoué, vérifiez les paramètres de "
 "connexion figurant dans le fichier config_db.php"
+
+msgid "Encryption"
+msgstr "Chiffrement"
+
+msgid "Encryption tool"
+msgstr "Outil de chiffrement"
+
+msgid "Encryption algorithm"
+msgstr "Algorithme de chiffrement"
+
+msgid "Encryption type"
+msgstr "Type de chiffrement"
+
+msgid "Partial encryption"
+msgstr "Partiellement chiffré"
+
+msgid "Encrypted"
+msgstr "Chiffrage complet"
+
+msgid "Partially encrypted"
+msgstr "Chiffrage partiel"
+
+msgid "Not encrypted"
+msgstr "Non chiffré"
