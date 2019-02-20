@@ -31,65 +31,20 @@
  */
 
 /**
- * Update from 9.4 to 10.0.0
+ * Update from 9.3 to 9.4
  *
  * @return bool for success (will die for most error)
 **/
-function update94to100() {
-   global $DB, $migration, $CFG_GLPI;
-   $dbutils = new DbUtils();
+function update93to94() {
+   global $DB, $migration;
 
-   $current_config   = Config::getConfigurationValues('core');
    $updateresult     = true;
    $ADDTODISPLAYPREF = [];
-   $config_to_drop = [];
+   $config_to_drop   = [];
 
    //TRANS: %s is the number of new version
-   $migration->displayTitle(sprintf(__('Update to %s'), '10.0.0'));
-   $migration->setVersion('10.0.0');
-
-   /** Add main column on displaypreferences */
-   if ($migration->addField(
-         'glpi_displaypreferences',
-         'is_main',
-         'bool',
-         ['value' => 1]
-      )) {
-      $migration->addKey('glpi_displaypreferences', 'is_main');
-      $migration->dropKey('glpi_displaypreferences', 'unicity');
-      $migration->migrationOneTable('glpi_displaypreferences');
-      $migration->addKey(
-         'glpi_displaypreferences',
-         ['users_id', 'itemtype', 'num', 'is_main'],
-         'unicity',
-         'UNIQUE'
-      );
-   }
-   /** /Add main column on displaypreferences */
-
-   /** add display preferences for sub items */
-   $ADDTODISPLAYPREF['Contract'] = [3, 4, 29, 5];
-   $ADDTODISPLAYPREF['Item_Disk'] = [2, 3, 4, 5, 6, 7];
-   $ADDTODISPLAYPREF['Certificate'] = [7, 4, 8, 121, 10, 31];
-   $ADDTODISPLAYPREF['Notepad'] = [200, 201, 202, 203, 204];
-   $ADDTODISPLAYPREF['SoftwareVersion'] = [3, 31, 2, 122, 123, 124];
-   foreach ($ADDTODISPLAYPREF as $type => $tab) {
-      $rank = 1;
-      foreach ($tab as $newval) {
-         $query = "REPLACE INTO `glpi_displaypreferences`
-                           (`itemtype` ,`num` ,`rank` ,`users_id`, `is_main`)
-                     VALUES ('$type', '$newval', '".$rank++."', '0', '0')";
-         $DB->query($query);
-      }
-   }
-   /** /add display preferences for sub items */
-
-   //Add over-quota option to software licenses to allow assignment after all alloted licenses are used
-   if (!$DB->fieldExists('glpi_softwarelicenses', 'allow_overquota')) {
-      if ($migration->addField('glpi_softwarelicenses', 'allow_overquota', 'bool')) {
-         $migration->addKey('glpi_softwarelicenses', 'allow_overquota');
-      }
-   }
+   $migration->displayTitle(sprintf(__('Update to %s'), '9.4'));
+   $migration->setVersion('9.4');
 
    /** Encrypted FS support  */
    if (!$DB->fieldExists("glpi_items_disks", "encryption_status")) {
@@ -123,6 +78,8 @@ function update94to100() {
    /** /Encrypted FS support  */
 
    // ************ Keep it at the end **************
+   $migration->updateDisplayPrefs($ADDTODISPLAYPREF);
+
    $migration->executeMigration();
 
    return $updateresult;
