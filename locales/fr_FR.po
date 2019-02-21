@@ -19675,9 +19675,6 @@ msgstr "Algorithme de chiffrement"
 msgid "Encryption type"
 msgstr "Type de chiffrement"
 
-msgid "Partial encryption"
-msgstr "Partiellement chiffré"
-
 msgid "Encrypted"
 msgstr "Chiffrage complet"
 

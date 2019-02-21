@@ -364,8 +364,8 @@ class Item_Disk extends CommonDBChild {
             echo "<td class=\"center\">";
 
             if ($data['encryption_status'] != self::ENCRYPTION_STATUS_NO) {
-               $encryptionTooltip = "<strong>" . __('Partial encryption') . "</strong> : " .
-                  Dropdown::getYesNo($data['encryption_status'] == self::ENCRYPTION_STATUS_PARTIALLY) .
+               $encryptionTooltip = "<strong>" . __('Encryption') . "</strong> : " .
+                  self::getAllEncryptionStatus()[$data['encryption_status']] .
                   "<br/>" .
                   "<strong>" . __('Encryption tool') . "</strong> : " . $data['encryption_tool'] .
                   "</br>" .
@@ -632,9 +632,9 @@ class Item_Disk extends CommonDBChild {
     */
    static function getAllEncryptionStatus() {
       return [
-         self::ENCRYPTION_STATUS_NO          => __('Encrypted'),
-         self::ENCRYPTION_STATUS_YES         => __('Partially encrypted'),
-         self::ENCRYPTION_STATUS_PARTIALLY   => __('Not encrypted')
+         self::ENCRYPTION_STATUS_NO          => __('Not encrypted'),
+         self::ENCRYPTION_STATUS_YES         => __('Encrypted'),
+         self::ENCRYPTION_STATUS_PARTIALLY   => __('Partially encrypted')
       ];
    }
 
