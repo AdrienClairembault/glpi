@@ -1380,6 +1380,27 @@ INSERT INTO `glpi_configs` VALUES ('206','core','purge_all','0');
 INSERT INTO `glpi_configs` VALUES ('207','core','purge_user_auth_changes','0');
 INSERT INTO `glpi_configs` VALUES ('208','core','purge_plugins','0');
 INSERT INTO `glpi_configs` VALUES ('209','core','display_login_source','1');
+INSERT INTO `glpi_configs` VALUES ('210','core','impact_assets_list','');
+
+### Dump table glpi_impacts
+
+CREATE TABLE `glpi_impacts` (
+	`id` INT(11) NOT NULL AUTO_INCREMENT,
+	`source_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`source_asset_id` INT(11) NOT NULL DEFAULT '0',
+	`impacted_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`impacted_asset_id` INT(11) NOT NULL DEFAULT '0',
+	`date_creation` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `unicity` (
+    `source_asset_type`,
+    `source_asset_id`,
+    `impacted_asset_type`,
+    `impacted_asset_id`
+  ),
+	KEY `source_asset` (`source_asset_type`, `source_asset_id`),
+	KEY `impacted_asset` (`impacted_asset_type`, `impacted_asset_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 ### Dump table glpi_consumableitems
 

@@ -94,7 +94,8 @@ class Computer extends CommonDBTM {
          ->addStandardTab('Lock', $ong, $options)
          ->addStandardTab('Notepad', $ong, $options)
          ->addStandardTab('Reservation', $ong, $options)
-         ->addStandardTab('Log', $ong, $options);
+         ->addStandardTab('Log', $ong, $options)
+         ->addImpactTab($ong, $options);
 
       return $ong;
    }

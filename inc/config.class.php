@@ -550,6 +550,8 @@ class Config extends CommonDBTM {
          echo "</table>";
       }
 
+      $this->showImpactFieldSet();
+
       echo "<br><table class='tab_cadre_fixe'>";
       echo "<tr>";
       echo "<th colspan='4'>".__('Automatically update of the elements related to the computers');
@@ -613,6 +615,47 @@ class Config extends CommonDBTM {
       Html::closeForm();
    }
 
+   public function showImpactFieldSet() {
+
+      $enabled = $this->getConfigurationValues("core")["impact_assets_list"];
+
+      echo "<br>";
+      echo "<table class='tab_cadre_fixe'>";
+
+      // Table header
+      echo "<tr>";
+      echo "<th colspan='4'>".__('Impact analysis') . "</th>";
+      echo "</tr>";
+
+      // Asset list
+      echo "<tr class='tab_bg_2'>";
+      echo "<td width='30%'>";
+      echo "<label>" . __('Asset list', 'impacts') . "</label>";
+      echo "</td>";
+      echo "<td colspan='3'>";
+      Dropdown::showFromArray(
+         'impact_assets_list',
+         $this->getAllAssetList(),
+         [
+            'values'   => $enabled,
+            'width'    => '100%',
+            'multiple' => true
+         ]
+      );
+      echo "</td>";
+      echo "</tr>";
+
+      echo "</table>";
+   }
+
+   public function getAllAssetList() {
+      $ret = [];
+      foreach ($_SESSION["glpiactiveprofile"]["helpdesk_item_type"] as $asset) {
+         $ret[$asset] = $asset::getTypeName(Session::getPluralNumber());
+      }
+      asort($ret, SORT_STRING);
+      return $ret;
+   }
 
    /**
     * Print the config form for restrictions
@@ -2759,7 +2802,14 @@ class Config extends CommonDBTM {
       $iterator = $DB->request($query);
       $result = [];
       while ($line = $iterator->next()) {
-         $result[$line['name']] = $line['value'];
+         switch ($line['name']) {
+            case 'impact_assets_list':
+               $result[$line['name']] = json_decode($line['value']);
+               break;
+
+            default:
+               $result[$line['name']] = $line['value'];
+         }
       }
       return $result;
    }
@@ -2894,6 +2944,13 @@ class Config extends CommonDBTM {
 
       $config = new self();
       foreach ($values as $name => $value) {
+
+         switch ($name) {
+            case 'impact_assets_list':
+               $value = json_encode($value);
+               break;
+         }
+         error_log("$name = $value");
          if ($config->getFromDBByCrit([
             'context'   => $context,
             'name'      => $name

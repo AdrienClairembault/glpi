@@ -143,6 +143,48 @@ function update940to941() {
       $migration->addField('glpi_users', 'cookie_token_date', 'datetime', ['after' => 'cookie_token']);
    }
 
+   // Impact
+   $impactConfig = $DB->request([
+      'SELECT' => "id",
+      'FROM'   => "glpi_configs",
+      'WHERE'  => [
+         'name'      => "impact_assets_list",
+         'context'   => "core"
+      ]
+   ]);
+
+   if (count($impactConfig) === 0) {
+      $DB->insertOrDie(
+         "glpi_configs", [
+            'name'      => "impact_assets_list",
+            'context'   => "core",
+            'value'     => ""
+         ],
+         "impact_assets_list"
+      );
+   }
+
+   if (!$DB->tableExists('glpi_impacts')) {
+      $query = "CREATE TABLE `glpi_impacts` (
+         `id` INT(11) NOT NULL AUTO_INCREMENT,
+         `source_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+         `source_asset_id` INT(11) NOT NULL DEFAULT '0',
+         `impacted_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+         `impacted_asset_id` INT(11) NOT NULL DEFAULT '0',
+         `date_creation` DATETIME NULL DEFAULT NULL,
+         PRIMARY KEY (`id`),
+         UNIQUE KEY `unicity` (
+            `source_asset_type`,
+            `source_asset_id`,
+            `impacted_asset_type`,
+            `impacted_asset_id`
+         ),
+         KEY `source_asset` (`source_asset_type`, `source_asset_id`),
+         KEY `impacted_asset` (`impacted_asset_type`, `impacted_asset_id`)
+         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
+      $DB->queryOrDie($query, "add table glpi_impacts");
+   }
+
    // ************ Keep it at the end **************
    $migration->executeMigration();
 
