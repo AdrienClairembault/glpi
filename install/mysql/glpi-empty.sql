@@ -1390,7 +1390,6 @@ CREATE TABLE `glpi_impacts` (
 	`source_asset_id` INT(11) NOT NULL DEFAULT '0',
 	`impacted_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
 	`impacted_asset_id` INT(11) NOT NULL DEFAULT '0',
-	`date_creation` DATETIME NULL DEFAULT NULL,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `unicity` (
     `source_asset_type`,

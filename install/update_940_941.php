@@ -143,7 +143,7 @@ function update940to941() {
       $migration->addField('glpi_users', 'cookie_token_date', 'datetime', ['after' => 'cookie_token']);
    }
 
-   // Impact
+   // Impact config
    $impactConfig = $DB->request([
       'SELECT' => "id",
       'FROM'   => "glpi_configs",
@@ -164,6 +164,7 @@ function update940to941() {
       );
    }
 
+   // Impact table
    if (!$DB->tableExists('glpi_impacts')) {
       $query = "CREATE TABLE `glpi_impacts` (
          `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -171,7 +172,6 @@ function update940to941() {
          `source_asset_id` INT(11) NOT NULL DEFAULT '0',
          `impacted_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
          `impacted_asset_id` INT(11) NOT NULL DEFAULT '0',
-         `date_creation` DATETIME NULL DEFAULT NULL,
          PRIMARY KEY (`id`),
          UNIQUE KEY `unicity` (
             `source_asset_type`,

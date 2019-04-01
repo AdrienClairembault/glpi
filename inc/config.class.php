@@ -615,6 +615,11 @@ class Config extends CommonDBTM {
       Html::closeForm();
    }
 
+   /**
+    * Print the impact analysis fieldset
+    *
+    * @since 9.5
+   **/
    public function showImpactFieldSet() {
 
       $enabled = $this->getConfigurationValues("core")["impact_assets_list"];
@@ -648,6 +653,13 @@ class Config extends CommonDBTM {
       echo "</table>";
    }
 
+   /**
+    * Get a sorted array containing all assets
+    *
+    * @since 9.5
+    *
+    * @return array
+   **/
    public function getAllAssetList() {
       $ret = [];
       foreach ($_SESSION["glpiactiveprofile"]["helpdesk_item_type"] as $asset) {

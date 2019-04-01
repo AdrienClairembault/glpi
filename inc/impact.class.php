@@ -50,15 +50,21 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Show the impact analysis network centered on the specified item
+    * Show the impact network of the specified item
     *
     * @since 9.5
     *
-    * @param $item  Starting point of the network
+    * @param CommonGLPI $item         Starting point of the network
+    * @param integer    $tabnum       tab number (default 1)
+    * @param boolean    $withtemplate is a template object ? (default 0)
     *
-    * @return bool
-    */
-   public static function showForItem(CommonDBTM $item) {
+    * @return boolean
+   **/
+   public static function displayTabContentForItem(
+      CommonGLPI $item,
+      $tabnum = 1,
+      $withtemplate = 0) {
+
       $ID = $item->getID();
 
       // Don't show the impact analysis on new object
@@ -103,6 +109,9 @@ class Impact extends CommonDBRelation {
                height: 800px;
                border: 1px solid lightgray;
             }
+            #addNodedialog {
+               display: none;
+            }
          </style>
       ';
    }
@@ -113,6 +122,8 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     */
    public static function printImpactNetwork() {
+      $action = Toolbox::getItemTypeFormURL(__CLASS__);
+      echo "<form name=\"form_impact_network\" action=\"$action\" method=\"post\">";
       echo "<table class='tab_cadre_fixe'>";
 
       echo "<tr class='tab_bg_2'>";
@@ -126,6 +137,24 @@ class Impact extends CommonDBRelation {
       echo "</tr>";
 
       echo "</table>";
+
+      echo Html::input("impacts", [
+         'type' => 'hidden'
+      ]);
+      echo Html::submit(_sx('button', 'Save'), [
+         'name' => 'save'
+      ]);
+
+      HTML::closeForm();
+      echo HTML::scriptBlock("
+         $('form[name=form_impact_network]').on('submit', function(event) {
+            // $('input[name=impacts]').val(delta);
+            // var json = {'JObject': delta};
+            // json = ;
+            $('input[name=impacts]').val(JSON.stringify(delta));
+            // event.preventDefault();
+         });
+      ");
    }
 
    /**
@@ -137,14 +166,14 @@ class Impact extends CommonDBRelation {
     * @param array      $edges   Store the edges of the graph
     *    example :
     *       [
-    *          'Computer::1_Computer::2' => [
+    *          'Computer::1->Computer::2' => [
     *             'from'   => "Computer::1"
     *             'to'     => "Computer::2"
     *             'arrows' => "to"
     *          ]
     *      ]
     *   The keys of this array are made using the following format :
-    *      sourceItemType::sourceItemID_ImpactedItemType::ImpactedItemId
+    *      sourceItemType::sourceItemID->ImpactedItemType::ImpactedItemId
     *   Theses keys are used to check (with isset()) if an edge already exist
     *   in the graph.
     *   The values of this array are another array containing the following
@@ -305,10 +334,10 @@ class Impact extends CommonDBRelation {
          );
 
          // Check that this edge is not registered yet
-         if (!isset($edges["$sourceKey" . "_" . "$impactedKey"])) {
+         if (!isset($edges["$sourceKey" . "->" . "$impactedKey"])) {
 
             // Add the new edge
-            $edges["$sourceKey" . "_" . "$impactedKey"] = [
+            $edges["$sourceKey" . "->" . "$impactedKey"] = [
                'from'      => $sourceKey,
                'to'        => $impactedKey,
                'arrows'    => "to"
@@ -357,41 +386,169 @@ class Impact extends CommonDBRelation {
       }
    }
 
-   public static function buildVis(array $nodes, array $edges) {
-      $nodes = self::prepareArrayForJS($nodes);
-      $edges = self::prepareArrayForJS($edges);
+   /**
+    * Build the vis.js objet and insert it into the page
+    *
+    * @since 9.5
+    *
+    * @param array $nodes  Nodes of the graph
+    * @param array $edges  Edges of the graph
+   **/
+   public static function buildNetwork(array $nodes, array $edges) {
 
-      $str = '
-         // create an array with nodes
-         var nodes = new vis.DataSet(JSON.parse(\'' . json_encode($nodes) . '\'));
+      // Remove array keys and convert to json
+      $nodes = json_encode(array_values($nodes));
+      $edges = json_encode(array_values($edges));
 
-         // create an array with edges
-         var edges = new vis.DataSet(JSON.parse(\'' . json_encode($edges) . '\'));
-
-         // create a network
+      $js = '
          var container = document.getElementById("networkContainer");
          var data = {
-            nodes: nodes,
-            edges: edges
+            nodes: new vis.DataSet(JSON.parse(\'' . $nodes . '\')),
+            edges: new vis.DataSet(JSON.parse(\'' . $edges . '\'))
          };
-         var options = {};
+
+         var delta = {};
+
+         function updateDelta (action, edge) {
+            var key = edge.from + "->" + edge.to;
+
+            // Remove useless changes (add + delete the same edge)
+            if (delta.hasOwnProperty(key)) {
+               delete delta[key];
+               return;
+            }
+
+            var source = edge.from.split("::");
+            var impacted = edge.to.split("::");
+
+            delta[key] = {
+               action:              action,
+               source_asset_type:   source[0],
+               source_asset_id:     source[1],
+               impacted_asset_type: impacted[0],
+               impacted_asset_id:   impacted[1]
+            };
+         }
+
+         var options = {
+            manipulation: {
+               enabled: true,
+               initiallyActive: true,
+               addNode: function(nodeData,callback) {
+                  $( "#addNodedialog" ).dialog({
+                     modal: true,
+                     buttons: [{
+                           text: "Add",
+                           click: function() {
+                              nodeData.label = $("select[name=item_id] option:selected").text();
+                              nodeData.id = $("select[name=item_type] option:selected").val() +
+                                 "::" +
+                                 $("select[name=item_id] option:selected").val();
+                              callback(nodeData);
+                              $( this ).dialog( "close" );
+                           }
+                        },{
+                           text: "Cancel",
+                           click: function() {
+                              $( this ).dialog( "close" );
+                           }
+                        }
+                     ]
+                  });
+               },
+               deleteNode: function (node, callback) {
+                  node.edges.forEach(function (e){
+                     realEdge = data.edges.get(e);
+                     updateDelta("delete", realEdge);
+                  });
+                  callback(node);
+               },
+               addEdge: function(edge, callback) {
+                  edge.arrows = "to";
+                  updateDelta("add", edge);
+                  callback(edge);
+               },
+               deleteEdge: function(edge, callback) {
+                  realEdge = data.edges.get(edge.edges[0]);
+                  updateDelta("delete", realEdge);
+                  callback(edge);
+               }
+            },
+            locale: "en"
+         };
 
          var network = new vis.Network(container, data, options);
       ';
-            // error_log($str);
-      echo HTML::scriptBlock($str);
+
+      echo HTML::scriptBlock($js);
    }
 
-   public static function prepareArrayForJs(array $array) {
-      // error_log(print_r(array_values($array), true));
-      // error_log(json_encode(array_values($array), true));
-      return array_values($array);
-   }
-
-   public static function showImpactNetwork(CommonDBTM $item, $level = 1) {
+   /**
+    * Load the impact network html content
+    *
+    * @since 9.5
+    */
+   public static function printAddNodeDialog() {
       global $CFG_GLPI;
+      $conf = Config::getConfigurationValues('Core');
+      $rand = mt_rand();
 
-      // Load vis.js lib
+      echo '<div id="addNodedialog" title="' . __('New asset') . '">';
+
+      echo '<table class="tab_cadre_fixe">';
+
+      // Item type field
+      echo "<tr>";
+      echo "<td> <label>" . __('Item type') . "</label> </td>";
+      echo "<td>";
+      Dropdown::showItemTypes(
+         'item_type',
+         $conf['impact_assets_list'],
+         [
+            'value'        => null,
+            'width'        => '100%',
+            'emptylabel'   => Dropdown::EMPTY_VALUE,
+            'rand'         => $rand
+         ]
+      );
+      echo "</td>";
+      echo "</tr>";
+
+      // Item id field
+      echo "<tr>";
+      echo "<td> <label>" . __('Item') . "</label> </td>";
+      echo "<td>";
+      Ajax::updateItemOnSelectEvent("dropdown_item_type$rand", "results",
+         $CFG_GLPI["root_doc"].
+         "/ajax/dropdownTrackingDeviceType.php",
+         [
+            'itemtype'        => '__VALUE__',
+            'entity_restrict' => 0,
+            'multiple'        => 1,
+            'admin'           => 1,
+            'rand'            => $rand,
+            'myname'          => "item_id",
+         ]
+      );
+      echo "<span id='results'>\n";
+      echo "</span>\n";
+      echo "</td>";
+      echo "</tr>";
+
+      echo "</table>";
+      echo "</div>";
+   }
+
+   /**
+    * Show the impact network for a specified item
+    *
+    * @since 9.5
+    *
+    * @param CommonDBTM $item The specified item
+   **/
+   public static function showImpactNetwork(CommonDBTM $item) {
+
+      // Load the vis.js library
       self::loadVisJS();
 
       // Load #networkContainer style
@@ -400,23 +557,111 @@ class Impact extends CommonDBRelation {
       // Print the HTML part of the impact network
       self::printImpactNetwork();
 
+      // Print the add node node dialog
+      self::printAddNodeDialog();
+
+      // Prepare the graph
       $edges = [];
       $nodes = [];
       self::buildGraph($item, $edges, $nodes, self::DIRECTION_BOTH);
 
-      self::buildVis($nodes, $edges);
+      // Build the network
+      self::buildNetwork($nodes, $edges);
    }
 
-   /**
-    * Summary of displayTabContentForItem
-    * @param CommonGLPI $item         is the item
-    * @param mixed      $tabnum       is the tab num
-    * @param mixed      $withtemplate has template
-    * @return mixed
-    */
-   static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0) {
+   public function add(array $input, $options = [], $history = true) {
+      global $DB;
 
-      self::showForItem($item);
-      return true;
+      // Check that mandatory values are set
+      $required = [
+         "source_asset_type",
+         "source_asset_id",
+         "impacted_asset_type",
+         "impacted_asset_id"
+      ];
+
+      if (array_diff($required, array_keys($input))) {
+         return false;
+      }
+
+      // Check that source and impacted are different items
+      if ($input['source_asset_type'] == $input['impacted_asset_type'] &&
+          $input['source_asset_id'] == $input['impacted_asset_id']) {
+         return false;
+      }
+
+      // Check for duplicate
+      $it = $DB->request([
+         'FROM'   => 'glpi_impacts',
+         'WHERE'  => [
+            'source_asset_type'     => $input['source_asset_type'],
+            'source_asset_id'       => $input['source_asset_id'],
+            'impacted_asset_type'   => $input['impacted_asset_type'],
+            'impacted_asset_id'     => $input['impacted_asset_id']
+         ]
+      ]);
+
+      if (count($it)) {
+         return false;
+      }
+
+      // Check if source and impacted are valid objets
+      if (!$this->assetExist(
+            $input['source_asset_type'],
+            $input['source_asset_id']) ||
+         !$this->assetExist(
+            $input['impacted_asset_type'],
+            $input['impacted_asset_id'])) {
+         return false;
+      }
+
+      parent::add($input, $options, $history);
+   }
+
+   public function delete(array $input, $options = [], $history = true) {
+      global $DB;
+
+      $var = [
+         'FROM'   => 'glpi_impacts',
+         'WHERE'  => [
+            'source_asset_type'     => $input['source_asset_type'],
+            'source_asset_id'       => $input['source_asset_id'],
+            'impacted_asset_type'   => $input['impacted_asset_type'],
+            'impacted_asset_id'     => $input['impacted_asset_id']
+         ]
+         ];
+
+      // Check that the link exist
+      $it = $DB->request([
+         'FROM'   => 'glpi_impacts',
+         'WHERE'  => [
+            'source_asset_type'     => $input['source_asset_type'],
+            'source_asset_id'       => $input['source_asset_id'],
+            'impacted_asset_type'   => $input['impacted_asset_type'],
+            'impacted_asset_id'     => $input['impacted_asset_id']
+         ]
+      ]);
+
+      if (count($it)) {
+         $input['id'] = $it->next()['id'];
+         parent::delete($input, $options, $history);
+      }
+   }
+
+   public function assetExist($itemType, $itemID) {
+      try {
+         $reflectionClass = new ReflectionClass($itemType);
+         if (!$reflectionClass->isInstantiable()) {
+            return false;
+         }
+         $asset = new $itemType();
+         return $asset->getFromDB($itemID);
+      } catch (ReflectionException $e) { // class does not exist
+         return false;
+      }
+   }
+
+   public function rawSearchOptions() {
+      return [];
    }
 }
