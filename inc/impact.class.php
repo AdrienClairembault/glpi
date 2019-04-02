@@ -13,6 +13,9 @@ class Impact extends CommonDBRelation {
    const DIRECTION_BACKWARD   = 0b10;
    const DIRECTION_BOTH       = 0b11;
 
+   const EDGE = 1;
+   const NODE = 2;
+
    /**
     * Return the localized name of the current Type (Asset impacts)
     *
@@ -21,7 +24,7 @@ class Impact extends CommonDBRelation {
     * @param integer $nb Number of items
     *
     * @return string
-    **/
+    */
    public static function getTypeName($nb = 0) {
       return _n('Asset impact', 'Asset impacts', $nb);
    }
@@ -35,7 +38,7 @@ class Impact extends CommonDBRelation {
     * @param boolean    $withtemplate is a template object ? (default 0)
     *
     * @return string tab name
-    **/
+    */
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
       $nbimpacts = 0;
 
@@ -46,7 +49,9 @@ class Impact extends CommonDBRelation {
       //    $nbimpacts = count($opposite);
       // }
 
-      return self::createTabEntry(_n('Impact', 'Impacts', Session::getPluralNumber(), 'impacts'), $nbimpacts);
+      $tabName = _n('Impact', 'Impacts', Session::getPluralNumber(), 'impacts');
+
+      return self::createTabEntry($tabName, $nbimpacts);
    }
 
    /**
@@ -59,7 +64,7 @@ class Impact extends CommonDBRelation {
     * @param boolean    $withtemplate is a template object ? (default 0)
     *
     * @return boolean
-   **/
+    */
    public static function displayTabContentForItem(
       CommonGLPI $item,
       $tabnum = 1,
@@ -123,7 +128,9 @@ class Impact extends CommonDBRelation {
     */
    public static function printImpactNetwork() {
       $action = Toolbox::getItemTypeFormURL(__CLASS__);
-      echo "<form name=\"form_impact_network\" action=\"$action\" method=\"post\">";
+      $formName = "form_impact_network";
+      echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
+
       echo "<table class='tab_cadre_fixe'>";
 
       echo "<tr class='tab_bg_2'>";
@@ -146,13 +153,11 @@ class Impact extends CommonDBRelation {
       ]);
 
       HTML::closeForm();
+
+      // On submit convert data to JSON
       echo HTML::scriptBlock("
          $('form[name=form_impact_network]').on('submit', function(event) {
-            // $('input[name=impacts]').val(delta);
-            // var json = {'JObject': delta};
-            // json = ;
             $('input[name=impacts]').val(JSON.stringify(delta));
-            // event.preventDefault();
          });
       ");
    }
@@ -180,7 +185,7 @@ class Impact extends CommonDBRelation {
     *   values :
     *       - from   : id of the source node
     *       - to     : id of the impacted node
-    *       - arrows : fixed values "to" for now
+    *       - arrows : fixed values "to"
     * @param array $nodes Store the nodes of the graph
     *    example :
     *       [
@@ -276,8 +281,8 @@ class Impact extends CommonDBRelation {
       /* If we found no edges after exploring all dependencies,
          create a single node for the current item */
       if ($level == 0 && count($nodes) == 0 && $main == true) {
-         $currentKey = sprintf(
-            "%s::%s",
+         $currentKey = self::makeID(
+            self::NODE, 
             get_class($item),
             $item->getID()
          );
@@ -320,24 +325,27 @@ class Impact extends CommonDBRelation {
          $impacted = $impact['impacted'];
 
          // Build key of the source item (class::id)
-         $sourceKey = sprintf(
-            "%s::%s",
+         $sourceKey = self::makeID(
+            self::NODE,
             get_class($source),
             $source->getID()
          );
 
          // Build key of the impacted item (class::id)
-         $impactedKey = sprintf(
-            "%s::%s",
+         $impactedKey = self::makeID(
+            self::NODE,
             get_class($impacted),
             $impacted->getID()
          );
 
+         $egdeKey = self::makeID(self::EDGE, $sourceKey, $impactedKey);
+
          // Check that this edge is not registered yet
-         if (!isset($edges["$sourceKey" . "->" . "$impactedKey"])) {
+         if (!isset($edges[$egdeKey])) {
 
             // Add the new edge
-            $edges["$sourceKey" . "->" . "$impactedKey"] = [
+            $edges[$egdeKey] = [
+               'id'        => $egdeKey,
                'from'      => $sourceKey,
                'to'        => $impactedKey,
                'arrows'    => "to"
@@ -393,93 +401,24 @@ class Impact extends CommonDBRelation {
     *
     * @param array $nodes  Nodes of the graph
     * @param array $edges  Edges of the graph
-   **/
+    */
    public static function buildNetwork(array $nodes, array $edges) {
+      // Load script
+      echo HTML::script("js/impact_network.js");
 
       // Remove array keys and convert to json
       $nodes = json_encode(array_values($nodes));
       $edges = json_encode(array_values($edges));
 
       $js = '
-         var container = document.getElementById("networkContainer");
          var data = {
             nodes: new vis.DataSet(JSON.parse(\'' . $nodes . '\')),
             edges: new vis.DataSet(JSON.parse(\'' . $edges . '\'))
          };
 
-         var delta = {};
-
-         function updateDelta (action, edge) {
-            var key = edge.from + "->" + edge.to;
-
-            // Remove useless changes (add + delete the same edge)
-            if (delta.hasOwnProperty(key)) {
-               delete delta[key];
-               return;
-            }
-
-            var source = edge.from.split("::");
-            var impacted = edge.to.split("::");
-
-            delta[key] = {
-               action:              action,
-               source_asset_type:   source[0],
-               source_asset_id:     source[1],
-               impacted_asset_type: impacted[0],
-               impacted_asset_id:   impacted[1]
-            };
-         }
-
-         var options = {
-            manipulation: {
-               enabled: true,
-               initiallyActive: true,
-               addNode: function(nodeData,callback) {
-                  $( "#addNodedialog" ).dialog({
-                     modal: true,
-                     buttons: [{
-                           text: "Add",
-                           click: function() {
-                              nodeData.label = $("select[name=item_id] option:selected").text();
-                              nodeData.id = $("select[name=item_type] option:selected").val() +
-                                 "::" +
-                                 $("select[name=item_id] option:selected").val();
-                              callback(nodeData);
-                              $( this ).dialog( "close" );
-                           }
-                        },{
-                           text: "Cancel",
-                           click: function() {
-                              $( this ).dialog( "close" );
-                           }
-                        }
-                     ]
-                  });
-               },
-               deleteNode: function (node, callback) {
-                  node.edges.forEach(function (e){
-                     realEdge = data.edges.get(e);
-                     updateDelta("delete", realEdge);
-                  });
-                  callback(node);
-               },
-               addEdge: function(edge, callback) {
-                  edge.arrows = "to";
-                  updateDelta("add", edge);
-                  callback(edge);
-               },
-               deleteEdge: function(edge, callback) {
-                  realEdge = data.edges.get(edge.edges[0]);
-                  updateDelta("delete", realEdge);
-                  callback(edge);
-               }
-            },
-            locale: "en"
-         };
-
-         var network = new vis.Network(container, data, options);
+         initImpactNetwork(data);
       ';
-
+         
       echo HTML::scriptBlock($js);
    }
 
@@ -545,7 +484,7 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     *
     * @param CommonDBTM $item The specified item
-   **/
+    */
    public static function showImpactNetwork(CommonDBTM $item) {
 
       // Load the vis.js library
@@ -569,6 +508,15 @@ class Impact extends CommonDBRelation {
       self::buildNetwork($nodes, $edges);
    }
 
+   /**
+    * Add a new impact relation 
+    * 
+    * @param array $input   Array containing the new relations values
+    * @param array $options
+    * @param bool  $history
+    *
+    * @return bool false on failure
+    */
    public function add(array $input, $options = [], $history = true) {
       global $DB;
 
@@ -615,9 +563,18 @@ class Impact extends CommonDBRelation {
          return false;
       }
 
-      parent::add($input, $options, $history);
+      return parent::add($input, $options, $history);
    }
 
+   /**
+    * Delete an existing impact relation 
+    * 
+    * @param array $input   Array containing the impact to be deleted
+    * @param array $options
+    * @param bool  $history
+    *
+    * @return bool false on failure
+    */
    public function delete(array $input, $options = [], $history = true) {
       global $DB;
 
@@ -644,23 +601,61 @@ class Impact extends CommonDBRelation {
 
       if (count($it)) {
          $input['id'] = $it->next()['id'];
-         parent::delete($input, $options, $history);
+         return parent::delete($input, $options, $history);
       }
    }
 
-   public function assetExist($itemType, $itemID) {
+   /**
+    * Check that a given asset exist in the db 
+    *
+    * @param string $itemType Class of the asset
+    * @param string $itemID id of the asset
+    */
+   public function assetExists(string $itemType, string $itemID) {
       try {
          $reflectionClass = new ReflectionClass($itemType);
+
          if (!$reflectionClass->isInstantiable()) {
             return false;
          }
+
          $asset = new $itemType();
          return $asset->getFromDB($itemID);
-      } catch (ReflectionException $e) { // class does not exist
+      } catch (ReflectionException $e) { 
+         // class does not exist
          return false;
       }
    }
 
+   /**
+    * Create ID used for the node and eges on the graph
+    *
+    * @param int     $type NODE or EDGE
+    * @param string  $a    first element of the id :
+    *                         - an item type for NODE  
+    *                         - a node id for EDGE  
+    * @param string  $b    second element of the id :
+    *                         - an item id for NODE  
+    *                         - a node id for EDGE  
+    *
+    * @return string|null
+    */
+   public static function createID(int $type, string $a, string $b) {
+      switch ($type) {
+         case self::NODE:
+            return "$a::$b";
+         case self::EDGE:
+            return "$a->$b";
+      }
+
+      return null;
+   }
+
+   /**
+    * Get search function for Impacts
+    *
+    * @return array 
+    */
    public function rawSearchOptions() {
       return [];
    }
