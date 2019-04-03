@@ -9,6 +9,7 @@ if (!defined('GLPI_ROOT')) {
  * Manage impactship between assets
  */
 class Impact extends CommonDBRelation {
+
    const DIRECTION_FORWARD    = 0b01;
    const DIRECTION_BACKWARD   = 0b10;
    const DIRECTION_BOTH       = 0b11;
@@ -281,8 +282,8 @@ class Impact extends CommonDBRelation {
       /* If we found no edges after exploring all dependencies,
          create a single node for the current item */
       if ($level == 0 && count($nodes) == 0 && $main == true) {
-         $currentKey = self::makeID(
-            self::NODE, 
+         $currentKey = self::createID(
+            self::NODE,
             get_class($item),
             $item->getID()
          );
@@ -325,20 +326,20 @@ class Impact extends CommonDBRelation {
          $impacted = $impact['impacted'];
 
          // Build key of the source item (class::id)
-         $sourceKey = self::makeID(
+         $sourceKey = self::createID(
             self::NODE,
             get_class($source),
             $source->getID()
          );
 
          // Build key of the impacted item (class::id)
-         $impactedKey = self::makeID(
+         $impactedKey = self::createID(
             self::NODE,
             get_class($impacted),
             $impacted->getID()
          );
 
-         $egdeKey = self::makeID(self::EDGE, $sourceKey, $impactedKey);
+         $egdeKey = self::createID(self::EDGE, $sourceKey, $impactedKey);
 
          // Check that this edge is not registered yet
          if (!isset($edges[$egdeKey])) {
@@ -402,7 +403,11 @@ class Impact extends CommonDBRelation {
     * @param array $nodes  Nodes of the graph
     * @param array $edges  Edges of the graph
     */
-   public static function buildNetwork(array $nodes, array $edges) {
+   public static function buildNetwork(
+      array $nodes,
+      array $edges,
+      CommonDBTM $item) {
+
       // Load script
       echo HTML::script("js/impact_network.js");
 
@@ -410,15 +415,26 @@ class Impact extends CommonDBRelation {
       $nodes = json_encode(array_values($nodes));
       $edges = json_encode(array_values($edges));
 
+      // Get current object key
+      $currentItem = self::createID(
+         self::NODE,
+         get_class($item),
+         $item->getID()
+      );
+
       $js = '
-         var data = {
+         var glpiData = {
             nodes: new vis.DataSet(JSON.parse(\'' . $nodes . '\')),
             edges: new vis.DataSet(JSON.parse(\'' . $edges . '\'))
          };
 
-         initImpactNetwork(data);
+         var glpiLocales = \'' . self::getVisJSLocales() . '\';
+
+         var currentItem = \'' . $currentItem . '\';
+
+         initImpactNetwork(glpiData, glpiLocales, currentItem);
       ';
-         
+
       echo HTML::scriptBlock($js);
    }
 
@@ -466,7 +482,7 @@ class Impact extends CommonDBRelation {
             'multiple'        => 1,
             'admin'           => 1,
             'rand'            => $rand,
-            'myname'          => "item_id",
+            'myname'          => "item_id"
          ]
       );
       echo "<span id='results'>\n";
@@ -505,12 +521,12 @@ class Impact extends CommonDBRelation {
       self::buildGraph($item, $edges, $nodes, self::DIRECTION_BOTH);
 
       // Build the network
-      self::buildNetwork($nodes, $edges);
+      self::buildNetwork($nodes, $edges, $item);
    }
 
    /**
-    * Add a new impact relation 
-    * 
+    * Add a new impact relation
+    *
     * @param array $input   Array containing the new relations values
     * @param array $options
     * @param bool  $history
@@ -554,10 +570,10 @@ class Impact extends CommonDBRelation {
       }
 
       // Check if source and impacted are valid objets
-      if (!$this->assetExist(
+      if (!self::assetExist(
             $input['source_asset_type'],
             $input['source_asset_id']) ||
-         !$this->assetExist(
+         !self::assetExist(
             $input['impacted_asset_type'],
             $input['impacted_asset_id'])) {
          return false;
@@ -567,8 +583,8 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Delete an existing impact relation 
-    * 
+    * Delete an existing impact relation
+    *
     * @param array $input   Array containing the impact to be deleted
     * @param array $options
     * @param bool  $history
@@ -606,12 +622,12 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Check that a given asset exist in the db 
+    * Check that a given asset exist in the db
     *
     * @param string $itemType Class of the asset
     * @param string $itemID id of the asset
     */
-   public function assetExists(string $itemType, string $itemID) {
+   public static function assetExist(string $itemType, string $itemID) {
       try {
          $reflectionClass = new ReflectionClass($itemType);
 
@@ -621,7 +637,7 @@ class Impact extends CommonDBRelation {
 
          $asset = new $itemType();
          return $asset->getFromDB($itemID);
-      } catch (ReflectionException $e) { 
+      } catch (ReflectionException $e) {
          // class does not exist
          return false;
       }
@@ -631,16 +647,16 @@ class Impact extends CommonDBRelation {
     * Create ID used for the node and eges on the graph
     *
     * @param int     $type NODE or EDGE
-    * @param string  $a    first element of the id :
-    *                         - an item type for NODE  
-    *                         - a node id for EDGE  
-    * @param string  $b    second element of the id :
-    *                         - an item id for NODE  
-    *                         - a node id for EDGE  
+    * @param string  $a     first element of the id :
+    *                         - an item type for NODE
+    *                         - a node id for EDGE
+    * @param string|int  $b second element of the id :
+    *                         - an item id for NODE
+    *                         - a node id for EDGE
     *
     * @return string|null
     */
-   public static function createID(int $type, string $a, string $b) {
+   public static function createID(int $type, string $a, $b) {
       switch ($type) {
          case self::NODE:
             return "$a::$b";
@@ -654,9 +670,33 @@ class Impact extends CommonDBRelation {
    /**
     * Get search function for Impacts
     *
-    * @return array 
+    * @return array
     */
    public function rawSearchOptions() {
       return [];
+   }
+
+   public static function getVisJSLocales() {
+      $locales = [
+         'edit'   => __('Edit'),
+         'del'    => __('Delete selected'),
+         'back'   => __('Back'),
+         'addNode'   => __('Add Asset'),
+         'addEdge'   => __('Add Edge'),
+         'editNode'   => __('Edit Node'),
+         'editEdge'   => __('Edit Edge'),
+         'addDescription'   => __('Click in an empty space to place a new node.'),
+         'edgeDescription'   => __('Click on a node and drag the edge to another node to connect them.'),
+         'editEdgeDescription'   => __('Click on the control points and drag them to a node to connect to it.'),
+         'createEdgeError'   => __('Cannot link edges to a cluster.'),
+         'deleteClusterError'   => __('Clusters cannot be deleted.'),
+         'editClusterError'   => __('Clusters cannot be edited.'),
+         'duplicateAsset'   => __('This asset already exist.'),
+         'linkToSelf'   => __("Can't link a node to itself."),
+         'duplicateEdge'   => __("An identical link already exist between theses two nodes."),
+         'unexpectedError' => __("Unexpected error.")
+      ];
+
+      return addslashes(json_encode($locales));
    }
 }
