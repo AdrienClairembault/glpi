@@ -32,21 +32,71 @@
 const NODE = 1;
 const EDGE = 2;
 
+const FORWARD = 1;
+const BACKWARD = 2;
+const BOTH = 3;
+
 // Store user action on the network
 // var delta;
 // var data;
 // var locales;
 
 // Start impact network
-function initImpactNetwork (glpiData, glpiLocales, currentNode) {
+function initImpactNetwork (glpiLocales, startNode, defautView) {
 
    // Init global vars
    window.delta = {};
-   window.data = glpiData;
    window.locales = {
       default: JSON.parse(glpiLocales)
    };
+   window.startNode = startNode;
+   window.graphs = {};
 
+   var toBeLoaded = [BOTH, FORWARD, BACKWARD];
+
+   // Load main view first
+   toBeLoaded.filter(function(value) {
+      if (value == defautView){
+         loadData(value, true);
+         return false;
+      }
+
+      return true;
+   });
+   // Load others views
+   toBeLoaded.forEach(function(item) {
+      loadData(item, false);
+   });
+
+   // // Load data
+   // loadData(BOTH);
+   // loadData(FORWARD);
+   // loadData(BACKWARD);
+}
+
+function loadData(direction, startNetwork) {
+   startNodeDetails = window.startNode.split('::');
+
+   $.ajax({
+      type: "POST",
+      url: "../ajax/impact.php",
+      data: {
+         itemType:   startNodeDetails[0],
+         itemID:     startNodeDetails[1],
+         direction:  direction
+      },
+      success: function(data, textStatus, jqXHR) {
+         window.graphs[direction] = data;
+
+         if (startNetwork) {
+            createNetwork(direction);
+         }
+      },
+      dataType: "json"
+   });
+}
+
+function createNetwork (direction) {
    // Network container
    var container = document.getElementById("networkContainer");
 
@@ -69,22 +119,97 @@ function initImpactNetwork (glpiData, glpiLocales, currentNode) {
       locale: "default"
    };
 
-   window.network = new vis.Network(container, data, options);
+   window.data = {
+      nodes: new vis.DataSet(window.graphs[direction]['nodes']),
+      edges: new vis.DataSet(window.graphs[direction]['edges'])
+   };
+   window.network = new vis.Network(container, window.data, options);
 
-   // Mode to current node on first drawing
-   window.currentNodeFocused = false;
-   window.network.on('beforeDrawing', function (){
-      if (!window.currentNodeFocused) {
-         window.currentNodeFocused = true;
-         window.network.focus(currentNode, {
-            locked: false
-         });
-      }
-   });
-
-   // Select current node
-   window.network.selectNodes([currentNode]);
+   selectFirstNode();
 }
+
+function switchGraph(direction) {
+   window.data.edges.clear();
+   window.data.nodes.clear();
+   window.data.nodes.add(window.graphs[direction].nodes);
+   window.data.edges.add(window.graphs[direction].edges);
+   selectFirstNode();
+}
+
+function selectFirstNode(){
+   // Select current node
+   // window.firstLoad = false;
+   // window.network.on('afterDrawing', function (){
+   //    if (!window.firstLoad) {
+   //       window.firstLoad = true;
+   //       window.network.focus(window.startNode, {
+   //          locked: false
+   //       });
+   //    }
+   // });
+   window.network.selectNodes([window.startNode]);
+}
+
+// function filterForward() {
+//    var nodes = [];
+//    var edges = [];
+
+//    buildLocalGraph(
+//       nodes,
+//       edges,
+//       FORWARD,
+//       window.data.nodes.get(window.firstNode)
+//    );
+// }
+
+// function buildLocalGraph(nodes, edges, direction, currentNode) {
+//    // Find the edges connected to the current node
+//    window.data.edges.get().forEach(function(edge) {
+//       var str = "";
+//       switch (direction) {
+//          case FORWARD:
+//             str = makeID(EDGE, currentNode.id, "");
+//             break;
+//          case BACKWARD:
+//             str = makeID(EDGE, "", currentNode.id);
+//             break;
+//       }
+
+//       // Check if edge match with our node
+//       if (edge.id.indexOf(str) === -1) {
+//          return;
+//       }
+
+//       // Add nodes
+//       addNodeIfNotExist(edge.from);
+//       addNodeIfNotExist(edge.to);
+
+//       // Add edge
+//       edges.push(edge);
+
+//       // Go to next node if not already done
+//    });
+// }
+
+// function addNodeIfNotExist(nodes, nodeID) {
+//    var newNode = window.data.nodes.get(nodeID);
+
+//    if (nodeExist(nodes, nodeID)) {
+//       nodes.push(newNode);
+//    }
+// }
+
+// function nodeExist(nodes, node) {
+//    var found = false;
+
+//    nodes.forEach(function(node) {
+//       if (newNode == node.id) {
+//          found = true;
+//       }
+//    });
+
+//    return found;
+// }
 
 function getLocale(key) {
    return window.locales['default'][key];

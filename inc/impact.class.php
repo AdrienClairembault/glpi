@@ -41,18 +41,25 @@ class Impact extends CommonDBRelation {
     * @return string tab name
     */
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
-      $nbimpacts = 0;
+      global $DB;
 
-      // TODO : enable or disable count on config
-
-      // if ($_SESSION['glpishow_count_on_tabs']) {
-      //    self::getOppositeItems($item, $opposite);
-      //    $nbimpacts = count($opposite);
-      // }
+      // Get direct dependencies
+      $it = $DB->request([
+         'FROM'   => 'glpi_impacts',
+         'WHERE'  => [
+            'OR' => [
+               'source_asset_type'     => get_class($item),
+               'source_asset_id'       => $item->getID(),
+            ], [
+               'impacted_asset_type' => get_class($item),
+               'impacted_asset_id' => $item->getID(),
+            ]
+         ]
+      ]);
 
       $tabName = _n('Impact', 'Impacts', Session::getPluralNumber(), 'impacts');
 
-      return self::createTabEntry($tabName, $nbimpacts);
+      return self::createTabEntry($tabName, count($it));
    }
 
    /**
@@ -135,12 +142,29 @@ class Impact extends CommonDBRelation {
       echo "<table class='tab_cadre_fixe'>";
 
       echo "<tr class='tab_bg_2'>";
-      echo "<th>" . __('Impact graph', 'impacts') . "</th>";
+      echo "<th colspan=\"2\">" . __('Impact graph') . "</th>";
       echo "</tr>";
 
       echo "<tr>";
-      echo "<td>";
+      echo "<td width=\"80%\">";
       echo '<div id="networkContainer"></div>';
+      echo "</td>";
+      echo "<td>";
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr class='tab_bg_2'>";
+      echo "<th colspan=\"1\">" . __('Options (WIP)') . "</th>";
+      echo "</tr>";
+      echo "<tr>";
+      $dropdown = Dropdown::showFromArray("direction", [
+         self::DIRECTION_BOTH => "Both",
+         self::DIRECTION_FORWARD => "FORWARD",
+         self::DIRECTION_BACKWARD => "BACKWARD",
+      ], [
+         'display' => false
+      ]);
+      echo "<td><label>Direction: </label>$dropdown</td>";
+      echo "</tr>";
+      echo "</table>";
       echo "</td>";
       echo "</tr>";
 
@@ -155,10 +179,15 @@ class Impact extends CommonDBRelation {
 
       HTML::closeForm();
 
-      // On submit convert data to JSON
       echo HTML::scriptBlock("
+         // On submit convert data to JSON
          $('form[name=form_impact_network]').on('submit', function(event) {
             $('input[name=impacts]').val(JSON.stringify(delta));
+         });
+
+         // Change graph
+         $('select[name=direction]').on('change', function () {
+            switchGraph($('select[name=direction] option:selected').val());
          });
       ");
    }
@@ -206,7 +235,6 @@ class Impact extends CommonDBRelation {
     * @param int $direction Specify if the network should contain the items
     *    impacted by the current item (DIRECTION_FORWARD), the items that
     *    impact the current item (DIRECTION_BACKWARD) or both (DIRECTION_BOTH).
-    * @param int  $level depth level, not used yet
     * @param bool $main  Used to check if we are in the original or in a
     *    recursive call of this function.
     */
@@ -215,7 +243,6 @@ class Impact extends CommonDBRelation {
       array &$edges,
       array &$nodes,
       int $direction = self::DIRECTION_BOTH,
-      int $level = 0,
       bool $main = true) {
 
       global $DB;
@@ -275,13 +302,12 @@ class Impact extends CommonDBRelation {
          $currentItemDependencies,
          $edges,
          $nodes,
-         $direction,
-         $level
+         $direction
       );
 
       /* If we found no edges after exploring all dependencies,
          create a single node for the current item */
-      if ($level == 0 && count($nodes) == 0 && $main == true) {
+      if (count($nodes) == 0 && $main == true) {
          $currentKey = self::createID(
             self::NODE,
             get_class($item),
@@ -312,14 +338,12 @@ class Impact extends CommonDBRelation {
     * @param int        $direction Specify if the network should contain the
     *    items impacted by the current item (DIRECTION_FORWARD), the items that
     *    impact the current item (DIRECTION_BACKWARD) or both (DIRECTION_BOTH).
-    * @param int        $level      depth level, not used yet
     */
    public static function explodeDependencies(
       array $impacts,
       array &$edges,
       array &$nodes,
-      int $direction,
-      int $level) {
+      int $direction) {
 
       foreach ($impacts as $impact) {
          $source = $impact['source'];
@@ -378,7 +402,6 @@ class Impact extends CommonDBRelation {
                   $edges,
                   $nodes,
                   $direction,
-                  $level++,
                   false
                );
             } else {
@@ -387,7 +410,6 @@ class Impact extends CommonDBRelation {
                   $edges,
                   $nodes,
                   $direction,
-                  $level--,
                   false
                );
             }
@@ -403,17 +425,11 @@ class Impact extends CommonDBRelation {
     * @param array $nodes  Nodes of the graph
     * @param array $edges  Edges of the graph
     */
-   public static function buildNetwork(
-      array $nodes,
-      array $edges,
-      CommonDBTM $item) {
-
+   public static function buildNetwork(CommonDBTM $item) {
       // Load script
       echo HTML::script("js/impact_network.js");
 
-      // Remove array keys and convert to json
-      $nodes = json_encode(array_values($nodes));
-      $edges = json_encode(array_values($edges));
+      $locales = self::getVisJSLocales();
 
       // Get current object key
       $currentItem = self::createID(
@@ -422,18 +438,13 @@ class Impact extends CommonDBRelation {
          $item->getID()
       );
 
-      $js = '
-         var glpiData = {
-            nodes: new vis.DataSet(JSON.parse(\'' . $nodes . '\')),
-            edges: new vis.DataSet(JSON.parse(\'' . $edges . '\'))
-         };
+      $direction = self::DIRECTION_BOTH;
 
-         var glpiLocales = \'' . self::getVisJSLocales() . '\';
-
-         var currentItem = \'' . $currentItem . '\';
-
-         initImpactNetwork(glpiData, glpiLocales, currentItem);
-      ';
+      $js = "
+         var glpiLocales = '$locales';
+         var currentItem = '$currentItem';
+         var direction = $direction;
+         initImpactNetwork(glpiLocales, currentItem, direction);";
 
       echo HTML::scriptBlock($js);
    }
@@ -512,16 +523,17 @@ class Impact extends CommonDBRelation {
       // Print the HTML part of the impact network
       self::printImpactNetwork();
 
-      // Print the add node node dialog
+      // Print the "add node" dialog
       self::printAddNodeDialog();
 
       // Prepare the graph
-      $edges = [];
-      $nodes = [];
-      self::buildGraph($item, $edges, $nodes, self::DIRECTION_BOTH);
+      // $edges = [];
+      // $nodes = [];
+      // self::buildGraph($item, $edges, $nodes, self::DIRECTION_BOTH);
 
       // Build the network
-      self::buildNetwork($nodes, $edges, $item);
+      // self::buildNetwork($nodes, $edges, $item);
+      self::buildNetwork($item);
    }
 
    /**
@@ -629,6 +641,13 @@ class Impact extends CommonDBRelation {
     */
    public static function assetExist(string $itemType, string $itemID) {
       try {
+         // Check this asset type is enabled
+         $conf = Config::getConfigurationValues('core');
+         $enabledClasses = $conf['impact_assets_list'];
+         if (array_search($itemType, $enabledClasses) === false) {
+            return false;
+         }
+
          $reflectionClass = new ReflectionClass($itemType);
 
          if (!$reflectionClass->isInstantiable()) {
@@ -676,6 +695,11 @@ class Impact extends CommonDBRelation {
       return [];
    }
 
+   /**
+    * Build the visjs locales
+    *
+    * @return string json encoded locales array
+    */
    public static function getVisJSLocales() {
       $locales = [
          'edit'   => __('Edit'),

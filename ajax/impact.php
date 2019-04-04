@@ -40,8 +40,10 @@ Html::header_nocache();
 
 Session::checkLoginUser();
 
-$itemType = $_POST["itemType"] ?? $_GET["itemType"] ?? "";
-$itemID =   $_POST["itemID"]   ?? $_GET["itemID"]   ?? "";
+$itemType = $_POST["itemType"]   ?? $_GET["itemType"]  ?? "";
+$itemID =   $_POST["itemID"]     ?? $_GET["itemID"]    ?? "";
+$direction = $_POST["direction"] ?? $_GET["direction"] ??
+   Impact::DIRECTION_BOTH;
 
 // Required params
 if (empty($itemType) || empty($itemID)) {
@@ -64,9 +66,8 @@ Impact::buildGraph(
    $item,
    $edges,
    $nodes,
-   Impact::DIRECTION_BOTH,
-   0,
-   false
+   $direction,
+   true
 );
 
 // Remove array keys
