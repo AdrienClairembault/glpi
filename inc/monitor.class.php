@@ -88,6 +88,7 @@ class Monitor extends CommonDBTM {
       $this->addStandardTab('Notepad', $ong, $options);
       $this->addStandardTab('Reservation', $ong, $options);
       $this->addStandardTab('Log', $ong, $options);
+      $this->addImpactTab($ong, $options);
 
       return $ong;
    }

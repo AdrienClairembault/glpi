@@ -60,7 +60,8 @@ class Enclosure extends CommonDBTM {
          ->addStandardTab('Ticket', $ong, $options)
          ->addStandardTab('Item_Problem', $ong, $options)
          ->addStandardTab('Change_Item', $ong, $options)
-         ->addStandardTab('Log', $ong, $options);
+         ->addStandardTab('Log', $ong, $options)
+         ->addImpactTab($ong, $options);
       ;
       return $ong;
    }
