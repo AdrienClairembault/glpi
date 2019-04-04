@@ -53,31 +53,37 @@ function initImpactNetwork (glpiLocales, startNode, defautView) {
    window.graphs = {};
 
    var toBeLoaded = [BOTH, FORWARD, BACKWARD];
+   var calls = [];
 
    // Load main view first
-   toBeLoaded.filter(function(value) {
-      if (value == defautView){
-         loadData(value, true);
-         return false;
-      }
+   // toBeLoaded.filter(function(value) {
+   //    if (value == defautView){
+   //       loadData(value, true, calls);
+   //       return false;
+   //    }
 
-      return true;
-   });
+   //    return true;
+   // });
    // Load others views
+
    toBeLoaded.forEach(function(item) {
-      loadData(item, false);
+      loadData(item, calls);
    });
 
+   $.when.apply($, calls).then(function() {
+      createNetwork(direction);
+      applyColors();
+  });
    // // Load data
    // loadData(BOTH);
    // loadData(FORWARD);
    // loadData(BACKWARD);
 }
 
-function loadData(direction, startNetwork) {
+function loadData(direction, calls) {
    startNodeDetails = window.startNode.split('::');
 
-   $.ajax({
+   calls.push($.ajax({
       type: "POST",
       url: "../ajax/impact.php",
       data: {
@@ -87,13 +93,9 @@ function loadData(direction, startNetwork) {
       },
       success: function(data, textStatus, jqXHR) {
          window.graphs[direction] = data;
-
-         if (startNetwork) {
-            createNetwork(direction);
-         }
       },
       dataType: "json"
-   });
+   }));
 }
 
 function createNetwork (direction) {
@@ -115,6 +117,11 @@ function createNetwork (direction) {
          maxVelocity: 5,
          minVelocity: 0.1
       },
+      edges: {
+         color: {
+            inherit: false
+         }
+      },
       locales: locales,
       locale: "default"
    };
@@ -133,11 +140,56 @@ function switchGraph(direction) {
    window.data.nodes.clear();
    window.data.nodes.add(window.graphs[direction].nodes);
    window.data.edges.add(window.graphs[direction].edges);
+   applyColors(direction);
    selectFirstNode();
 }
 
+function applyColors(direction) {
+   edges = window.data.edges.get();
+   console.log(window.graphs);
+   console.log(FORWARD);
+   console.log(window.graphs[1]);
+   console.log(window.graphs[2]);
+
+   edges.forEach(function(edge){
+      // Apply Navy to forward graph
+      window.graphs[FORWARD].edges.forEach(function (forwardEdge) {
+         if (edge.id == forwardEdge.id) {
+            edge.color = {
+               color: "red",
+               highlight: "red",
+               inherit: false
+            };
+         }
+      });
+
+      window.graphs[BACKWARD].edges.forEach(function (backwardEdge) {
+         if (edge.id == backwardEdge.id) {
+
+            if (edge.color.color == "red"){
+               edge.color = {
+                  color: "purple",
+                  highlight: "purple",
+                  inherit: false
+               };
+            }
+            else {
+               edge.color = {
+                  color: "navy",
+                  highlight: "navy",
+                  inherit: false
+               };
+            }
+         }
+      });
+
+   });
+
+   window.data.edges.update(edges);
+}
+
 function selectFirstNode(){
-   // Select current node
+   // Move to current node, doesn't always work ... TODO fix ?
    // window.firstLoad = false;
    // window.network.on('afterDrawing', function (){
    //    if (!window.firstLoad) {
@@ -147,6 +199,8 @@ function selectFirstNode(){
    //       });
    //    }
    // });
+
+   // Select current node
    window.network.selectNodes([window.startNode]);
 }
 
@@ -274,8 +328,6 @@ var addNodeHandler = function (node, callback) {
                   alert(getLocale("duplicateAsset"));
                   return;
                }
-
-               
 
                /* We may have new nodes and eges linked to the new node
                  to insert into the graph */

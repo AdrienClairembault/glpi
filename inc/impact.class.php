@@ -373,7 +373,13 @@ class Impact extends CommonDBRelation {
                'id'        => $egdeKey,
                'from'      => $sourceKey,
                'to'        => $impactedKey,
-               'arrows'    => "to"
+               'arrows'    => "to",
+               'color'    =>  [
+                  'color' => "SlateGrey", // navy + magenta
+                  'highlight' => "SlateGrey",
+                  'inherit' => false
+               ]
+               // 'color'    => "red"
             ];
 
             // Add source node if missing
