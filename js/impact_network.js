@@ -61,6 +61,7 @@ function initImpactNetwork (glpiData, glpiLocales, currentNode) {
          deleteEdge:       deleteHandler
       },
       physics: {
+         enabled: true,
          maxVelocity: 5,
          minVelocity: 0.1
       },
@@ -69,6 +70,19 @@ function initImpactNetwork (glpiData, glpiLocales, currentNode) {
    };
 
    window.network = new vis.Network(container, data, options);
+
+   // Mode to current node on first drawing
+   window.currentNodeFocused = false;
+   window.network.on('beforeDrawing', function (){
+      if (!window.currentNodeFocused) {
+         window.currentNodeFocused = true;
+         window.network.focus(currentNode, {
+            locked: false
+         });
+      }
+   });
+
+   // Select current node
    window.network.selectNodes([currentNode]);
 }
 
