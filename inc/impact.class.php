@@ -137,6 +137,7 @@ class Impact extends CommonDBRelation {
    public static function printImpactNetwork() {
       $action = Toolbox::getItemTypeFormURL(__CLASS__);
       $formName = "form_impact_network";
+
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
 
       echo "<table class='tab_cadre_fixe'>";
@@ -150,21 +151,7 @@ class Impact extends CommonDBRelation {
       echo '<div id="networkContainer"></div>';
       echo "</td>";
       echo "<td>";
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr class='tab_bg_2'>";
-      echo "<th colspan=\"1\">" . __('Options (WIP)') . "</th>";
-      echo "</tr>";
-      echo "<tr>";
-      $dropdown = Dropdown::showFromArray("direction", [
-         self::DIRECTION_BOTH => "Both",
-         self::DIRECTION_FORWARD => "FORWARD",
-         self::DIRECTION_BACKWARD => "BACKWARD",
-      ], [
-         'display' => false
-      ]);
-      echo "<td><label>Direction: </label>$dropdown</td>";
-      echo "</tr>";
-      echo "</table>";
+      self::printOptionForm();
       echo "</td>";
       echo "</tr>";
 
@@ -178,7 +165,55 @@ class Impact extends CommonDBRelation {
       ]);
 
       HTML::closeForm();
+      self::printOptionFormInteractions();
+   }
 
+   static function printOptionForm() {
+      echo "<table class='tab_cadre_fixe'>";
+
+      echo "<tr class='tab_bg_2'>";
+      echo "<th colspan=\"1\">" . __('Options (WIP)') . "</th>";
+      echo "</tr>";
+
+      echo "<tr>";
+      $dropdown = Dropdown::showFromArray("direction", [
+         self::DIRECTION_BOTH => "Both",
+         self::DIRECTION_FORWARD => "FORWARD",
+         self::DIRECTION_BACKWARD => "BACKWARD",
+      ], [
+         'display' => false
+      ]);
+      echo "<td><label>Direction: </label>$dropdown</td>";
+      echo "</tr>";
+
+      echo "<tr>";
+      echo "<td>";
+      echo "<input type=\"checkbox\" id=\"colorizeImpacted\" checked>";
+      echo "<label> color impact </label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "</tr>";
+
+      echo "<tr>";
+      echo "<td>";
+      echo "<input type=\"checkbox\" id=\"colorizeDepends\" checked>";
+      echo "<label> color depends </label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "</tr>";
+
+      echo "<tr>";
+      echo "<td> <a id=\"export_link\" href=\"\" download=\"impact.png\">";
+      echo "<button type=\"button\" id=\"export\">Export</button>";
+      echo "</a></td>";
+      echo "</tr>";
+      echo "</tr>";
+
+      echo "</table>";
+   }
+
+   // Export this to js file ?
+   static function printOptionFormInteractions() {
       echo HTML::scriptBlock("
          // On submit convert data to JSON
          $('form[name=form_impact_network]').on('submit', function(event) {
@@ -188,6 +223,27 @@ class Impact extends CommonDBRelation {
          // Change graph
          $('select[name=direction]').on('change', function () {
             switchGraph($('select[name=direction] option:selected').val());
+         });
+
+         // Remove colors
+         $('#colorizeImpacted').on('change', function () {
+            toggleColors(
+               " . self::DIRECTION_FORWARD . ",
+               $('#colorizeImpacted').is(\":checked\")
+            );
+         });
+
+         // Remove colors
+         $('#colorizeDepends').on('change', function () {
+            toggleColors(
+               " . self::DIRECTION_BACKWARD . ",
+               $('#colorizeDepends').is(\":checked\")
+            );
+         });
+
+         // Export graph
+         $('#export').on('click', function (e) {
+            exportCanvas();
          });
       ");
    }
@@ -373,13 +429,7 @@ class Impact extends CommonDBRelation {
                'id'        => $egdeKey,
                'from'      => $sourceKey,
                'to'        => $impactedKey,
-               'arrows'    => "to",
-               'color'    =>  [
-                  'color' => "SlateGrey", // navy + magenta
-                  'highlight' => "SlateGrey",
-                  'inherit' => false
-               ]
-               // 'color'    => "red"
+               'arrows'    => "to"
             ];
 
             // Add source node if missing
@@ -712,18 +762,18 @@ class Impact extends CommonDBRelation {
          'del'    => __('Delete selected'),
          'back'   => __('Back'),
          'addNode'   => __('Add Asset'),
-         'addEdge'   => __('Add Edge'),
-         'editNode'   => __('Edit Node'),
-         'editEdge'   => __('Edit Edge'),
-         'addDescription'   => __('Click in an empty space to place a new node.'),
-         'edgeDescription'   => __('Click on a node and drag the edge to another node to connect them.'),
-         'editEdgeDescription'   => __('Click on the control points and drag them to a node to connect to it.'),
+         'addEdge'   => __('Add Impact relation'),
+         'editNode'   => __('Edit Asset'),
+         'editEdge'   => __('Edit Impact relation'),
+         'addDescription'   => __('Click in an empty space to place a new asset.'),
+         'edgeDescription'   => __('Click on an asset and drag the link to another asset to connect them.'),
+         'editEdgeDescription'   => __('Click on the control points and drag them to a asset to connect to it.'),
          'createEdgeError'   => __('Cannot link edges to a cluster.'),
          'deleteClusterError'   => __('Clusters cannot be deleted.'),
          'editClusterError'   => __('Clusters cannot be edited.'),
          'duplicateAsset'   => __('This asset already exist.'),
-         'linkToSelf'   => __("Can't link a node to itself."),
-         'duplicateEdge'   => __("An identical link already exist between theses two nodes."),
+         'linkToSelf'   => __("Can't link an asset to itself."),
+         'duplicateEdge'   => __("An identical link already exist between theses two asset."),
          'unexpectedError' => __("Unexpected error.")
       ];
 

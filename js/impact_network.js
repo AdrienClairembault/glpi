@@ -36,10 +36,10 @@ const FORWARD = 1;
 const BACKWARD = 2;
 const BOTH = 3;
 
-// Store user action on the network
-// var delta;
-// var data;
-// var locales;
+const IMPACT_COLOR =  'red';
+const DEPENDS_COLOR =  'navy';
+const IMPACT_AND_DEPENDS_COLOR =  'purple';
+const DEFAUT_COLOR =  'black';
 
 // Start impact network
 function initImpactNetwork (glpiLocales, startNode, defautView) {
@@ -51,33 +51,22 @@ function initImpactNetwork (glpiLocales, startNode, defautView) {
    };
    window.startNode = startNode;
    window.graphs = {};
+   window.editMode = false;
+   window.colorize = {};
+   window.colorize[FORWARD] = true;
+   window.colorize[BACKWARD] = true;
 
    var toBeLoaded = [BOTH, FORWARD, BACKWARD];
    var calls = [];
-
-   // Load main view first
-   // toBeLoaded.filter(function(value) {
-   //    if (value == defautView){
-   //       loadData(value, true, calls);
-   //       return false;
-   //    }
-
-   //    return true;
-   // });
-   // Load others views
 
    toBeLoaded.forEach(function(item) {
       loadData(item, calls);
    });
 
+   // Create network after all the graphs are loaded
    $.when.apply($, calls).then(function() {
       createNetwork(direction);
-      applyColors();
   });
-   // // Load data
-   // loadData(BOTH);
-   // loadData(FORWARD);
-   // loadData(BACKWARD);
 }
 
 function loadData(direction, calls) {
@@ -105,7 +94,7 @@ function createNetwork (direction) {
    var options = {
       manipulation: {
          enabled:          true,
-         initiallyActive:  true,
+         initiallyActive:  false,
          addNode:          addNodeHandler,
          addEdge:          addEdgeHandler,
          editEdge:         editEdgeHandler,
@@ -132,7 +121,32 @@ function createNetwork (direction) {
    };
    window.network = new vis.Network(container, window.data, options);
 
+   // Mutation observer
+   var config = { attributes: true, childList: true, subtree: true };
+   var callback = function(mutationsList, observer) {
+      // Enter edit mode
+      if (!window.editMode && $(".vis-close:visible").length == 1) {
+         window.editMode = true;
+         // Force to "both" graph
+         if ($('select[name=direction] option:selected').val() != BOTH) {
+            $('select[name=direction]').val(BOTH).change();
+         }
+         // Disable graph selection
+         $('select[name=direction]').prop('disabled', true);
+      }
+
+      // Exit edit mode
+      else if (window.editMode && $(".vis-close:visible").length == 0) {
+         window.editMode = false;
+         // Enable graph selection
+         $('select[name=direction]').prop('disabled', false);
+      }
+  };
+  var observer = new MutationObserver(callback);
+  observer.observe(container, config);
+
    selectFirstNode();
+   updateGraph();
 }
 
 function switchGraph(direction) {
@@ -140,56 +154,55 @@ function switchGraph(direction) {
    window.data.nodes.clear();
    window.data.nodes.add(window.graphs[direction].nodes);
    window.data.edges.add(window.graphs[direction].edges);
-   applyColors(direction);
    selectFirstNode();
+   updateGraph();
 }
 
-function applyColors(direction) {
+function applyColors() {
    edges = window.data.edges.get();
-   console.log(window.graphs);
-   console.log(FORWARD);
-   console.log(window.graphs[1]);
-   console.log(window.graphs[2]);
 
    edges.forEach(function(edge){
-      // Apply Navy to forward graph
-      window.graphs[FORWARD].edges.forEach(function (forwardEdge) {
-         if (edge.id == forwardEdge.id) {
-            edge.color = {
-               color: "red",
-               highlight: "red",
-               inherit: false
-            };
+      var color;
+
+      // Filter on bitmast if forward links are hidden
+      if (!window.colorize[FORWARD] && edge.flag & FORWARD) {
+         edge.flag = edge.flag - FORWARD;
+      }
+
+      // Filter on bitmast if backward links are hidden
+      if (!window.colorize[BACKWARD] && edge.flag & BACKWARD) {
+         edge.flag = edge.flag - BACKWARD;
+      }
+
+      switch (edge.flag) {
+         case FORWARD:
+            color = IMPACT_COLOR;
+            break;
+         case BACKWARD:
+            color = DEPENDS_COLOR;
+            break;
+         case BOTH:
+            color = IMPACT_AND_DEPENDS_COLOR;
+            break;
+         default:
+            color = DEFAUT_COLOR;
+      }
+
+      window.data.edges.update({
+         id: edge.id,
+         color: {
+            color: color,
+            highlight: color
          }
       });
-
-      window.graphs[BACKWARD].edges.forEach(function (backwardEdge) {
-         if (edge.id == backwardEdge.id) {
-
-            if (edge.color.color == "red"){
-               edge.color = {
-                  color: "purple",
-                  highlight: "purple",
-                  inherit: false
-               };
-            }
-            else {
-               edge.color = {
-                  color: "navy",
-                  highlight: "navy",
-                  inherit: false
-               };
-            }
-         }
-      });
-
    });
-
-   window.data.edges.update(edges);
 }
 
 function selectFirstNode(){
-   // Move to current node, doesn't always work ... TODO fix ?
+   // Move the "camero " to the current node, doesn't always work ...
+   // Todo : fix or remove ? do we really need to center the camera on the
+   // current node ? It looks bad on small graph but may be usefull on big ones
+   // -> currently disabled
    // window.firstLoad = false;
    // window.network.on('afterDrawing', function (){
    //    if (!window.firstLoad) {
@@ -203,67 +216,6 @@ function selectFirstNode(){
    // Select current node
    window.network.selectNodes([window.startNode]);
 }
-
-// function filterForward() {
-//    var nodes = [];
-//    var edges = [];
-
-//    buildLocalGraph(
-//       nodes,
-//       edges,
-//       FORWARD,
-//       window.data.nodes.get(window.firstNode)
-//    );
-// }
-
-// function buildLocalGraph(nodes, edges, direction, currentNode) {
-//    // Find the edges connected to the current node
-//    window.data.edges.get().forEach(function(edge) {
-//       var str = "";
-//       switch (direction) {
-//          case FORWARD:
-//             str = makeID(EDGE, currentNode.id, "");
-//             break;
-//          case BACKWARD:
-//             str = makeID(EDGE, "", currentNode.id);
-//             break;
-//       }
-
-//       // Check if edge match with our node
-//       if (edge.id.indexOf(str) === -1) {
-//          return;
-//       }
-
-//       // Add nodes
-//       addNodeIfNotExist(edge.from);
-//       addNodeIfNotExist(edge.to);
-
-//       // Add edge
-//       edges.push(edge);
-
-//       // Go to next node if not already done
-//    });
-// }
-
-// function addNodeIfNotExist(nodes, nodeID) {
-//    var newNode = window.data.nodes.get(nodeID);
-
-//    if (nodeExist(nodes, nodeID)) {
-//       nodes.push(newNode);
-//    }
-// }
-
-// function nodeExist(nodes, node) {
-//    var found = false;
-
-//    nodes.forEach(function(node) {
-//       if (newNode == node.id) {
-//          found = true;
-//       }
-//    });
-
-//    return found;
-// }
 
 function getLocale(key) {
    return window.locales['default'][key];
@@ -329,8 +281,9 @@ var addNodeHandler = function (node, callback) {
                   return;
                }
 
-               /* We may have new nodes and eges linked to the new node
-                 to insert into the graph */
+               /* We may have new nodes and eges linked to the node that we are
+                 inserting into the graph, let's check by building a new graph
+                 from this node */
                $.ajax({
                   type: "POST",
                   url: "../ajax/impact.php",
@@ -383,6 +336,7 @@ var addEdgeHandler = function(edge, callback) {
    if (canAddEdge(edge)) {
       updateDelta("add", edge);
       callback(edge);
+      updateGraph();
    }
 }
 
@@ -398,6 +352,7 @@ var deleteHandler = function (deleteData, callback) {
    });
 
    callback(deleteData);
+   updateGraph();
 }
 
 var editEdgeHandler = function(edge, callback) {
@@ -421,12 +376,15 @@ var editEdgeHandler = function(edge, callback) {
       // Add new edge
       updateDelta("add", newEdge);
       window.data.edges.add(newEdge);
+
+      // Update colors
+      updateGraph();
    }
 }
 
 
 // Create ID for nodes and egdes
-var makeID = function (type, a, b) {
+function makeID (type, a, b) {
    switch (type) {
       case NODE:
          return a + "::" + b;
@@ -435,4 +393,90 @@ var makeID = function (type, a, b) {
    }
 
    return null;
+}
+
+// Export (to png for now, we need another lib for pdf)
+function exportCanvas() {
+   var img = window.$("#networkContainer canvas")
+      .get(0)
+      .toDataURL("image/octet-stream");
+   $("#export_link").prop("href", img);
+}
+
+function buildFlags() {
+   var passed_nodes;
+
+   window.data.edges.get().forEach(function(edge) {
+      window.data.edges.update({
+         id: edge.id,
+         flag: 0
+      });
+   });
+
+   passed_nodes = {};
+   passed_nodes[window.startNode] = true;
+   buildFlagsFromCurrentNode(
+      passed_nodes,
+      FORWARD,
+      window.startNode
+   );
+
+   passed_nodes = {};
+   passed_nodes[window.startNode] = true;
+   buildFlagsFromCurrentNode(
+      passed_nodes,
+      BACKWARD,
+      window.startNode
+   );
+
+    console.log(window.data.edges.get());
+}
+
+function buildFlagsFromCurrentNode(nodes, direction, currentNodeID) {
+   // Find the edges connected to the current node
+   window.data.edges.get().forEach(function(edge) {
+      var str = "";
+      var node_target = "";
+      switch (direction) {
+         case FORWARD:
+            str = makeID(EDGE, currentNodeID, "");
+            node_target = edge.to;
+            break;
+         case BACKWARD:
+            str = makeID(EDGE, "", currentNodeID);
+            node_target = edge.from;
+            break;
+      }
+
+      // Check if edge match with our node
+      if (edge.id.indexOf(str) === -1) {
+         return;
+      }
+
+      // Set flag
+      window.data.edges.update({
+         id: edge.id,
+         flag: direction | edge.flag
+      });
+
+      // Check we haven't go through this node yet
+      if(nodes[node_target] == undefined) {
+         nodes[node_target] = true;
+         // Go to next node
+         buildFlagsFromCurrentNode(nodes, direction, node_target);
+      }
+   });
+}
+
+// Toggle the color global variables
+function toggleColors(direction, enable) {
+   window.colorize[direction] = enable;
+   applyColors();
+}
+
+// Update the client side calculations
+// For now this only concers the edges's colors
+function updateGraph() {
+   buildFlags();
+   applyColors();
 }
