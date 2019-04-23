@@ -222,7 +222,7 @@ class Impact extends CommonDBRelation {
 
          // Change graph
          $('select[name=direction]').on('change', function () {
-            switchGraph($('select[name=direction] option:selected').val());
+            hideDisabledNodes($('select[name=direction] option:selected').val());
          });
 
          // Remove colors

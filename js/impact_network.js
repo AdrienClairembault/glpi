@@ -44,21 +44,35 @@ const DEFAUT_COLOR =  'black';
 // Start impact network
 function initImpactNetwork (glpiLocales, startNode, defautView) {
 
-   // Init global vars
+   /*
+    * Init global vars
+    */
+
+   // Store the user modification
    window.delta = {};
+
+   // Store the translations
    window.locales = {
       default: JSON.parse(glpiLocales)
    };
+
+   // The current item from which the graph was built
    window.startNode = startNode;
+
+   // Store the graph (not usefull anymore - TODO delete)
    window.graphs = {};
+
+   // Check if the graph is in edit mode
    window.editMode = false;
+
+   // Store if the different direction of the graph should be colorized
    window.colorize = {};
    window.colorize[FORWARD] = true;
    window.colorize[BACKWARD] = true;
 
-   var toBeLoaded = [BOTH, FORWARD, BACKWARD];
+   // Load the graph (TODO simplify as there is only 1 graph now)
+   var toBeLoaded = [BOTH];
    var calls = [];
-
    toBeLoaded.forEach(function(item) {
       loadData(item, calls);
    });
@@ -121,7 +135,9 @@ function createNetwork (direction) {
    };
    window.network = new vis.Network(container, window.data, options);
 
-   // Mutation observer
+   /*
+    * Mutation observer used to detect when we enter or exit the edit mode
+    */
    var config = { attributes: true, childList: true, subtree: true };
    var callback = function(mutationsList, observer) {
       // Enter edit mode
@@ -145,15 +161,6 @@ function createNetwork (direction) {
   var observer = new MutationObserver(callback);
   observer.observe(container, config);
 
-   selectFirstNode();
-   updateGraph();
-}
-
-function switchGraph(direction) {
-   window.data.edges.clear();
-   window.data.nodes.clear();
-   window.data.nodes.add(window.graphs[direction].nodes);
-   window.data.edges.add(window.graphs[direction].edges);
    selectFirstNode();
    updateGraph();
 }
@@ -198,21 +205,30 @@ function applyColors() {
    });
 }
 
-function selectFirstNode(){
-   // Move the "camero " to the current node, doesn't always work ...
-   // Todo : fix or remove ? do we really need to center the camera on the
-   // current node ? It looks bad on small graph but may be usefull on big ones
-   // -> currently disabled
-   // window.firstLoad = false;
-   // window.network.on('afterDrawing', function (){
-   //    if (!window.firstLoad) {
-   //       window.firstLoad = true;
-   //       window.network.focus(window.startNode, {
-   //          locked: false
-   //       });
-   //    }
-   // });
+function hideDisabledNodes(direction) {
 
+   window.data.nodes.get().forEach(function (node) {
+      var visible = false;
+
+      window.data.edges.forEach(function(edge){
+         // For all edges linked to the current node
+         if (edge.to == node.id || edge.from == node.id) {
+            // Check if the edge is valid for the new direction
+            if (edge.flag & direction) {
+               visible = true;
+            }
+         }
+      });
+
+      // Update node visibility
+      window.data.nodes.update({
+         id: node.id,
+         hidden: !visible,
+      });
+   });
+}
+
+function selectFirstNode(){
    // Select current node
    window.network.selectNodes([window.startNode]);
 }
@@ -355,10 +371,8 @@ var deleteHandler = function (deleteData, callback) {
    updateGraph();
 }
 
+// Handler called when an edge is edited
 var editEdgeHandler = function(edge, callback) {
-   console.log(edge);
-   // edge.id = makeID(EDGE, edge.from, edge.to);
-   // edge.arrows = "to";
    callback(null);
 
    var newEdge = {
@@ -382,7 +396,6 @@ var editEdgeHandler = function(edge, callback) {
    }
 }
 
-
 // Create ID for nodes and egdes
 function makeID (type, a, b) {
    switch (type) {
@@ -395,7 +408,7 @@ function makeID (type, a, b) {
    return null;
 }
 
-// Export (to png for now, we need another lib for pdf)
+// Export canvas to png
 function exportCanvas() {
    var img = window.$("#networkContainer canvas")
       .get(0)
@@ -403,9 +416,11 @@ function exportCanvas() {
    $("#export_link").prop("href", img);
 }
 
+// Run through the graph and set a flag for each edge storing the direction
 function buildFlags() {
    var passed_nodes;
 
+   // Set all flag to the default value (0)
    window.data.edges.get().forEach(function(edge) {
       window.data.edges.update({
          id: edge.id,
@@ -413,6 +428,7 @@ function buildFlags() {
       });
    });
 
+   // Run through the graph forward
    passed_nodes = {};
    passed_nodes[window.startNode] = true;
    buildFlagsFromCurrentNode(
@@ -421,6 +437,7 @@ function buildFlags() {
       window.startNode
    );
 
+   // Run through the graph backward
    passed_nodes = {};
    passed_nodes[window.startNode] = true;
    buildFlagsFromCurrentNode(
@@ -428,8 +445,6 @@ function buildFlags() {
       BACKWARD,
       window.startNode
    );
-
-    console.log(window.data.edges.get());
 }
 
 function buildFlagsFromCurrentNode(nodes, direction, currentNodeID) {
@@ -468,7 +483,7 @@ function buildFlagsFromCurrentNode(nodes, direction, currentNodeID) {
    });
 }
 
-// Toggle the color global variables
+// Toggle the colors global variables
 function toggleColors(direction, enable) {
    window.colorize[direction] = enable;
    applyColors();
