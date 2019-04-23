@@ -369,11 +369,7 @@ class Impact extends CommonDBRelation {
             get_class($item),
             $item->getID()
          );
-
-         $nodes[$currentKey] = [
-            'id'     => $currentKey,
-            'label'  => $item->fields['name']
-         ];
+         self::addNode($nodes, $currentKey, $item);
       }
    }
 
@@ -433,20 +429,10 @@ class Impact extends CommonDBRelation {
             ];
 
             // Add source node if missing
-            if (!isset($nodes[$sourceKey])) {
-               $nodes[$sourceKey] = [
-                  'id'     => $sourceKey,
-                  'label'  => $source->fields['name']
-               ];
-            }
+            self::addNode($nodes, $sourceKey, $source);
 
             // Add impacted node if missing
-            if (!isset($nodes[$impactedKey])) {
-               $nodes[$impactedKey] = [
-                  'id'     => $impactedKey,
-                  'label'  => $impacted->fields['name']
-               ];
-            }
+            self::addNode($nodes, $impactedKey, $impacted);
 
             /* Keep going in the same direction:
                - Use the impacted item if we came forward
@@ -470,6 +456,25 @@ class Impact extends CommonDBRelation {
                );
             }
          }
+      }
+   }
+
+   /**
+    * Add a node to the node lists if missing
+    *
+    * @param array $nodes  Nodes of the graph
+    * @param array $node   Node to add
+    */
+   public static function addNode(array &$nodes, string $key, $item) {
+      if (!isset($nodes[$key])) {
+         $imageName = strtolower(get_class($item));
+
+         $nodes[$key] = [
+            'id'     => $key,
+            'label'  => $item->fields['name'],
+            'shape'  => "image",
+            'image'  => "../pics/impact/$imageName.png"
+         ];
       }
    }
 
