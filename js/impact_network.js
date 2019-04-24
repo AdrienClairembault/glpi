@@ -42,7 +42,7 @@ const IMPACT_AND_DEPENDS_COLOR =  'purple';
 const DEFAUT_COLOR =  'black';
 
 // Start impact network
-function initImpactNetwork (glpiLocales, startNode, defautView) {
+function initImpactNetwork (glpiLocales, startNode) {
 
    /*
     * Init global vars
@@ -59,8 +59,8 @@ function initImpactNetwork (glpiLocales, startNode, defautView) {
    // The current item from which the graph was built
    window.startNode = startNode;
 
-   // Store the graph (not usefull anymore - TODO delete)
-   window.graphs = {};
+   // Store the graph
+   window.data = {};
 
    // Check if the graph is in edit mode
    window.editMode = false;
@@ -70,38 +70,27 @@ function initImpactNetwork (glpiLocales, startNode, defautView) {
    window.colorize[FORWARD] = true;
    window.colorize[BACKWARD] = true;
 
-   // Load the graph (TODO simplify as there is only 1 graph now)
-   var toBeLoaded = [BOTH];
-   var calls = [];
-   toBeLoaded.forEach(function(item) {
-      loadData(item, calls);
-   });
+   // Get start node type and id
+   var startNodeDetails = window.startNode.split('::');
 
-   // Create network after all the graphs are loaded
-   $.when.apply($, calls).then(function() {
-      createNetwork(direction);
-  });
-}
-
-function loadData(direction, calls) {
-   startNodeDetails = window.startNode.split('::');
-
-   calls.push($.ajax({
+   // Load the graph
+   $.ajax({
       type: "POST",
       url: "../ajax/impact.php",
       data: {
          itemType:   startNodeDetails[0],
          itemID:     startNodeDetails[1],
-         direction:  direction
       },
       success: function(data, textStatus, jqXHR) {
-         window.graphs[direction] = data;
+         window.data = data;
+         createNetwork();
       },
       dataType: "json"
-   }));
+   });
 }
 
-function createNetwork (direction) {
+// Create the vis.js network
+function createNetwork () {
    // Network container
    var container = document.getElementById("networkContainer");
 
@@ -130,8 +119,8 @@ function createNetwork (direction) {
    };
 
    window.data = {
-      nodes: new vis.DataSet(window.graphs[direction]['nodes']),
-      edges: new vis.DataSet(window.graphs[direction]['edges'])
+      nodes: new vis.DataSet(window.data['nodes']),
+      edges: new vis.DataSet(window.data['edges'])
    };
    window.network = new vis.Network(container, window.data, options);
 
@@ -165,18 +154,17 @@ function createNetwork (direction) {
    applyColors();
 }
 
+// Highlight "impact" and/or "depends" relations if enabled
 function applyColors() {
-   edges = window.data.edges.get();
-
-   edges.forEach(function(edge){
+   window.data.edges.get().forEach(function(edge){
       var color;
 
-      // Filter on bitmast if forward links are hidden
+      // Remove "impact" highlights if disabled
       if (!window.colorize[FORWARD] && edge.flag & FORWARD) {
          edge.flag = edge.flag - FORWARD;
       }
 
-      // Filter on bitmast if backward links are hidden
+      // Remove "depends" highlights if disabled
       if (!window.colorize[BACKWARD] && edge.flag & BACKWARD) {
          edge.flag = edge.flag - BACKWARD;
       }
@@ -205,6 +193,7 @@ function applyColors() {
    });
 }
 
+// Hide the disabled nodes
 function hideDisabledNodes(direction) {
 
    window.data.nodes.get().forEach(function (node) {
@@ -217,7 +206,7 @@ function hideDisabledNodes(direction) {
          window.data.edges.forEach(function(edge){
             // For all edges linked to the current node
             if (edge.to == node.id || edge.from == node.id) {
-               // Check if the edge is valid for the new direction
+               // Check if the edge should be visible for the current direction
                if (edge.flag & direction) {
                   visible = true;
                }
@@ -233,11 +222,12 @@ function hideDisabledNodes(direction) {
    });
 }
 
+// Select current node
 function selectFirstNode(){
-   // Select current node
    window.network.selectNodes([window.startNode]);
 }
 
+// Get a locale value
 function getLocale(key) {
    return window.locales['default'][key];
 }
@@ -329,6 +319,8 @@ var addNodeHandler = function (node, callback) {
                         newEdges.push(newEdge);
                      });
                      window.data.edges.update(newEdges);
+
+                     updateGraph();
                   },
                   error: function(data, textStatus, jqXHR) {
                     alert(getLocale("unexpectedError"));
@@ -423,7 +415,7 @@ function exportCanvas() {
 
 // Client side flag calculations
 function buildFlags() {
-   var passed_nodes;
+   var exploredNodes;
 
    // Set all flag to the default value (0)
    window.data.edges.get().forEach(function(edge) {
@@ -434,24 +426,25 @@ function buildFlags() {
    });
 
    // Run through the graph forward
-   passed_nodes = {};
-   passed_nodes[window.startNode] = true;
+   exploredNodes = {};
+   exploredNodes[window.startNode] = true;
    buildFlagsFromCurrentNode(
-      passed_nodes,
+      exploredNodes,
       FORWARD,
       window.startNode
    );
 
    // Run through the graph backward
-   passed_nodes = {};
-   passed_nodes[window.startNode] = true;
+   exploredNodes = {};
+   exploredNodes[window.startNode] = true;
    buildFlagsFromCurrentNode(
-      passed_nodes,
+      exploredNodes,
       BACKWARD,
       window.startNode
    );
 }
 
+// Client side flag calculations
 function buildFlagsFromCurrentNode(nodes, direction, currentNodeID) {
    // Find the edges connected to the current node
    window.data.edges.get().forEach(function(edge) {
@@ -488,19 +481,13 @@ function buildFlagsFromCurrentNode(nodes, direction, currentNodeID) {
    });
 }
 
-// Remove uneeded nodes that does not depends to or impact the current item
-function removeContextualNodes() {
-
-}
-
 // Toggle the colors global variables
 function toggleColors(direction, enable) {
    window.colorize[direction] = enable;
    applyColors();
 }
 
-// Update the client side calculations
-// For now this only concers the edges's colors
+// Update the client side calculations (flags + colors)
 function updateGraph() {
    buildFlags();
    applyColors();

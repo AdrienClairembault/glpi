@@ -34,8 +34,8 @@ include ('../inc/includes.php');
 Html::header(__('Impact'), $_SERVER['PHP_SELF'], "tools", "impact");
 
 
-$itemType = $_POST["item_type"]   ?? $_GET["item_type"]  ?? "";
-$itemID =   $_POST["item_id"]     ?? $_GET["item_id"]    ?? "";
+$itemType = $_POST["type"]   ?? $_GET["type"]  ?? null;
+$itemID =   $_POST["id"]     ?? $_GET["id"]    ?? null;
 
 // Handle submitted form
 if (!empty($itemType) && !empty($itemID) &&
@@ -69,7 +69,7 @@ function printForm() {
    echo "<td width=\"40%\"> <label>" . __('Item type') . "</label> </td>";
    echo "<td>";
    Dropdown::showItemTypes(
-      'item_type_form',
+      'type',
       $conf['impact_assets_list'],
       [
          'value'        => null,
@@ -85,7 +85,7 @@ function printForm() {
    echo "<tr>";
    echo "<td> <label>" . __('Item') . "</label> </td>";
    echo "<td>";
-   Ajax::updateItemOnSelectEvent("dropdown_item_type_form$rand", "results",
+   Ajax::updateItemOnSelectEvent("dropdown_type$rand", "form_results",
       $CFG_GLPI["root_doc"].
       "/ajax/dropdownTrackingDeviceType.php",
       [
@@ -94,10 +94,10 @@ function printForm() {
          'multiple'        => 1,
          'admin'           => 1,
          'rand'            => $rand,
-         'myname'          => "item_id"
+         'myname'          => "id",
       ]
    );
-   echo "<span id='results'>\n";
+   echo "<span id='form_results'>\n";
    echo "</span>\n";
    echo "</td>";
    echo "</tr>";

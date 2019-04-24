@@ -42,8 +42,6 @@ Session::checkLoginUser();
 
 $itemType = $_POST["itemType"]   ?? $_GET["itemType"]  ?? "";
 $itemID =   $_POST["itemID"]     ?? $_GET["itemID"]    ?? "";
-$direction = $_POST["direction"] ?? $_GET["direction"] ??
-   Impact::DIRECTION_BOTH;
 
 // Required params
 if (empty($itemType) || empty($itemID)) {
@@ -59,16 +57,6 @@ if (!Impact::assetExist($itemType, $itemID)) {
 
 $item = new $itemType;
 $item->getFromDB($itemID);
-
-// Build graph
-// $nodes = []; $edges = [];
-// Impact::buildGraph(
-//    $item,
-//    $edges,
-//    $nodes,
-//    $direction,
-//    true
-// );
 $graph = Impact::buildGraph($item);
 
 // Remove array keys

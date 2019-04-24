@@ -10,12 +10,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class Impact extends CommonDBRelation {
 
+   // Constants used to express the direction of a graph
    const DIRECTION_FORWARD    = 0b01;
    const DIRECTION_BACKWARD   = 0b10;
    const DIRECTION_BOTH       = 0b11;
-
-   const EDGE = 1;
-   const NODE = 2;
 
    /**
     * Return the localized name of the current Type (Asset impacts)
@@ -30,14 +28,29 @@ class Impact extends CommonDBRelation {
       return _n('Asset impact', 'Asset impacts', $nb);
    }
 
+   /**
+    * Do I have the global right to "view" the Object
+    *
+    * @return boolean
+    */
    public static function canView() {
       return true;
    }
 
+   /**
+    * Do I have the right to "view" the Object
+    *
+    * @return boolean
+    */
    public static function canUpdate() {
       return true;
    }
 
+   /**
+    * Do I have the global right to "create" the Object
+    *
+    * @return boolean
+    */
    public static function canCreate() {
       return true;
    }
@@ -147,7 +160,7 @@ class Impact extends CommonDBRelation {
     *
     * @since 9.5
     */
-   public static function printImpactNetwork() {
+   public static function printImpactNetworkContainer() {
       $action = Toolbox::getItemTypeFormURL(__CLASS__);
       $formName = "form_impact_network";
 
@@ -183,7 +196,12 @@ class Impact extends CommonDBRelation {
       self::printOptionFormInteractions();
    }
 
-   static function printOptionForm() {
+   /**
+    * Print the option form for the impact analysis
+    *
+    * @since 9.5
+    */
+   public static function printOptionForm() {
       echo "<table class='tab_cadre_fixe'>";
 
       echo "<tr class='tab_bg_2'>";
@@ -227,20 +245,25 @@ class Impact extends CommonDBRelation {
       echo "</table>";
    }
 
-   // Export this to js file ?
-   static function printOptionFormInteractions() {
+   /**
+    * Print the js used to interact with the impact analysis through the option
+    * form
+    *
+    * @since 9.5
+    */
+   public static function printOptionFormInteractions() {
       echo HTML::scriptBlock("
-         // On submit convert data to JSON
+         // Send data as JSON on submit
          $('form[name=form_impact_network]').on('submit', function(event) {
             $('input[name=impacts]').val(JSON.stringify(delta));
          });
 
-         // Change graph
+         // Update the graph direction
          $('select[name=direction]').on('change', function () {
             hideDisabledNodes($('select[name=direction] option:selected').val());
          });
 
-         // Remove colors
+         // Toggle 'impact' colors
          $('#colorizeImpacted').on('change', function () {
             toggleColors(
                " . self::DIRECTION_FORWARD . ",
@@ -248,7 +271,7 @@ class Impact extends CommonDBRelation {
             );
          });
 
-         // Remove colors
+         // Toggle 'depends' colors
          $('#colorizeDepends').on('change', function () {
             toggleColors(
                " . self::DIRECTION_BACKWARD . ",
@@ -256,7 +279,7 @@ class Impact extends CommonDBRelation {
             );
          });
 
-         // Export graph
+         // Export graph to png
          $('#export').on('click', function (e) {
             exportCanvas();
          });
@@ -264,128 +287,26 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Build the network graph recursively
+    * Build the impact graph starting from a node
     *
     * @since 9.5
     *
     * @param CommonDBTM $item    Current item
-    * @param array      $edges   Store the edges of the graph
-    *    example :
-    *       [
-    *          'Computer::1->Computer::2' => [
-    *             'from'   => "Computer::1"
-    *             'to'     => "Computer::2"
-    *             'arrows' => "to"
-    *          ]
+    *
+    * @return array Array containing edges and nodes
+    *    See addNode and addEdge to learn the expected node and edge data
+    *   Example of a node :
+    *      'Computer::1' => [
+    *         'id'     => "Computer::1"
+    *         'label'  => "PC 1"
     *      ]
-    *   The keys of this array are made using the following format :
-    *      sourceItemType::sourceItemID->ImpactedItemType::ImpactedItemId
-    *   Theses keys are used to check (with isset()) if an edge already exist
-    *   in the graph.
-    *   The values of this array are another array containing the following
-    *   values :
-    *       - from   : id of the source node
-    *       - to     : id of the impacted node
-    *       - arrows : fixed values "to"
-    * @param array $nodes Store the nodes of the graph
-    *    example :
-    *       [
-    *          'Computer::1' => [
-    *             'id'     => "Computer::1"
-    *             'label'  => "PC 1"
-    *          ]
+    *   Example of an edge :
+    *      'Computer::1->Computer::2' => [
+    *         'from'   => "Computer::1"
+    *         'to'     => "Computer::2"
+    *         'arrows' => "to"
     *      ]
-    *   The keys of this array are made using the following format :
-    *       itemType::itemID
-    *   Theses keys are used to check (with isset()) if a node already exist
-    *   in the graph.
-    *   The values of this array are another array containing the following
-    *   values :
-    *       - id     : id given to this node (will be reused by edges)
-    *       - label  : label given to this node
-    * @param int $direction Specify if the network should contain the items
-    *    impacted by the current item (DIRECTION_FORWARD), the items that
-    *    impact the current item (DIRECTION_BACKWARD) or both (DIRECTION_BOTH).
-    * @param bool $main  Used to check if we are in the original or in a
-    *    recursive call of this function.
     */
-   // public static function buildGraph(
-   //    CommonDBTM $item,
-   //    array &$edges,
-   //    array &$nodes,
-   //    int $direction = self::DIRECTION_BOTH,
-   //    bool $main = true) {
-   //    global $DB;
-   //    $currentItemDependencies = [];
-
-   //    // Get all items that depend from the current item
-   //    if ($direction & self::DIRECTION_FORWARD) {
-   //       $depend = $DB->request([
-   //          'FROM'   => 'glpi_impacts',
-   //          'WHERE'  => [
-   //             'source_asset_type'  => get_class($item),
-   //             'source_asset_id'    => $item->getID()
-   //          ]
-   //       ]);
-
-   //       // Add these items to $currentItemDependencies
-   //       foreach ($depend as $impactedItem) {
-   //          $id = $impactedItem['impacted_asset_id'];
-   //          $impactedItem = new $impactedItem['impacted_asset_type'];
-   //          $impactedItem->getFromDB($id);
-
-   //          $currentItemDependencies[] = [
-   //             "source" => $item,
-   //             "impacted" => $impactedItem,
-   //             "direction" => self::DIRECTION_FORWARD
-   //          ];
-   //       }
-   //    }
-
-   //    // Get all items that impact the current item
-   //    if ($direction & self::DIRECTION_BACKWARD) {
-   //       $impact = $DB->request([
-   //          'FROM'   => 'glpi_impacts',
-   //          'WHERE'  => [
-   //             'impacted_asset_type'  => get_class($item),
-   //             'impacted_asset_id'    => $item->getID()
-   //          ]
-   //       ]);
-
-   //       // Add these items to $currentItemDependencies
-   //       foreach ($impact as $sourceItem) {
-   //          $id = $sourceItem['source_asset_id'];
-   //          $sourceItem = new $sourceItem['source_asset_type'];
-   //          $sourceItem->getFromDB($id);
-
-   //          $currentItemDependencies[] = [
-   //             "source" => $sourceItem,
-   //             "impacted" => $item,
-   //             "direction" => self::DIRECTION_BACKWARD
-   //          ];
-   //       }
-   //    }
-
-   //    // Explore each dependency
-   //    self::explodeDependencies(
-   //       $currentItemDependencies,
-   //       $edges,
-   //       $nodes,
-   //       $direction
-   //    );
-
-   //    /* If we found no edges after exploring all dependencies,
-   //       create a single node for the current item */
-   //    if (count($nodes) == 0 && $main == true) {
-   //       $currentKey = self::createID(
-   //          self::NODE,
-   //          get_class($item),
-   //          $item->getID()
-   //       );
-   //       self::addNode($nodes, $currentKey, $item);
-   //    }
-   // }
-
    public static function buildGraph(CommonDBTM $item) {
       global $DB;
 
@@ -398,7 +319,7 @@ class Impact extends CommonDBRelation {
       // Explore the graph backward
       self::buildGraphFromNode($nodes, $edges, $item, self::DIRECTION_BACKWARD);
 
-      // Add current node to the graph if no dependencies were found
+      // Add current node to the graph if no impact relations were found
       if (count($nodes) == 0) {
          self::addNode($nodes, $item);
       }
@@ -409,6 +330,20 @@ class Impact extends CommonDBRelation {
       ];
    }
 
+   /**
+    * Explore dependencies of the current item, subfunction of buildGraph()
+    * See buildGraph for more details on shared params
+    *
+    * @since 9.5
+    *
+    * @param array      $edges         Edges of the graph
+    * @param array      $nodes         Nodes of the graph
+    * @param CommonDBTM $node          Current node
+    * @param int        $direction     The direction in which the graph
+    *    is being explored : DIRECTION_FORWARD or DIRECTION_BACKWARD
+    * @param array      $exploredNodes List of nodes that have already been
+    *    explored
+    */
    public static function buildGraphFromNode(
       array &$nodes,
       array &$edges,
@@ -418,12 +353,13 @@ class Impact extends CommonDBRelation {
 
       global $DB;
 
+      // Source and target are determined by the direction in which we are
+      // exploring the graph
       switch ($direction) {
          case self::DIRECTION_FORWARD:
             $source = "source_asset";
             $target = "impacted_asset";
             break;
-
          case self::DIRECTION_BACKWARD:
             $source = "impacted_asset";
             $target = "source_asset";
@@ -439,23 +375,22 @@ class Impact extends CommonDBRelation {
          ]
       ]);
 
-      // Add current code if there is at least one relation
+      // Add current code to the graph if we found at least one impact relation
       if (count($relations)) {
          self::addNode($nodes, $node);
       }
 
       foreach ($relations as $relatedItem) {
-         // Get related node
+         // Add the related node
          $relatedNode = new $relatedItem[$source . '_type'];
          $relatedNode->getFromDB($relatedItem[$source . '_id']);
          self::addNode($nodes, $relatedNode);
 
-         $edgeID = self::getEdgeID($node, $relatedNode, $direction);
-
          // Add or update the relation on the graph
+         $edgeID = self::getEdgeID($node, $relatedNode, $direction);
          self::addEdge($edges, $edgeID, $node, $relatedNode, $direction);
 
-         // Add related node and keep exploring from this node
+         // Keep exploring from this node unless we already went through it
          $relatedNodeID = self::getNodeID($relatedNode);
          if (!isset($exploredNodes[$relatedNodeID])) {
             $exploredNodes[$relatedNodeID] = true;
@@ -471,96 +406,14 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Explore dependencies of the current item, subfunction of buildGraph()
-    * See buildGraph for more details on shared params
+    * Add a node to the node list if missing
+    *
+    * @param array $nodes  Nodes of the graph
+    * @param array $item   Node to add
     *
     * @since 9.5
     *
-    * @param array      $impacts   Dependencies found from the current item
-    *    Each row contains the following values :
-    *       - source :     source item
-    *       - impacted :   impacted item
-    *       - direction :  from which direction we came from :
-    *             self::DIRECTION_FORWARD or self::DIRECTION_BACKWARD
-    * @param array      $edges     Store the edges of the graph
-    * @param array      $nodes     Store the nodes of the graph
-    * @param int        $direction Specify if the network should contain the
-    *    items impacted by the current item (DIRECTION_FORWARD), the items that
-    *    impact the current item (DIRECTION_BACKWARD) or both (DIRECTION_BOTH).
-    */
-   public static function explodeDependencies(
-      array $impacts,
-      array &$edges,
-      array &$nodes,
-      int $direction) {
-
-      foreach ($impacts as $impact) {
-         $source = $impact['source'];
-         $impacted = $impact['impacted'];
-
-         // Build key of the source item (class::id)
-         $sourceKey = self::createID(
-            self::NODE,
-            get_class($source),
-            $source->getID()
-         );
-
-         // Build key of the impacted item (class::id)
-         $impactedKey = self::createID(
-            self::NODE,
-            get_class($impacted),
-            $impacted->getID()
-         );
-
-         $egdeKey = self::createID(self::EDGE, $sourceKey, $impactedKey);
-
-         // Check that this edge is not registered yet
-         if (!isset($edges[$egdeKey])) {
-
-            // Add the new edge
-            $edges[$egdeKey] = [
-               'id'        => $egdeKey,
-               'from'      => $sourceKey,
-               'to'        => $impactedKey,
-               'arrows'    => "to"
-            ];
-
-            // Add source node if missing
-            self::addNode($nodes, $sourceKey, $source);
-
-            // Add impacted node if missing
-            self::addNode($nodes, $impactedKey, $impacted);
-
-            /* Keep going in the same direction:
-               - Use the impacted item if we came forward
-               - Use the source item if we came backward
-            */
-            if ($impact['direction'] === self::DIRECTION_FORWARD) {
-               self::buildGraph(
-                  $impacted,
-                  $edges,
-                  $nodes,
-                  $direction,
-                  false
-               );
-            } else {
-               self::buildGraph(
-                  $source,
-                  $edges,
-                  $nodes,
-                  $direction,
-                  false
-               );
-            }
-         }
-      }
-   }
-
-   /**
-    * Add a node to the node lists if missing
-    *
-    * @param array $nodes  Nodes of the graph
-    * @param array $node   Node to add
+    * @return bool true if the node was missing, else false
     */
    public static function addNode(array &$nodes, $item) {
       $key = self::getNodeID($item);
@@ -581,6 +434,19 @@ class Impact extends CommonDBRelation {
       return false;
    }
 
+   /**
+    * Add an edge to the edge list if missing, else update it's direction
+    *
+    * @param array      $edges      Edges of the graph
+    * @param string     $key        ID of the new edge
+    * @param CommonDBTM $itemA      One of the node connected to this edge
+    * @param CommonDBTM $itemB      The other node connected to this edge
+    * @param int        $direction  Direction of the edge : A to B or B to A ?
+    *
+    * @since 9.5
+    *
+    * @return bool true if the node was missing, else false
+    */
    public static function addEdge(
       array &$edges,
       string $key,
@@ -588,31 +454,31 @@ class Impact extends CommonDBRelation {
       CommonDBTM $itemB,
       int $direction) {
 
-      $flag = 0;
-
+      // Just update the flag if the edge already exist
       if (isset($edges[$key])) {
          $flag = $edges[$key]['flag'];
+         $edges[$key]['flag'] = $edges[$key]['flag'] | $direction;
+         return;
       }
 
+      // Add the new edge
       switch ($direction) {
          case self::DIRECTION_FORWARD:
             $from = self::getNodeID($itemA);
             $to = self::getNodeID($itemB);
             break;
-
          case self::DIRECTION_BACKWARD:
             $from = self::getNodeID($itemB);
             $to = self::getNodeID($itemA);
             break;
       }
 
-      // Add the new edge
       $edges[$key] = [
          'id'        => $key,
          'from'      => $from,
          'to'        => $to,
          'arrows'    => "to",
-         'flag'      => $flag | $direction
+         'flag'      => $direction
       ];
    }
 
@@ -628,22 +494,14 @@ class Impact extends CommonDBRelation {
       // Load script
       echo HTML::script("js/impact_network.js");
 
-      $locales = self::getVisJSLocales();
-
-      // Get current object key
-      $currentItem = self::createID(
-         self::NODE,
-         get_class($item),
-         $item->getID()
-      );
-
-      $direction = self::DIRECTION_BOTH;
+      // Get needed var from php to init the network
+      $locales       = self::getVisJSLocales();
+      $currentItem   = self::getNodeID($item);
 
       $js = "
          var glpiLocales = '$locales';
          var currentItem = '$currentItem';
-         var direction = $direction;
-         initImpactNetwork(glpiLocales, currentItem, direction);";
+         initImpactNetwork(glpiLocales, currentItem);";
 
       echo HTML::scriptBlock($js);
    }
@@ -713,25 +571,11 @@ class Impact extends CommonDBRelation {
     */
    public static function showImpactNetwork(CommonDBTM $item) {
 
-      // Load the vis.js library
+      // Load the required elements
       self::loadVisJS();
-
-      // Load #networkContainer style
       self::loadNetworkContainerStyle();
-
-      // Print the HTML part of the impact network
-      self::printImpactNetwork();
-
-      // Print the "add node" dialog
+      self::printImpactNetworkContainer();
       self::printAddNodeDialog();
-
-      // Prepare the graph
-      // $edges = [];
-      // $nodes = [];
-      // self::buildGraph($item, $edges, $nodes, self::DIRECTION_BOTH);
-
-      // Build the network
-      // self::buildNetwork($nodes, $edges, $item);
       self::buildNetwork($item);
    }
 
@@ -862,33 +706,25 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Create ID used for the node and eges on the graph
+    * Create an ID for a node (ItemType::ItemID)
     *
-    * @param int     $type NODE or EDGE
-    * @param string  $a     first element of the id :
-    *                         - an item type for NODE
-    *                         - a node id for EDGE
-    * @param string|int  $b second element of the id :
-    *                         - an item id for NODE
-    *                         - a node id for EDGE
+    * @param CommonDBTM  $item Name of the node
     *
-    * @return string|null
+    * @return string
     */
-   public static function createID(int $type, string $a, $b) {
-      switch ($type) {
-         case self::NODE:
-            return "$a::$b";
-         case self::EDGE:
-            return "$a->$b";
-      }
-
-      return null;
-   }
-
    public static function getNodeID(CommonDBTM $item) {
       return get_class($item) . "::" . $item->getID();
    }
 
+   /**
+    * Create an ID for an edge (NodeID->NodeID)
+    *
+    * @param CommonDBTM  $itemA     First node of the edge
+    * @param CommonDBTM  $itemB     Second node of the edge
+    * @param int         $direction Direction of the edge : A to B or B to A ?
+    *
+    * @return string|null
+    */
    public static function getEdgeID(
       CommonDBTM $itemA,
       CommonDBTM $itemB,
