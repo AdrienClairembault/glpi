@@ -61,21 +61,19 @@ $item = new $itemType;
 $item->getFromDB($itemID);
 
 // Build graph
-$nodes = []; $edges = [];
-Impact::buildGraph(
-   $item,
-   $edges,
-   $nodes,
-   $direction,
-   true
-);
+// $nodes = []; $edges = [];
+// Impact::buildGraph(
+//    $item,
+//    $edges,
+//    $nodes,
+//    $direction,
+//    true
+// );
+$graph = Impact::buildGraph($item);
 
 // Remove array keys
-$nodes = array_values($nodes);
-$edges = array_values($edges);
+$graph['nodes'] = array_values($graph['nodes']);
+$graph['edges'] = array_values($graph['edges']);
 
 // Export graph to json
-echo json_encode([
-   'nodes' => $nodes,
-   'edges' => $edges
-]);
+echo json_encode($graph);

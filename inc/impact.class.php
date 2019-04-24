@@ -30,6 +30,19 @@ class Impact extends CommonDBRelation {
       return _n('Asset impact', 'Asset impacts', $nb);
    }
 
+   public static function canView() {
+      return true;
+   }
+
+   public static function canUpdate() {
+      return true;
+   }
+
+   public static function canCreate() {
+      return true;
+   }
+
+
    /**
     * Get Tab Name used for itemtype
     *
@@ -154,14 +167,16 @@ class Impact extends CommonDBRelation {
       self::printOptionForm();
       echo "</td>";
       echo "</tr>";
+      echo "<tr><td colspan=\"2\" style=\"text-align:center\">";
+      echo Html::submit(_sx('button', 'Save'), [
+         'name' => 'save'
+      ]);
+      echo "</td></tr>";
 
       echo "</table>";
 
       echo Html::input("impacts", [
          'type' => 'hidden'
-      ]);
-      echo Html::submit(_sx('button', 'Save'), [
-         'name' => 'save'
       ]);
 
       HTML::closeForm();
@@ -294,82 +309,164 @@ class Impact extends CommonDBRelation {
     * @param bool $main  Used to check if we are in the original or in a
     *    recursive call of this function.
     */
-   public static function buildGraph(
-      CommonDBTM $item,
-      array &$edges,
+   // public static function buildGraph(
+   //    CommonDBTM $item,
+   //    array &$edges,
+   //    array &$nodes,
+   //    int $direction = self::DIRECTION_BOTH,
+   //    bool $main = true) {
+   //    global $DB;
+   //    $currentItemDependencies = [];
+
+   //    // Get all items that depend from the current item
+   //    if ($direction & self::DIRECTION_FORWARD) {
+   //       $depend = $DB->request([
+   //          'FROM'   => 'glpi_impacts',
+   //          'WHERE'  => [
+   //             'source_asset_type'  => get_class($item),
+   //             'source_asset_id'    => $item->getID()
+   //          ]
+   //       ]);
+
+   //       // Add these items to $currentItemDependencies
+   //       foreach ($depend as $impactedItem) {
+   //          $id = $impactedItem['impacted_asset_id'];
+   //          $impactedItem = new $impactedItem['impacted_asset_type'];
+   //          $impactedItem->getFromDB($id);
+
+   //          $currentItemDependencies[] = [
+   //             "source" => $item,
+   //             "impacted" => $impactedItem,
+   //             "direction" => self::DIRECTION_FORWARD
+   //          ];
+   //       }
+   //    }
+
+   //    // Get all items that impact the current item
+   //    if ($direction & self::DIRECTION_BACKWARD) {
+   //       $impact = $DB->request([
+   //          'FROM'   => 'glpi_impacts',
+   //          'WHERE'  => [
+   //             'impacted_asset_type'  => get_class($item),
+   //             'impacted_asset_id'    => $item->getID()
+   //          ]
+   //       ]);
+
+   //       // Add these items to $currentItemDependencies
+   //       foreach ($impact as $sourceItem) {
+   //          $id = $sourceItem['source_asset_id'];
+   //          $sourceItem = new $sourceItem['source_asset_type'];
+   //          $sourceItem->getFromDB($id);
+
+   //          $currentItemDependencies[] = [
+   //             "source" => $sourceItem,
+   //             "impacted" => $item,
+   //             "direction" => self::DIRECTION_BACKWARD
+   //          ];
+   //       }
+   //    }
+
+   //    // Explore each dependency
+   //    self::explodeDependencies(
+   //       $currentItemDependencies,
+   //       $edges,
+   //       $nodes,
+   //       $direction
+   //    );
+
+   //    /* If we found no edges after exploring all dependencies,
+   //       create a single node for the current item */
+   //    if (count($nodes) == 0 && $main == true) {
+   //       $currentKey = self::createID(
+   //          self::NODE,
+   //          get_class($item),
+   //          $item->getID()
+   //       );
+   //       self::addNode($nodes, $currentKey, $item);
+   //    }
+   // }
+
+   public static function buildGraph(CommonDBTM $item) {
+      global $DB;
+
+      $nodes = [];
+      $edges = [];
+
+      // Explore the graph forward
+      self::buildGraphFromNode($nodes, $edges, $item, self::DIRECTION_FORWARD);
+
+      // Explore the graph backward
+      self::buildGraphFromNode($nodes, $edges, $item, self::DIRECTION_BACKWARD);
+
+      // Add current node to the graph if no dependencies were found
+      if (count($nodes) == 0) {
+         self::addNode($nodes, $item);
+      }
+
+      return [
+         'nodes' => $nodes,
+         'edges' => $edges
+      ];
+   }
+
+   public static function buildGraphFromNode(
       array &$nodes,
-      int $direction = self::DIRECTION_BOTH,
-      bool $main = true) {
+      array &$edges,
+      CommonDBTM $node,
+      int $direction,
+      array $exploredNodes = []) {
 
       global $DB;
 
-      $currentItemDependencies = [];
+      switch ($direction) {
+         case self::DIRECTION_FORWARD:
+            $source = "source_asset";
+            $target = "impacted_asset";
+            break;
 
-      // Get all items that depend from the current item
-      if ($direction & self::DIRECTION_FORWARD) {
-         $depend = $DB->request([
-            'FROM'   => 'glpi_impacts',
-            'WHERE'  => [
-               'source_asset_type'  => get_class($item),
-               'source_asset_id'    => $item->getID()
-            ]
-         ]);
-
-         // Add these items to $currentItemDependencies
-         foreach ($depend as $impactedItem) {
-            $id = $impactedItem['impacted_asset_id'];
-            $impactedItem = new $impactedItem['impacted_asset_type'];
-            $impactedItem->getFromDB($id);
-
-            $currentItemDependencies[] = [
-               "source" => $item,
-               "impacted" => $impactedItem,
-               "direction" => self::DIRECTION_FORWARD
-            ];
-         }
+         case self::DIRECTION_BACKWARD:
+            $source = "impacted_asset";
+            $target = "source_asset";
+            break;
       }
 
-      // Get all items that impact the current item
-      if ($direction & self::DIRECTION_BACKWARD) {
-         $impact = $DB->request([
-            'FROM'   => 'glpi_impacts',
-            'WHERE'  => [
-               'impacted_asset_type'  => get_class($item),
-               'impacted_asset_id'    => $item->getID()
-            ]
-         ]);
+      // Get relations of the current node
+      $relations = $DB->request([
+         'FROM'   => 'glpi_impacts',
+         'WHERE'  => [
+            $target . '_type'  => get_class($node),
+            $target . '_id'    => $node->getID()
+         ]
+      ]);
 
-         // Add these items to $currentItemDependencies
-         foreach ($impact as $sourceItem) {
-            $id = $sourceItem['source_asset_id'];
-            $sourceItem = new $sourceItem['source_asset_type'];
-            $sourceItem->getFromDB($id);
-
-            $currentItemDependencies[] = [
-               "source" => $sourceItem,
-               "impacted" => $item,
-               "direction" => self::DIRECTION_BACKWARD
-            ];
-         }
+      // Add current code if there is at least one relation
+      if (count($relations)) {
+         self::addNode($nodes, $node);
       }
 
-      // Explore each dependency
-      self::explodeDependencies(
-         $currentItemDependencies,
-         $edges,
-         $nodes,
-         $direction
-      );
+      foreach ($relations as $relatedItem) {
+         // Get related node
+         $relatedNode = new $relatedItem[$source . '_type'];
+         $relatedNode->getFromDB($relatedItem[$source . '_id']);
+         self::addNode($nodes, $relatedNode);
 
-      /* If we found no edges after exploring all dependencies,
-         create a single node for the current item */
-      if (count($nodes) == 0 && $main == true) {
-         $currentKey = self::createID(
-            self::NODE,
-            get_class($item),
-            $item->getID()
-         );
-         self::addNode($nodes, $currentKey, $item);
+         $edgeID = self::getEdgeID($node, $relatedNode, $direction);
+
+         // Add or update the relation on the graph
+         self::addEdge($edges, $edgeID, $node, $relatedNode, $direction);
+
+         // Add related node and keep exploring from this node
+         $relatedNodeID = self::getNodeID($relatedNode);
+         if (!isset($exploredNodes[$relatedNodeID])) {
+            $exploredNodes[$relatedNodeID] = true;
+            self::buildGraphFromNode(
+               $nodes,
+               $edges,
+               $relatedNode,
+               $direction,
+               $exploredNodes
+            );
+         }
       }
    }
 
@@ -465,7 +562,9 @@ class Impact extends CommonDBRelation {
     * @param array $nodes  Nodes of the graph
     * @param array $node   Node to add
     */
-   public static function addNode(array &$nodes, string $key, $item) {
+   public static function addNode(array &$nodes, $item) {
+      $key = self::getNodeID($item);
+
       if (!isset($nodes[$key])) {
          $imageName = strtolower(get_class($item));
 
@@ -475,7 +574,46 @@ class Impact extends CommonDBRelation {
             'shape'  => "image",
             'image'  => "../pics/impact/$imageName.png"
          ];
+
+         return true;
       }
+
+      return false;
+   }
+
+   public static function addEdge(
+      array &$edges,
+      string $key,
+      CommonDBTM $itemA,
+      CommonDBTM $itemB,
+      int $direction) {
+
+      $flag = 0;
+
+      if (isset($edges[$key])) {
+         $flag = $edges[$key]['flag'];
+      }
+
+      switch ($direction) {
+         case self::DIRECTION_FORWARD:
+            $from = self::getNodeID($itemA);
+            $to = self::getNodeID($itemB);
+            break;
+
+         case self::DIRECTION_BACKWARD:
+            $from = self::getNodeID($itemB);
+            $to = self::getNodeID($itemA);
+            break;
+      }
+
+      // Add the new edge
+      $edges[$key] = [
+         'id'        => $key,
+         'from'      => $from,
+         'to'        => $to,
+         'arrows'    => "to",
+         'flag'      => $flag | $direction
+      ];
    }
 
    /**
@@ -742,6 +880,26 @@ class Impact extends CommonDBRelation {
             return "$a::$b";
          case self::EDGE:
             return "$a->$b";
+      }
+
+      return null;
+   }
+
+   public static function getNodeID(CommonDBTM $item) {
+      return get_class($item) . "::" . $item->getID();
+   }
+
+   public static function getEdgeID(
+      CommonDBTM $itemA,
+      CommonDBTM $itemB,
+      int $direction) {
+
+      switch ($direction) {
+         case self::DIRECTION_FORWARD:
+            return self::getNodeID($itemA) . "->" . self::getNodeID($itemB);
+
+         case self::DIRECTION_BACKWARD:
+            return self::getNodeID($itemB) . "->" . self::getNodeID($itemA);
       }
 
       return null;

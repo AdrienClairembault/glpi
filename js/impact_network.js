@@ -162,7 +162,7 @@ function createNetwork (direction) {
   observer.observe(container, config);
 
    selectFirstNode();
-   updateGraph();
+   applyColors();
 }
 
 function applyColors() {
@@ -210,15 +210,20 @@ function hideDisabledNodes(direction) {
    window.data.nodes.get().forEach(function (node) {
       var visible = false;
 
-      window.data.edges.forEach(function(edge){
-         // For all edges linked to the current node
-         if (edge.to == node.id || edge.from == node.id) {
-            // Check if the edge is valid for the new direction
-            if (edge.flag & direction) {
-               visible = true;
+      if (direction == BOTH) {
+         // Show all the nodes, no need to check individualy
+         visible = true;
+      } else {
+         window.data.edges.forEach(function(edge){
+            // For all edges linked to the current node
+            if (edge.to == node.id || edge.from == node.id) {
+               // Check if the edge is valid for the new direction
+               if (edge.flag & direction) {
+                  visible = true;
+               }
             }
-         }
-      });
+         });
+      }
 
       // Update node visibility
       window.data.nodes.update({
@@ -416,7 +421,7 @@ function exportCanvas() {
    $("#export_link").prop("href", img);
 }
 
-// Run through the graph and set a flag for each edge storing the direction
+// Client side flag calculations
 function buildFlags() {
    var passed_nodes;
 
@@ -481,6 +486,11 @@ function buildFlagsFromCurrentNode(nodes, direction, currentNodeID) {
          buildFlagsFromCurrentNode(nodes, direction, node_target);
       }
    });
+}
+
+// Remove uneeded nodes that does not depends to or impact the current item
+function removeContextualNodes() {
+
 }
 
 // Toggle the colors global variables
