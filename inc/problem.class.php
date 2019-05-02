@@ -1573,4 +1573,44 @@ class Problem extends CommonITILObject {
 
       return $values;
    }
+
+   /**
+    * get active problems for an item
+    *
+    * @since 9.5
+    *
+    * @param string $itemtype     Item type
+    * @param integer $items_id    ID of the Item
+    *
+    * @return integer
+    */
+   public function GetActiveProblemsForItem($itemtype, $items_id) {
+      global $DB;
+
+      return $DB->request([
+         'SELECT'    => [
+            $this->getTable() . '.id',
+            $this->getTable() . '.name'
+         ],
+         'FROM'      => $this->getTable(),
+         'LEFT JOIN' => [
+            'glpi_items_problems' => [
+               'ON' => [
+                  'glpi_items_problems' => 'problems_id',
+                  $this->getTable()    => 'id'
+               ]
+            ]
+         ],
+         'WHERE'     => [
+            'glpi_items_problems.itemtype' => $itemtype,
+            'glpi_items_problems.items_id' => $items_id,
+            'NOT'                         => [
+               $this->getTable() . '.status' => array_merge(
+                  $this->getSolvedStatusArray(),
+                  $this->getClosedStatusArray()
+               )
+            ]
+         ]
+      ]);
+   }
 }

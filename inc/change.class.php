@@ -1237,4 +1237,44 @@ class Change extends CommonITILObject {
    function showDebug() {
       NotificationEvent::debugEvent($this);
    }
+
+   /**
+    * Get active changes for an item
+    *
+    * @since 9.5
+    *
+    * @param string $itemtype     Item type
+    * @param integer $items_id    ID of the Item
+    *
+    * @return integer
+    */
+   public function getActiveChangesForItem($itemtype, $items_id) {
+      global $DB;
+
+      return $DB->request([
+         'SELECT'    => [
+            $this->getTable() . '.id',
+            $this->getTable() . '.name'
+         ],
+         'FROM'      => $this->getTable(),
+         'LEFT JOIN' => [
+            'glpi_changes_items' => [
+               'ON' => [
+                  'glpi_changes_items' => 'changes_id',
+                  $this->getTable()    => 'id'
+               ]
+            ]
+         ],
+         'WHERE'     => [
+            'glpi_changes_items.itemtype' => $itemtype,
+            'glpi_changes_items.items_id' => $items_id,
+            'NOT'                         => [
+               $this->getTable() . '.status' => array_merge(
+                  $this->getSolvedStatusArray(),
+                  $this->getClosedStatusArray()
+               )
+            ]
+         ]
+      ]);
+   }
 }

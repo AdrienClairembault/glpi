@@ -64,4 +64,6 @@ $graph['nodes'] = array_values($graph['nodes']);
 $graph['edges'] = array_values($graph['edges']);
 
 // Export graph to json
-echo json_encode($graph);
+$json = json_encode($graph);
+echo str_replace('\\\\', '\\', $json);
+// error_log($graph);

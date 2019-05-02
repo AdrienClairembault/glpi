@@ -36,10 +36,14 @@ const FORWARD = 1;
 const BACKWARD = 2;
 const BOTH = 3;
 
-const IMPACT_COLOR =  'red';
+const IMPACT_COLOR =  "red";
 const DEPENDS_COLOR =  'navy';
 const IMPACT_AND_DEPENDS_COLOR =  'purple';
 const DEFAUT_COLOR =  'black';
+
+const INCIDENT_COLOR = "red";
+const PROBLEM_COLOR = "yellow";
+const CHANGE_COLOR = "blue";
 
 // Start impact network
 function initImpactNetwork (glpiLocales, startNode) {
@@ -146,12 +150,73 @@ function createNetwork () {
          // Enable graph selection
          $('select[name=direction]').prop('disabled', false);
       }
-  };
-  var observer = new MutationObserver(callback);
-  observer.observe(container, config);
+   };
+   var observer = new MutationObserver(callback);
+   observer.observe(container, config);
+
+   // Show list of ongoing item on click
+   window.network.on("click", function (params) {
+      params.event = "[original event]";
+
+      var targetNode = this.getNodeAt(params.pointer.DOM);
+      if (targetNode == undefined) {
+         $( "#ticketsDialog" ).dialog('close');
+         return;
+      }
+      targetNode = window.data.nodes.get(targetNode);
+
+      if (targetNode.incidents.length > 0 || targetNode.requests.length > 0 ||
+          targetNode.problems.length > 0 || targetNode.changes.length > 0
+         ) {
+         var canvasPos = $('canvas')[0].getBoundingClientRect();
+         $( "#ticketsDialog" ).dialog({
+            position:  [
+               params.pointer.DOM.x + canvasPos.x,
+               params.pointer.DOM.y + canvasPos.y
+            ],
+            width: 'auto',
+            draggable: false,
+            title: targetNode.label.substring(0, targetNode.label.length - 2),
+         });
+
+         // Set dialog content
+         $( "#ticketsDialog" ).html(printTicketsDialog(targetNode));
+      }
+      else {
+         $( "#ticketsDialog" ).dialog('close');
+      }
+   });
 
    selectFirstNode();
    applyColors();
+}
+
+// Print the ticketsDialog
+function printTicketsDialog(targetNode) {
+   var html = "";
+
+   html += listElements("Incidents", targetNode.incidents, "problem");
+   html += listElements("Request", targetNode.requests, "problem");
+   html += listElements("Changes", targetNode.changes , "problem");
+   html += listElements("Problems", targetNode.problems, "problem");
+
+   return html;
+}
+
+// List elements (request, incidents, problems or changes) in the ticketsDialog
+function listElements(title, elements, url) {
+   html = "";
+
+   if (elements.length > 0) {
+      html += "<h3>" + title + "</h3>";
+
+      elements.forEach(function(element) {
+         var link = "./" + url + ".form.php?id=" + element.id;
+         html += '<a target="_blank" href="' + link + '">' + element.name + '</a><br>';
+      });
+   }
+
+   return html;
 }
 
 // Highlight "impact" and/or "depends" relations if enabled

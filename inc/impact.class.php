@@ -408,30 +408,95 @@ class Impact extends CommonDBRelation {
    /**
     * Add a node to the node list if missing
     *
-    * @param array $nodes  Nodes of the graph
-    * @param array $item   Node to add
+    * @param array      $nodes  Nodes of the graph
+    * @param CommonDBTM $item   Node to add
     *
     * @since 9.5
     *
     * @return bool true if the node was missing, else false
     */
-   public static function addNode(array &$nodes, $item) {
+   public static function addNode(array &$nodes, CommonDBTM $item) {
+
+      // Check if the node already exist
       $key = self::getNodeID($item);
-
-      if (!isset($nodes[$key])) {
-         $imageName = strtolower(get_class($item));
-
-         $nodes[$key] = [
-            'id'     => $key,
-            'label'  => $item->fields['name'],
-            'shape'  => "image",
-            'image'  => "../pics/impact/$imageName.png"
-         ];
-
-         return true;
+      if (isset($nodes[$key])) {
+         return false;
       }
 
-      return false;
+      $imageName = strtolower(get_class($item));
+
+      $newNode = [
+         'id'     => $key,
+         'label'  => $item->fields['name'],
+         'shape'  => "image",
+         'image'  => "../pics/impact/$imageName.png",
+         'font'   => [
+            // 'strokeColor' => "#00ff00",
+            'multi'       => 'html',
+            'face' => 'FontAwesome',
+         ],
+         'incidents' => [],
+         'requests'  => [],
+         'changes'   => [],
+         'problems'  => [],
+      ];
+
+      $ticket = new Ticket();
+      $problem = new Problem();
+      $change = new Change();
+
+      $incidents = $ticket->getActiveTicketsForItem(
+         get_class($item),
+         $item->getID(),
+         Ticket::INCIDENT_TYPE
+      );
+
+      $requests = $ticket->getActiveTicketsForItem(
+         get_class($item),
+         $item->getID(),
+         Ticket::DEMAND_TYPE
+      );
+
+      $problems = $problem->getActiveProblemsForItem(
+         get_class($item),
+         $item->getID()
+      );
+
+      $changes = $change->getActiveChangesForItem(
+         get_class($item),
+         $item->getID()
+      );
+
+      // Warning and tooltip if at least one ticket is found
+      if (count($incidents) > 0 || count($requests) > 0 ||
+          count($problems) > 0 || count($changes) > 0) {
+         $newNode['label'] .= ' \uf071';
+         $newNode['title'] = __("Click to see ongoing tickets...");
+      }
+
+      // Store each request, incident and change details
+      foreach ($incidents as $incident) {
+         $newNode['incidents'][] = $incident;
+      }
+      foreach ($requests as $request) {
+         $newNode['requests'][] = $request;
+      }
+      foreach ($problems as $problem) {
+         $newNode['problems'][] = $problem;
+      }
+      foreach ($changes as $change) {
+         $newNode['changes'][] = $change;
+      }
+
+      // Insert the node
+      $nodes[$key] = $newNode;
+      return true;
+   }
+
+   public static function getItemTooltip(CommonDBTM $item) {
+      $tooltip = "<h3>" . __("Comments :") . "</h3>" . $item->fields['comment'];
+
+      return $tooltip;
    }
 
    /**
@@ -560,6 +625,8 @@ class Impact extends CommonDBRelation {
 
       echo "</table>";
       echo "</div>";
+
+      echo '<div id="ticketsDialog"></div>';
    }
 
    /**
@@ -773,7 +840,7 @@ class Impact extends CommonDBRelation {
          'duplicateAsset'   => __('This asset already exist.'),
          'linkToSelf'   => __("Can't link an asset to itself."),
          'duplicateEdge'   => __("An identical link already exist between theses two asset."),
-         'unexpectedError' => __("Unexpected error.")
+         'unexpectedError' => __("Unexpected error."),
       ];
 
       return addslashes(json_encode($locales));
