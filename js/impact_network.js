@@ -183,6 +183,7 @@ function createNetwork () {
          $( "#ticketsDialog" ).html(printTicketsDialog(targetNode));
       }
       else {
+         // Click on a node without ongoing tickets, close dialog
          $( "#ticketsDialog" ).dialog('close');
       }
    });
@@ -471,10 +472,12 @@ function makeID (type, a, b) {
 }
 
 // Export canvas to png
-function exportCanvas() {
+function exportCanvas(format) {
+
+   // TODO : set a white background for format that doens't support non-opaque pixels
    var img = window.$("#networkContainer canvas")
       .get(0)
-      .toDataURL("image/octet-stream");
+      .toDataURL("image/" + format);
    $("#export_link").prop("href", img);
 }
 

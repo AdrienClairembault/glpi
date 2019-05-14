@@ -145,7 +145,7 @@ class Impact extends CommonDBRelation {
          <style type="text/css">
             #networkContainer {
                width: 100%;
-               height: 800px;
+               height: 50vh;
                border: 1px solid lightgray;
             }
             #addNodedialog {
@@ -169,18 +169,20 @@ class Impact extends CommonDBRelation {
       echo "<table class='tab_cadre_fixe'>";
 
       echo "<tr class='tab_bg_2'>";
-      echo "<th colspan=\"2\">" . __('Impact graph') . "</th>";
+      echo "<th>" . __('Impact graph') . "</th>";
       echo "</tr>";
 
       echo "<tr>";
-      echo "<td width=\"80%\">";
+      echo "<td>";
       echo '<div id="networkContainer"></div>';
       echo "</td>";
-      echo "<td>";
+
+      echo "<tr><td>";
       self::printOptionForm();
-      echo "</td>";
+      echo "</td></tr>";
+
       echo "</tr>";
-      echo "<tr><td colspan=\"2\" style=\"text-align:center\">";
+      echo "<tr><td style=\"text-align:center\">";
       echo Html::submit(_sx('button', 'Save'), [
          'name' => 'save'
       ]);
@@ -193,7 +195,10 @@ class Impact extends CommonDBRelation {
       ]);
 
       HTML::closeForm();
-      self::printOptionFormInteractions();
+
+      echo Html::css('lib/jqueryplugins/spectrum-colorpicker/spectrum.css');
+      Html::requireJs('colorpicker');
+
    }
 
    /**
@@ -202,47 +207,107 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     */
    public static function printOptionForm() {
+      // Table that will contains the options related to the Impact graph
       echo "<table class='tab_cadre_fixe'>";
 
+      // First row : Headers
       echo "<tr class='tab_bg_2'>";
-      echo "<th colspan=\"1\">" . __('Options (WIP)') . "</th>";
+      echo "<th>" . __('Visibility') . "</th>";
+      echo "<th>" . __('Colors') . "</th>";
+      echo "<th>" . __('Export') . "</th>";
       echo "</tr>";
 
+      // Second row : options (separated in individuals tables)
       echo "<tr>";
-      $dropdown = Dropdown::showFromArray("direction", [
-         self::DIRECTION_BOTH => "Both",
-         self::DIRECTION_FORWARD => "FORWARD",
-         self::DIRECTION_BACKWARD => "BACKWARD",
-      ], [
-         'display' => false
+
+      // First option table : visility
+      echo "<td style=\"vertical-align:top;width:33%\">";
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr>";
+      echo "<td>";
+      echo "<input type=\"checkbox\" id=\"showDepends\" checked>";
+      echo "<label>&nbsp;" . __("Show assets that depends on the current item") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      echo "<input type=\"checkbox\" id=\"showImpacted\" checked>";
+      echo "<label>&nbsp;" . __("Show assets that impact the current item") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "</table>";
+      echo "</td>";
+
+      // Second option table  : colors of the arrows
+      echo "<td style=\"vertical-align:top;width:33%\">";
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr>";
+      echo "<td>";
+      HTML::showColorField("depends_color");
+      echo "<label>&nbsp;" . __("Depends on the current item") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      HTML::showColorField("impact_color");
+      echo "<label>&nbsp;" . __("Impact the current item") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      HTML::showColorField("impact_and_depends_color");
+      echo "<label>&nbsp;" . __("Impact and depends on the current item") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "</table>";
+      echo "</td>";
+
+      // Third option table : export
+      echo "<td style=\"vertical-align:top;width:33%\">";
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr>";
+      echo "<td>";
+      echo "<label>" . __("File format: ") . "</label>";
+      $dropdown = Dropdown::showFromArray("impact_format", [
+            'png' => "PNG",
+            'jpeg' => "JPEG",
       ]);
-      echo "<td><label>Direction: </label>$dropdown</td>";
-      echo "</tr>";
-
-      echo "<tr>";
-      echo "<td>";
-      echo "<input type=\"checkbox\" id=\"colorizeImpacted\" checked>";
-      echo "<label> color impact </label>";
       echo "</td>";
       echo "</tr>";
-      echo "</tr>";
-
       echo "<tr>";
       echo "<td>";
-      echo "<input type=\"checkbox\" id=\"colorizeDepends\" checked>";
-      echo "<label> color depends </label>";
+      echo "<a id=\"export_link\" href=\"\" download=\"impact.png\">";
+      echo "<button class=\"x-button\" type=\"button\" id=\"export_network\">Export</button>";
+      echo "</a>";
       echo "</td>";
       echo "</tr>";
-      echo "</tr>";
+      echo "</table>";
+      echo "</td>";
+      // echo "<tr>";
+      // echo "<td>";
+      // echo "<input type=\"checkbox\" id=\"colorizeImpacted\" checked>";
+      // echo "<label> color impact </label>";
+      // echo "</td>";
+      // echo "</tr>";
+      // echo "</tr>";
 
-      echo "<tr>";
-      echo "<td> <a id=\"export_link\" href=\"\" download=\"impact.png\">";
-      echo "<button type=\"button\" id=\"export\">Export</button>";
-      echo "</a></td>";
-      echo "</tr>";
+      // echo "<tr>";
+      // echo "<td>";
+      // echo "<input type=\"checkbox\" id=\"colorizeDepends\" checked>";
+      // echo "<label> color depends </label>";
+      // echo "</td>";
+      // echo "</tr>";
+      // echo "</tr>";
+
+      // echo "<tr>";
+     
+      // echo "</tr>";
       echo "</tr>";
 
       echo "</table>";
+
+      // JS to handle the options
+      self::printOptionFormInteractions();
    }
 
    /**
@@ -259,8 +324,20 @@ class Impact extends CommonDBRelation {
          });
 
          // Update the graph direction
-         $('select[name=direction]').on('change', function () {
-            hideDisabledNodes($('select[name=direction] option:selected').val());
+         $('#showDepends, #showImpacted').on('change', function () {
+            var showDepends   = $('#showDepends').prop('checked');
+            var showImpact    = $('#showImpacted').prop('checked');
+            var direction     = 0;
+
+            if (showDepends && showImpact) {
+               direction = " . self::DIRECTION_BOTH . ";
+            } else if (!showDepends && showImpact) {
+               direction = " . self::DIRECTION_FORWARD . ";
+            } else if (showDepends && !showImpact) {
+               direction = " . self::DIRECTION_BACKWARD . ";
+            }
+
+            hideDisabledNodes(direction);
          });
 
          // Toggle 'impact' colors
@@ -280,8 +357,10 @@ class Impact extends CommonDBRelation {
          });
 
          // Export graph to png
-         $('#export').on('click', function (e) {
-            exportCanvas();
+         $('#export_network').on('click', function (e) {
+            var format = $('select[name=\"impact_format\"] option:selected').val();
+            $('#export_link').prop('download', 'impact.' + format);
+            exportCanvas(format);
          });
       ");
    }
