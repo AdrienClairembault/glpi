@@ -4,16 +4,17 @@ if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
-/**
- * Summary of PluginImpactsImpact
- * Manage impactship between assets
- */
 class Impact extends CommonDBRelation {
 
    // Constants used to express the direction of a graph
    const DIRECTION_FORWARD    = 0b01;
    const DIRECTION_BACKWARD   = 0b10;
    const DIRECTION_BOTH       = 0b11;
+
+   // TODO : export to conf
+   const IMPACT_COLOR               = '#DC143C';
+   const DEPENDS_COLOR              = '#000080';
+   const IMPACT_AND_DEPENDS_COLOR   = '#4B0082';
 
    /**
     * Return the localized name of the current Type (Asset impacts)
@@ -54,7 +55,6 @@ class Impact extends CommonDBRelation {
    public static function canCreate() {
       return true;
    }
-
 
    /**
     * Get Tab Name used for itemtype
@@ -111,7 +111,7 @@ class Impact extends CommonDBRelation {
          return false;
       }
 
-      // Right check
+      // Check rights
       $itemtype = $item->getType();
       if (!$itemtype::canView()) {
          return false;
@@ -165,23 +165,24 @@ class Impact extends CommonDBRelation {
       $formName = "form_impact_network";
 
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
-
       echo "<table class='tab_cadre_fixe'>";
 
+      // First row : header
       echo "<tr class='tab_bg_2'>";
       echo "<th>" . __('Impact graph') . "</th>";
       echo "</tr>";
 
-      echo "<tr>";
-      echo "<td>";
+      // Second row : network graph
+      echo "<tr><td>";
       echo '<div id="networkContainer"></div>';
-      echo "</td>";
+      echo "</td></tr>";
 
+      // Third row : network graph options
       echo "<tr><td>";
       self::printOptionForm();
       echo "</td></tr>";
 
-      echo "</tr>";
+      // Fourth row : save button
       echo "<tr><td style=\"text-align:center\">";
       echo Html::submit(_sx('button', 'Save'), [
          'name' => 'save'
@@ -190,15 +191,16 @@ class Impact extends CommonDBRelation {
 
       echo "</table>";
 
+      // Hidden input to update the network graph
       echo Html::input("impacts", [
          'type' => 'hidden'
       ]);
-
       HTML::closeForm();
 
+      // Color picker for network graph colors options
+      // Shouldn't this be already loaded somewhere else ?
       echo Html::css('lib/jqueryplugins/spectrum-colorpicker/spectrum.css');
       Html::requireJs('colorpicker');
-
    }
 
    /**
@@ -243,19 +245,25 @@ class Impact extends CommonDBRelation {
       echo "<table class='tab_cadre_fixe'>";
       echo "<tr>";
       echo "<td>";
-      HTML::showColorField("depends_color");
+      HTML::showColorField("depends_color", [
+         'value' => self::DEPENDS_COLOR
+      ]);
       echo "<label>&nbsp;" . __("Depends on the current item") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "<tr>";
       echo "<td>";
-      HTML::showColorField("impact_color");
+      HTML::showColorField("impact_color", [
+         'value' => self::IMPACT_COLOR
+      ]);
       echo "<label>&nbsp;" . __("Impact the current item") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "<tr>";
       echo "<td>";
-      HTML::showColorField("impact_and_depends_color");
+      HTML::showColorField("impact_and_depends_color", [
+         'value' => self::IMPACT_AND_DEPENDS_COLOR
+      ]);
       echo "<label>&nbsp;" . __("Impact and depends on the current item") . "</label>";
       echo "</td>";
       echo "</tr>";
@@ -283,25 +291,7 @@ class Impact extends CommonDBRelation {
       echo "</tr>";
       echo "</table>";
       echo "</td>";
-      // echo "<tr>";
-      // echo "<td>";
-      // echo "<input type=\"checkbox\" id=\"colorizeImpacted\" checked>";
-      // echo "<label> color impact </label>";
-      // echo "</td>";
-      // echo "</tr>";
-      // echo "</tr>";
 
-      // echo "<tr>";
-      // echo "<td>";
-      // echo "<input type=\"checkbox\" id=\"colorizeDepends\" checked>";
-      // echo "<label> color depends </label>";
-      // echo "</td>";
-      // echo "</tr>";
-      // echo "</tr>";
-
-      // echo "<tr>";
-     
-      // echo "</tr>";
       echo "</tr>";
 
       echo "</table>";
@@ -340,20 +330,15 @@ class Impact extends CommonDBRelation {
             hideDisabledNodes(direction);
          });
 
-         // Toggle 'impact' colors
-         $('#colorizeImpacted').on('change', function () {
-            toggleColors(
-               " . self::DIRECTION_FORWARD . ",
-               $('#colorizeImpacted').is(\":checked\")
-            );
+         // Update graph colors
+         $('input[name=depends_color]').change(function(){
+            setColor(BACKWARD, $('input[name=depends_color]').val());
          });
-
-         // Toggle 'depends' colors
-         $('#colorizeDepends').on('change', function () {
-            toggleColors(
-               " . self::DIRECTION_BACKWARD . ",
-               $('#colorizeDepends').is(\":checked\")
-            );
+         $('input[name=impact_color]').change(function(){
+            setColor(FORWARD, $('input[name=impact_color]').val());
+         });
+         $('input[name=impact_and_depends_color]').change(function(){
+            setColor(BOTH, $('input[name=impact_and_depends_color]').val());
          });
 
          // Export graph to png
@@ -572,12 +557,6 @@ class Impact extends CommonDBRelation {
       return true;
    }
 
-   public static function getItemTooltip(CommonDBTM $item) {
-      $tooltip = "<h3>" . __("Comments :") . "</h3>" . $item->fields['comment'];
-
-      return $tooltip;
-   }
-
    /**
     * Add an edge to the edge list if missing, else update it's direction
     *
@@ -627,7 +606,7 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Build the vis.js objet and insert it into the page
+    * Build the vis.js object and insert it into the page
     *
     * @since 9.5
     *
@@ -643,6 +622,16 @@ class Impact extends CommonDBRelation {
       $currentItem   = self::getNodeID($item);
 
       $js = "
+         // Shared const
+         var FORWARD  = " . self::DIRECTION_FORWARD . ";
+         var BACKWARD = " . self::DIRECTION_BACKWARD . ";
+         var BOTH     = " . self::DIRECTION_BOTH . ";
+
+         var IMPACT_COLOR             = '" . self::IMPACT_COLOR . "';
+         var DEPENDS_COLOR            = '" . self::DEPENDS_COLOR . "';
+         var IMPACT_AND_DEPENDS_COLOR = '" . self::IMPACT_AND_DEPENDS_COLOR . "';
+
+         // Init network
          var glpiLocales = '$locales';
          var currentItem = '$currentItem';
          initImpactNetwork(glpiLocales, currentItem);";
@@ -722,6 +711,8 @@ class Impact extends CommonDBRelation {
       self::loadNetworkContainerStyle();
       self::printImpactNetworkContainer();
       self::printAddNodeDialog();
+
+      // Start the network
       self::buildNetwork($item);
    }
 
@@ -920,6 +911,10 @@ class Impact extends CommonDBRelation {
          'linkToSelf'   => __("Can't link an asset to itself."),
          'duplicateEdge'   => __("An identical link already exist between theses two asset."),
          'unexpectedError' => __("Unexpected error."),
+         'Incidents' => __("Incidents"),
+         'Requests' => __("Requests"),
+         'Changes' => __("Changes"),
+         'Problems' => __("Problems"),
       ];
 
       return addslashes(json_encode($locales));

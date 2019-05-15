@@ -32,19 +32,6 @@
 const NODE = 1;
 const EDGE = 2;
 
-const FORWARD = 1;
-const BACKWARD = 2;
-const BOTH = 3;
-
-const IMPACT_COLOR =  "red";
-const DEPENDS_COLOR =  'navy';
-const IMPACT_AND_DEPENDS_COLOR =  'purple';
-const DEFAUT_COLOR =  'black';
-
-const INCIDENT_COLOR = "red";
-const PROBLEM_COLOR = "yellow";
-const CHANGE_COLOR = "blue";
-
 // Start impact network
 function initImpactNetwork (glpiLocales, startNode) {
 
@@ -73,6 +60,13 @@ function initImpactNetwork (glpiLocales, startNode) {
    window.colorize = {};
    window.colorize[FORWARD] = true;
    window.colorize[BACKWARD] = true;
+
+   // Store default colors
+   window.colors = {};
+   window.colors[0]         = 'black';
+   window.colors[FORWARD]   = IMPACT_COLOR;
+   window.colors[BACKWARD]  = DEPENDS_COLOR;
+   window.colors[BOTH]      = IMPACT_AND_DEPENDS_COLOR;
 
    // Get start node type and id
    var startNodeDetails = window.startNode.split('::');
@@ -136,19 +130,25 @@ function createNetwork () {
       // Enter edit mode
       if (!window.editMode && $(".vis-close:visible").length == 1) {
          window.editMode = true;
-         // Force to "both" graph
-         if ($('select[name=direction] option:selected').val() != BOTH) {
-            $('select[name=direction]').val(BOTH).change();
+         // Force total visibility
+         if (!$('#showDepends').prop('checked')) {
+            $('#showDepends').prop('checked', true);
          }
-         // Disable graph selection
-         $('select[name=direction]').prop('disabled', true);
+         if (!$('#showImpacted').prop('checked')) {
+            $('#showImpacted').prop('checked', true);
+         }
+
+         $('#showDepends').prop('disabled', true);
+         $('#showImpacted').prop('disabled', true);
+         hideDisabledNodes(BOTH);
       }
 
       // Exit edit mode
       else if (window.editMode && $(".vis-close:visible").length == 0) {
          window.editMode = false;
-         // Enable graph selection
-         $('select[name=direction]').prop('disabled', false);
+         // Enable visibility changes
+         $('#showDepends').prop('disabled', false);
+         $('#showImpacted').prop('disabled', false);
       }
    };
    var observer = new MutationObserver(callback);
@@ -160,7 +160,9 @@ function createNetwork () {
 
       var targetNode = this.getNodeAt(params.pointer.DOM);
       if (targetNode == undefined) {
-         $( "#ticketsDialog" ).dialog('close');
+         if ($('#ticketsDialog').hasClass('ui-dialog-content')) {
+            $( "#ticketsDialog" ).dialog('close');
+         }
          return;
       }
       targetNode = window.data.nodes.get(targetNode);
@@ -184,7 +186,9 @@ function createNetwork () {
       }
       else {
          // Click on a node without ongoing tickets, close dialog
-         $( "#ticketsDialog" ).dialog('close');
+         if ($('#ticketsDialog').hasClass('ui-dialog-content')) {
+            $( "#ticketsDialog" ).dialog('close');
+         }
       }
    });
 
@@ -197,7 +201,7 @@ function printTicketsDialog(targetNode) {
    var html = "";
 
    html += listElements("Incidents", targetNode.incidents, "problem");
-   html += listElements("Request", targetNode.requests, "problem");
+   html += listElements("Requests", targetNode.requests, "problem");
    html += listElements("Changes", targetNode.changes , "problem");
    html += listElements("Problems", targetNode.problems, "problem");
 
@@ -209,7 +213,7 @@ function listElements(title, elements, url) {
    html = "";
 
    if (elements.length > 0) {
-      html += "<h3>" + title + "</h3>";
+      html += "<h3>" + getLocale(title) + "</h3>";
 
       elements.forEach(function(element) {
          var link = "./" + url + ".form.php?id=" + element.id;
@@ -235,19 +239,20 @@ function applyColors() {
          edge.flag = edge.flag - BACKWARD;
       }
 
-      switch (edge.flag) {
-         case FORWARD:
-            color = IMPACT_COLOR;
-            break;
-         case BACKWARD:
-            color = DEPENDS_COLOR;
-            break;
-         case BOTH:
-            color = IMPACT_AND_DEPENDS_COLOR;
-            break;
-         default:
-            color = DEFAUT_COLOR;
-      }
+      // switch (edge.flag) {
+      //    case FORWARD:
+      //       color = IMPACT_COLOR;
+      //       break;
+      //    case BACKWARD:
+      //       color = DEPENDS_COLOR;
+      //       break;
+      //    case BOTH:
+      //       color = IMPACT_AND_DEPENDS_COLOR;
+      //       break;
+      //    default:
+      //       color = DEFAUT_COLOR;
+      // }
+      color = window.colors[edge.flag];
 
       window.data.edges.update({
          id: edge.id,
@@ -558,5 +563,11 @@ function toggleColors(direction, enable) {
 // Update the client side calculations (flags + colors)
 function updateGraph() {
    buildFlags();
+   applyColors();
+}
+
+// Set color global var
+function setColor(direction, color) {
+   window.colors[direction] = color;
    applyColors();
 }
