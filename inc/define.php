@@ -469,7 +469,16 @@ $CFG_GLPI['javascript'] = [
       'central'   => ['fullcalendar', 'tinymce']
    ],
    'assets'    => [
-      'rack'         => ['colorpicker', 'gridstack']
+      'rack'              => ['colorpicker', 'gridstack'],
+      'computer'          => ['colorpicker'],
+      'peripheral'        => ['colorpicker'],
+      'enclosure'         => ['colorpicker'],
+      'monitor'           => ['colorpicker'],
+      'networkequipment'  => ['colorpicker'],
+      'phone'             => ['colorpicker'],
+      'printer'           => ['colorpicker'],
+      'dcroom'            => ['colorpicker'],
+      'software'          => ['colorpicker'],
    ],
    'helpdesk'  => [
       'planning'  => ['fullcalendar', 'colorpicker', 'tinymce'],
@@ -481,7 +490,8 @@ $CFG_GLPI['javascript'] = [
    'tools'     => [
       'project'      => ['gantt'],
       'knowbaseitem' => ['tinymce', 'jstree'],
-      'reminder'     => ['tinymce']
+      'reminder'     => ['tinymce'],
+      'impact'       => ['colorpicker']
    ],
    'management' => [
       'datacenter'       => [

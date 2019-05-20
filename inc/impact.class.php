@@ -11,7 +11,7 @@ class Impact extends CommonDBRelation {
    const DIRECTION_BACKWARD   = 0b10;
    const DIRECTION_BOTH       = 0b11;
 
-   // TODO : export to conf
+   // TODO : export to conf ?
    const IMPACT_COLOR               = '#DC143C';
    const DEPENDS_COLOR              = '#000080';
    const IMPACT_AND_DEPENDS_COLOR   = '#4B0082';
@@ -39,7 +39,7 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Do I have the right to "view" the Object
+    * Do I have the right to "update" the Object
     *
     * @return boolean
     */
@@ -69,16 +69,19 @@ class Impact extends CommonDBRelation {
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
       global $DB;
 
-      // Get direct dependencies
+      // Number of directs dependencies
       $it = $DB->request([
          'FROM'   => 'glpi_impacts',
          'WHERE'  => [
             'OR' => [
-               'source_asset_type'     => get_class($item),
-               'source_asset_id'       => $item->getID(),
-            ], [
+               [
+                  'source_asset_type' => get_class($item),
+                  'source_asset_id'   => $item->getID(),
+               ],
+               [
                'impacted_asset_type' => get_class($item),
-               'impacted_asset_id' => $item->getID(),
+               'impacted_asset_id'   => $item->getID(),
+               ]
             ]
          ]
       ]);
@@ -118,7 +121,7 @@ class Impact extends CommonDBRelation {
       }
 
       // Show the impact network
-      self::showImpactNetwork($item, PHP_INT_MAX);
+      self::showImpactNetwork($item);
 
       return true;
    }
@@ -196,11 +199,6 @@ class Impact extends CommonDBRelation {
          'type' => 'hidden'
       ]);
       HTML::closeForm();
-
-      // Color picker for network graph colors options
-      // Shouldn't this be already loaded somewhere else ?
-      echo Html::css('lib/jqueryplugins/spectrum-colorpicker/spectrum.css');
-      Html::requireJs('colorpicker');
    }
 
    /**
@@ -396,7 +394,6 @@ class Impact extends CommonDBRelation {
 
    /**
     * Explore dependencies of the current item, subfunction of buildGraph()
-    * See buildGraph for more details on shared params
     *
     * @since 9.5
     *
@@ -420,11 +417,11 @@ class Impact extends CommonDBRelation {
       // Source and target are determined by the direction in which we are
       // exploring the graph
       switch ($direction) {
-         case self::DIRECTION_FORWARD:
+         case self::DIRECTION_BACKWARD:
             $source = "source_asset";
             $target = "impacted_asset";
             break;
-         case self::DIRECTION_BACKWARD:
+         case self::DIRECTION_FORWARD:
             $source = "impacted_asset";
             $target = "source_asset";
             break;
@@ -487,6 +484,9 @@ class Impact extends CommonDBRelation {
          return false;
       }
 
+      $ticket = new Ticket();
+      $problem = new Problem();
+      $change = new Change();
       $imageName = strtolower(get_class($item));
 
       $newNode = [
@@ -495,61 +495,46 @@ class Impact extends CommonDBRelation {
          'shape'  => "image",
          'image'  => "../pics/impact/$imageName.png",
          'font'   => [
-            // 'strokeColor' => "#00ff00",
-            'multi'       => 'html',
-            'face' => 'FontAwesome',
+            'multi' => 'html',
+            'face'  => 'FontAwesome',
          ],
-         'incidents' => [],
-         'requests'  => [],
-         'changes'   => [],
-         'problems'  => [],
+         'incidents' => iterator_to_array(
+            $ticket->getActiveTicketsForItem(
+               get_class($item),
+               $item->getID(),
+               Ticket::INCIDENT_TYPE
+            ),
+            false
+         ),
+         'requests'  => iterator_to_array(
+            $ticket->getActiveTicketsForItem(
+               get_class($item),
+               $item->getID(),
+               Ticket::DEMAND_TYPE
+            ),
+            false
+         ),
+         'changes'   => iterator_to_array(
+            $change->getActiveChangesForItem(
+               get_class($item),
+               $item->getID()
+            ),
+            false
+         ),
+         'problems'  => iterator_to_array(
+            $problem->getActiveProblemsForItem(
+               get_class($item),
+               $item->getID()
+            ),
+            false
+         ),
       ];
 
-      $ticket = new Ticket();
-      $problem = new Problem();
-      $change = new Change();
-
-      $incidents = $ticket->getActiveTicketsForItem(
-         get_class($item),
-         $item->getID(),
-         Ticket::INCIDENT_TYPE
-      );
-
-      $requests = $ticket->getActiveTicketsForItem(
-         get_class($item),
-         $item->getID(),
-         Ticket::DEMAND_TYPE
-      );
-
-      $problems = $problem->getActiveProblemsForItem(
-         get_class($item),
-         $item->getID()
-      );
-
-      $changes = $change->getActiveChangesForItem(
-         get_class($item),
-         $item->getID()
-      );
-
-      // Warning and tooltip if at least one ticket is found
-      if (count($incidents) > 0 || count($requests) > 0 ||
-          count($problems) > 0 || count($changes) > 0) {
+      // Warning icon and tooltip if at least one ticket is found
+      if (count($newNode['incidents'] + $newNode['requests']
+              + $newNode['changes']   + $newNode['problems']) > 0) {
          $newNode['label'] .= ' \uf071';
          $newNode['title'] = __("Click to see ongoing tickets...");
-      }
-
-      // Store each request, incident and change details
-      foreach ($incidents as $incident) {
-         $newNode['incidents'][] = $incident;
-      }
-      foreach ($requests as $request) {
-         $newNode['requests'][] = $request;
-      }
-      foreach ($problems as $problem) {
-         $newNode['problems'][] = $problem;
-      }
-      foreach ($changes as $change) {
-         $newNode['changes'][] = $change;
       }
 
       // Insert the node
@@ -579,12 +564,11 @@ class Impact extends CommonDBRelation {
 
       // Just update the flag if the edge already exist
       if (isset($edges[$key])) {
-         $flag = $edges[$key]['flag'];
          $edges[$key]['flag'] = $edges[$key]['flag'] | $direction;
          return;
       }
 
-      // Add the new edge
+      // Assign 'from' and 'to' according to the direction
       switch ($direction) {
          case self::DIRECTION_FORWARD:
             $from = self::getNodeID($itemA);
@@ -596,6 +580,7 @@ class Impact extends CommonDBRelation {
             break;
       }
 
+      // Add the new edge
       $edges[$key] = [
          'id'        => $key,
          'from'      => $from,
@@ -640,7 +625,7 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Load the impact network html content
+    * Load the add node dialog
     *
     * @since 9.5
     */
@@ -650,7 +635,6 @@ class Impact extends CommonDBRelation {
       $rand = mt_rand();
 
       echo '<div id="addNodedialog" title="' . __('New asset') . '">';
-
       echo '<table class="tab_cadre_fixe">';
 
       // Item type field
@@ -683,7 +667,8 @@ class Impact extends CommonDBRelation {
             'multiple'        => 1,
             'admin'           => 1,
             'rand'            => $rand,
-            'myname'          => "item_id"
+            'myname'          => "item_id",
+            'test'            => "test"
          ]
       );
       echo "<span id='results'>\n";
@@ -786,16 +771,6 @@ class Impact extends CommonDBRelation {
    public function delete(array $input, $options = [], $history = true) {
       global $DB;
 
-      $var = [
-         'FROM'   => 'glpi_impacts',
-         'WHERE'  => [
-            'source_asset_type'     => $input['source_asset_type'],
-            'source_asset_id'       => $input['source_asset_id'],
-            'impacted_asset_type'   => $input['impacted_asset_type'],
-            'impacted_asset_id'     => $input['impacted_asset_id']
-         ]
-         ];
-
       // Check that the link exist
       $it = $DB->request([
          'FROM'   => 'glpi_impacts',
@@ -894,27 +869,27 @@ class Impact extends CommonDBRelation {
     */
    public static function getVisJSLocales() {
       $locales = [
-         'edit'   => __('Edit'),
-         'del'    => __('Delete selected'),
-         'back'   => __('Back'),
-         'addNode'   => __('Add Asset'),
-         'addEdge'   => __('Add Impact relation'),
-         'editNode'   => __('Edit Asset'),
-         'editEdge'   => __('Edit Impact relation'),
-         'addDescription'   => __('Click in an empty space to place a new asset.'),
-         'edgeDescription'   => __('Click on an asset and drag the link to another asset to connect them.'),
-         'editEdgeDescription'   => __('Click on the control points and drag them to a asset to connect to it.'),
-         'createEdgeError'   => __('Cannot link edges to a cluster.'),
-         'deleteClusterError'   => __('Clusters cannot be deleted.'),
-         'editClusterError'   => __('Clusters cannot be edited.'),
-         'duplicateAsset'   => __('This asset already exist.'),
-         'linkToSelf'   => __("Can't link an asset to itself."),
-         'duplicateEdge'   => __("An identical link already exist between theses two asset."),
-         'unexpectedError' => __("Unexpected error."),
-         'Incidents' => __("Incidents"),
-         'Requests' => __("Requests"),
-         'Changes' => __("Changes"),
-         'Problems' => __("Problems"),
+         'edit'                => __('Edit'),
+         'del'                 => __('Delete selected'),
+         'back'                => __('Back'),
+         'addNode'             => __('Add Asset'),
+         'addEdge'             => __('Add Impact relation'),
+         'editNode'            => __('Edit Asset'),
+         'editEdge'            => __('Edit Impact relation'),
+         'addDescription'      => __('Click in an empty space to place a new asset.'),
+         'edgeDescription'     => __('Click on an asset and drag the link to another asset to connect them.'),
+         'editEdgeDescription' => __('Click on the control points and drag them to a asset to connect to it.'),
+         'createEdgeError'     => __('Cannot link edges to a cluster.'),
+         'deleteClusterError'  => __('Clusters cannot be deleted.'),
+         'editClusterError'    => __('Clusters cannot be edited.'),
+         'duplicateAsset'      => __('This asset already exist.'),
+         'linkToSelf'          => __("Can't link an asset to itself."),
+         'duplicateEdge'       => __("An identical link already exist between theses two asset."),
+         'unexpectedError'     => __("Unexpected error."),
+         'Incidents'           => __("Incidents"),
+         'Requests'            => __("Requests"),
+         'Changes'             => __("Changes"),
+         'Problems'            => __("Problems"),
       ];
 
       return addslashes(json_encode($locales));

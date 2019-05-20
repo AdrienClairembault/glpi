@@ -200,9 +200,9 @@ function createNetwork () {
 function printTicketsDialog(targetNode) {
    var html = "";
 
-   html += listElements("Incidents", targetNode.incidents, "problem");
-   html += listElements("Requests", targetNode.requests, "problem");
-   html += listElements("Changes", targetNode.changes , "problem");
+   html += listElements("Incidents", targetNode.incidents, "ticket");
+   html += listElements("Requests", targetNode.requests, "ticket");
+   html += listElements("Changes", targetNode.changes , "change");
    html += listElements("Problems", targetNode.problems, "problem");
 
    return html;
@@ -239,19 +239,6 @@ function applyColors() {
          edge.flag = edge.flag - BACKWARD;
       }
 
-      // switch (edge.flag) {
-      //    case FORWARD:
-      //       color = IMPACT_COLOR;
-      //       break;
-      //    case BACKWARD:
-      //       color = DEPENDS_COLOR;
-      //       break;
-      //    case BOTH:
-      //       color = IMPACT_AND_DEPENDS_COLOR;
-      //       break;
-      //    default:
-      //       color = DEFAUT_COLOR;
-      // }
       color = window.colors[edge.flag];
 
       window.data.edges.update({
@@ -270,12 +257,12 @@ function hideDisabledNodes(direction) {
    window.data.nodes.get().forEach(function (node) {
       var visible = false;
 
-      if (direction == BOTH) {
-         // Show all the nodes, no need to check individualy
+      // Show all node if direction is BOTH, start node should always be visible
+      if (direction == BOTH || node.id == window.startNode) {
          visible = true;
       } else {
          window.data.edges.forEach(function(edge){
-            // For all edges linked to the current node
+            // Check that the edge is linked to the current node
             if (edge.to == node.id || edge.from == node.id) {
                // Check if the edge should be visible for the current direction
                if (edge.flag & direction) {
