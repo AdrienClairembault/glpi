@@ -1352,21 +1352,21 @@ class Html {
                      display: none;
                }
 
-               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(3), /* remove user and datemod */
-               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) th:nth-child(3), /* remove duedate th */
-               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) td:nth-child(4), /* remove duedate td */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(3), /* remove datemod */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(4), /* remove due dates */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(5), /* remove due dates */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) th:nth-of-type(2), /*  remove user th */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) td:nth-of-type(2), /* remove user td */
                form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(3), /* remove validation */
-               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(4), /* remove impact */
-               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(5), /* remove priority */
-               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(4) tr:nth-child(3), /* remove link tickets */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(4) th:nth-of-type(1), /*  remove impact th */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(4) td:nth-of-type(1), /*  remove impact td */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(5), /*  remove priority */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(4) tr:nth-child(3),  /* remove link tickets */
                #Ticket\\$2 #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(1) /* solution th */
                {
                      display:none;
                }
 
-               #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) th:nth-child(1) {
-                  width: 13%;
-               }
                #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) td:nth-child(2) {
                   width: 87%;
                }
