@@ -835,7 +835,7 @@ abstract class CommonITILObject extends CommonDBTM {
                                 && in_array($input['status'], $this->getNewStatusArray())))
                             && !$this->isStatusComputationBlocked($input)) {
                            if (in_array(self::ASSIGNED, array_keys($this->getAllStatusArray()))) {
-                              $input['status'] = self::ASSIGNED;
+                              // $input['status'] = self::ASSIGNED;
                            }
                         }
                      }

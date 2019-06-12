@@ -1338,6 +1338,42 @@ class Html {
          echo Html::script('lib/jqueryplugins/jquery-ui-scrollable-tabs/js/jquery.scrollabletab.js');
       }
 
+      if (isset($_SESSION['glpiactiveprofile'])
+         && $_SESSION['glpiactiveprofile']['interface'] == "helpdesk"
+         && strpos($_SERVER['REQUEST_URI'], "ticket.form.php") !== false) {
+
+         echo "
+            <style type='text/css'>
+               #ext-comp-1002__TicketValidation\\$1,
+               #ext-comp-1002__TicketTask\\$1,
+               #ext-comp-1002__Log\\$1,
+               #ext-comp-1002__Ticket\\$4,
+               #ext-comp-1002__-1 {
+                     display: none;
+               }
+
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(3), /* remove user and datemod */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) th:nth-child(3), /* remove duedate th */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) td:nth-child(4), /* remove duedate td */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(3), /* remove validation */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(4), /* remove impact */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(2) tr:nth-child(5), /* remove priority */
+               form[name=form_ticket] #tabsbody table.tab_cadre_fixe:nth-child(4) tr:nth-child(3), /* remove link tickets */
+               #Ticket\\$2 #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(1) /* solution th */
+               {
+                     display:none;
+               }
+
+               #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) th:nth-child(1) {
+                  width: 13%;
+               }
+               #tabsbody table.tab_cadre_fixe:nth-child(1) tr:nth-child(2) td:nth-child(2) {
+                  width: 87%;
+               }
+            </style>
+         ";
+      }
+
       // End of Head
       echo "</head>\n";
       self::glpi_flush();
@@ -1642,6 +1678,7 @@ class Html {
       }
       self::displayDebugInfos();
       self::loadJavascript();
+      echo '<img src="http://analyse.vinci-concessions.net/piwik.php?idsite=4&amp;rec=1" style="border:0" alt="" />';
       echo "</body></html>";
 
       if (!$keepDB) {
@@ -1821,6 +1858,7 @@ class Html {
          echo "</div>";
       }
       self::displayDebugInfos();
+      echo '<img src="http://analyse.vinci-concessions.net/piwik.php?idsite=4&amp;rec=1" style="border:0" alt="" />';
       echo "</body></html>";
       self::loadJavascript();
       closeDBConnections();
@@ -1883,6 +1921,7 @@ class Html {
 
          echo "<div id='footer-login'>" . self::getCopyrightMessage() . "</div>";
          self::loadJavascript();
+         echo '<img src="http://analyse.vinci-concessions.net/piwik.php?idsite=4&amp;rec=1" style="border:0" alt="" />';
          echo "</body></html>";
       }
       closeDBConnections();
@@ -1924,6 +1963,7 @@ class Html {
 
       // Print foot
       self::loadJavascript();
+      echo '<img src="http://analyse.vinci-concessions.net/piwik.php?idsite=4&amp;rec=1" style="border:0" alt="" />';
       echo "</body></html>";
    }
 

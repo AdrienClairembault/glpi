@@ -49,7 +49,7 @@ if (!defined('GLPI_DEMO_MODE')) {
    define('GLPI_DEMO_MODE', '0');
 }
 if (!defined('GLPI_USE_CSRF_CHECK')) {
-   define('GLPI_USE_CSRF_CHECK', '1');
+   define('GLPI_USE_CSRF_CHECK', '0');
 }
 define("GLPI_CSRF_EXPIRES", "7200");
 define("GLPI_CSRF_MAX_TOKENS", "100");

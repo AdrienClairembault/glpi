@@ -6923,6 +6923,9 @@ JAVASCRIPT;
 
          case self::CSV_OUTPUT : //CSV
             $out = "\"".self::csv_clean($value)."\"".$_SESSION["glpicsv_delimiter"];
+            if (strpos($_SERVER['HTTP_USER_AGENT'], "Windows") !== false) {
+               $out = utf8_decode($out);
+            }
             break;
 
          default :
@@ -6986,6 +6989,9 @@ JAVASCRIPT;
             $value = preg_replace('/'.self::LBHR.'/', '<hr>', $value);
             $value = Html::weblink_extract(Html::clean($value));
             $out   = "\"".self::csv_clean($value)."\"".$_SESSION["glpicsv_delimiter"];
+            if (strpos($_SERVER['HTTP_USER_AGENT'], "Windows") !== false) {
+               $out = utf8_decode($out);
+            }
             break;
 
          default :

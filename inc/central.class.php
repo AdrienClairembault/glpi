@@ -274,12 +274,14 @@ class Central extends CommonGLPI {
       echo "<table class='tab_cadre_central'>";
       echo "<tr class='noHover'><td class='top' width='50%'><table class='central'>";
       echo "<tr class='noHover'><td>";
+
+      if (Session::haveRight('ticket', Ticket::READGROUP)) {
+         Ticket::showCentralCount(false, true);
+         Ticket::showCentralList(0, "waiting", true);
+      }
       if ($showticket) {
          Ticket::showCentralList(0, "process", true);
          TicketTask::showCentralList(0, "todo", true);
-      }
-      if (Session::haveRight('ticket', Ticket::READGROUP)) {
-         Ticket::showCentralList(0, "waiting", true);
       }
       if ($showproblem) {
          Problem::showCentralList(0, "process", true);

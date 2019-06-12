@@ -1514,6 +1514,14 @@ class Ticket extends CommonITILObject {
          $this->fields['takeintoaccount_delay_stat'] = $this->computeTakeIntoAccountDelayStat();
       }
 
+      if ($this->fields['status'] === 'new') {
+         $this->updateInDB([
+            'id'     => $this->fields['id'],
+            'status' => 'assign'
+         ]);
+         $this->fields['status'] = 'assign';
+      }
+
       parent::pre_updateInDB();
 
    }
@@ -1961,9 +1969,9 @@ class Ticket extends CommonITILObject {
       if (((isset($input["_users_id_assign"])
            && ((!is_array($input['_users_id_assign']) &&  $input["_users_id_assign"] > 0)
                || is_array($input['_users_id_assign']) && count($input['_users_id_assign']) > 0))
-           || (isset($input["_groups_id_assign"])
-           && ((!is_array($input['_groups_id_assign']) && $input["_groups_id_assign"] > 0)
-               || is_array($input['_groups_id_assign']) && count($input['_groups_id_assign']) > 0))
+         //   || (isset($input["_groups_id_assign"])
+         //   && ((!is_array($input['_groups_id_assign']) && $input["_groups_id_assign"] > 0)
+         //       || is_array($input['_groups_id_assign']) && count($input['_groups_id_assign']) > 0))
            || (isset($input["_suppliers_id_assign"])
            && ((!is_array($input['_suppliers_id_assign']) && $input["_suppliers_id_assign"] > 0)
                || is_array($input['_suppliers_id_assign']) && count($input['_suppliers_id_assign']) > 0)))
@@ -3998,30 +4006,30 @@ class Ticket extends CommonITILObject {
                                   'on_change' => 'this.form.submit()']);
       echo "</td></tr>";
 
-      echo "<tr class='tab_bg_1'>";
-      echo "<td>".sprintf(__('%1$s%2$s'), __('Category'),
-                          $tt->getMandatoryMark('itilcategories_id'))."</td>";
-      echo "<td>";
+      // echo "<tr class='tab_bg_1'>";
+      // echo "<td>".sprintf(__('%1$s%2$s'), __('Category'),
+      //                     $tt->getMandatoryMark('itilcategories_id'))."</td>";
+      // echo "<td>";
 
-      $condition = ['is_helpdeskvisible' => 1];
-      switch ($options['type']) {
-         case self::DEMAND_TYPE :
-            $condition['is_request'] = 1;
-            break;
-         default: // self::INCIDENT_TYPE :
-            $condition['is_incident'] = 1;
-      }
-      $opt = ['value'     => $options['itilcategories_id'],
-              'condition' => $condition,
-              'entity'    => $_SESSION["glpiactive_entity"],
-              'on_change' => 'this.form.submit()'];
+      // $condition = ['is_helpdeskvisible' => 1];
+      // switch ($options['type']) {
+      //    case self::DEMAND_TYPE :
+      //       $condition['is_request'] = 1;
+      //       break;
+      //    default: // self::INCIDENT_TYPE :
+      //       $condition['is_incident'] = 1;
+      // }
+      // $opt = ['value'     => $options['itilcategories_id'],
+      //         'condition' => $condition,
+      //         'entity'    => $_SESSION["glpiactive_entity"],
+      //         'on_change' => 'this.form.submit()'];
 
-      if ($options['itilcategories_id'] && $tt->isMandatoryField("itilcategories_id")) {
-         $opt['display_emptychoice'] = false;
-      }
+      // if ($options['itilcategories_id'] && $tt->isMandatoryField("itilcategories_id")) {
+      //    $opt['display_emptychoice'] = false;
+      // }
 
-      ITILCategory::dropdown($opt);
-      echo "</td></tr>";
+      // ITILCategory::dropdown($opt);
+      // echo "</td></tr>";
 
       if ($CFG_GLPI['urgency_mask'] != (1<<3)) {
          if (!$tt->isHiddenField('urgency')) {
@@ -4034,21 +4042,21 @@ class Ticket extends CommonITILObject {
          }
       }
 
-      if (empty($delegating)
-          && NotificationTargetTicket::isAuthorMailingActivatedForHelpdesk()) {
-         echo "<tr class='tab_bg_1'>";
-         echo "<td>".__('Inform me about the actions taken')."</td>";
-         echo "<td>";
-         if ($options["_users_id_requester"] == 0) {
-            $options['_users_id_requester'] = Session::getLoginUserID();
-         }
-         $_POST['value']            = $options['_users_id_requester'];
-         $_POST['field']            = '_users_id_requester_notif';
-         $_POST['use_notification'] = $options['_users_id_requester_notif']['use_notification'];
-         include (GLPI_ROOT."/ajax/uemailUpdate.php");
+      // if (empty($delegating)
+      //     && NotificationTargetTicket::isAuthorMailingActivatedForHelpdesk()) {
+      //    echo "<tr class='tab_bg_1'>";
+      //    echo "<td>".__('Inform me about the actions taken')."</td>";
+      //    echo "<td>";
+      //    if ($options["_users_id_requester"] == 0) {
+      //       $options['_users_id_requester'] = Session::getLoginUserID();
+      //    }
+      //    $_POST['value']            = $options['_users_id_requester'];
+      //    $_POST['field']            = '_users_id_requester_notif';
+      //    $_POST['use_notification'] = $options['_users_id_requester_notif']['use_notification'];
+      //    include (GLPI_ROOT."/ajax/uemailUpdate.php");
 
-         echo "</td></tr>";
-      }
+      //    echo "</td></tr>";
+      // }
       if (($_SESSION["glpiactiveprofile"]["helpdesk_hardware"] != 0)
           && (count($_SESSION["glpiactiveprofile"]["helpdesk_item_type"]))) {
          if (!$tt->isHiddenField('items_id')) {
@@ -5870,7 +5878,7 @@ class Ticket extends CommonITILObject {
     *
     * @param $foruser boolean : only for current login user as requester (false by default)
    **/
-   static function showCentralCount($foruser = false) {
+   static function showCentralCount($foruser = false, $forgroup = false) {
       global $DB, $CFG_GLPI;
 
       // show a tab with count of jobs in the central and give link
@@ -5900,6 +5908,15 @@ class Ticket extends CommonITILObject {
                                AND `glpi_groups_tickets`.`type` = '".CommonITILActor::REQUESTER."')";
          }
       }
+      if ($forgroup) {
+         if (Session::haveRight("show_group_ticket", '1')
+            && isset($_SESSION["glpigroups"])
+            && count($_SESSION["glpigroups"])) {
+            $query .= " LEFT JOIN `glpi_groups_tickets`
+                         ON (`glpi_tickets`.`id` = `glpi_groups_tickets`.`tickets_id`
+                             AND `glpi_groups_tickets`.`type` = '".CommonITILActor::ASSIGN."')";
+         }
+      }
       $query .= getEntitiesRestrictRequest("WHERE", "glpi_tickets");
 
       if ($foruser) {
@@ -5914,6 +5931,14 @@ class Ticket extends CommonITILObject {
             $query .= " OR `glpi_groups_tickets`.`groups_id` IN (".$groups.") ";
          }
          $query.= ")";
+      }
+      if ($forgroup) {
+         if (Session::haveRight("show_group_ticket", '1')
+            && isset($_SESSION["glpigroups"])
+            && count($_SESSION["glpigroups"])) {
+            $groups = implode("','", $_SESSION['glpigroups']);
+            $query .= " AND `glpi_groups_tickets`.`groups_id` IN ('$groups') ";
+         }
       }
       $query_deleted = $query;
 
@@ -5948,6 +5973,13 @@ class Ticket extends CommonITILObject {
       $options['criteria'][0]['link']       = 'AND';
       $options['reset']         ='reset';
 
+      if ($forgroup) {
+            $options['contains'][0]   = 'notold';
+            $options['field'][1]      = 8;
+            $options['searchtype'][1] = 'equals';
+            $options['contains'][1]   = 'mygroups';
+            $options['link'][1]       = 'AND';
+      }
       echo "<table class='tab_cadrehov' >";
       echo "<tr class='noHover'><th colspan='2'>";
 

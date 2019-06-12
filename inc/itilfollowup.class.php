@@ -317,6 +317,7 @@ class ITILFollowup  extends CommonDBChild {
 
 
    function prepareInputForAdd($input) {
+      global $CFG_GLPI;
 
       $input["_job"] = new $input['itemtype']();
 
@@ -350,7 +351,9 @@ class ITILFollowup  extends CommonDBChild {
       unset($input["add_close"]);
 
       if (!isset($input["is_private"])) {
-         $input['is_private'] = 0;
+         $input['is_private'] = isset($_SESSION['glpifollowup_private']) ?
+            $_SESSION['glpifollowup_private'] :
+            $CFG_GLPI['glpifollowup_private'];
       }
 
       if (isset($input["add_reopen"])) {

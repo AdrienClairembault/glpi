@@ -944,7 +944,7 @@ class MailCollector  extends CommonDBTM {
 
       // See in title
       if (!isset($tkt['tickets_id'])
-          && preg_match('/\[.+#(\d+)\]/', $head['subject'], $match)) {
+          && preg_match('/\[.+?#(\d+)\]/', $head['subject'], $match)) {
          $tkt['tickets_id'] = intval($match[1]);
       }
 
