@@ -246,7 +246,7 @@ class Impact extends CommonDBRelation {
       HTML::showColorField("depends_color", [
          'value' => self::DEPENDS_COLOR
       ]);
-      echo "<label>&nbsp;" . __("Depends on the current item") . "</label>";
+      echo "<label>&nbsp;" . __("Depends") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "<tr>";
@@ -254,7 +254,7 @@ class Impact extends CommonDBRelation {
       HTML::showColorField("impact_color", [
          'value' => self::IMPACT_COLOR
       ]);
-      echo "<label>&nbsp;" . __("Impact the current item") . "</label>";
+      echo "<label>&nbsp;" . __("Impact") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "<tr>";
@@ -262,7 +262,7 @@ class Impact extends CommonDBRelation {
       HTML::showColorField("impact_and_depends_color", [
          'value' => self::IMPACT_AND_DEPENDS_COLOR
       ]);
-      echo "<label>&nbsp;" . __("Impact and depends on the current item") . "</label>";
+      echo "<label>&nbsp;" . __("Impact and depends") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "</table>";
