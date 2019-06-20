@@ -156,8 +156,6 @@ function createNetwork () {
 
    // Show list of ongoing item on click
    window.network.on("click", function (params) {
-      params.event = "[original event]";
-
       var targetNode = this.getNodeAt(params.pointer.DOM);
       if (targetNode == undefined) {
          if ($('#ticketsDialog').hasClass('ui-dialog-content')) {
@@ -170,12 +168,14 @@ function createNetwork () {
       if (targetNode.incidents.length > 0 || targetNode.requests.length > 0 ||
           targetNode.problems.length > 0 || targetNode.changes.length > 0
          ) {
-         var canvasPos = $('canvas')[0].getBoundingClientRect();
+
+         // TODO : this dialog should open where the cursor is
+         // not working since jquery-ui update
          $( "#ticketsDialog" ).dialog({
-            position:  [
-               params.pointer.DOM.x + canvasPos.x,
-               params.pointer.DOM.y + canvasPos.y
-            ],
+            position:  {
+               my: "center",
+               of: window
+            },
             width: 'auto',
             draggable: false,
             title: targetNode.label.substring(0, targetNode.label.length - 2),
