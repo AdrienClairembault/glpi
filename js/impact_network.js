@@ -172,10 +172,10 @@ function createNetwork () {
          // TODO : this dialog should open where the cursor is
          // not working since jquery-ui update
          $( "#ticketsDialog" ).dialog({
-            position:  {
-               my: "center",
-               of: window
-            },
+            // position:  {
+            //    my: "center",
+            //    of: params.event
+            // },
             width: 'auto',
             draggable: false,
             title: targetNode.label.substring(0, targetNode.label.length - 2),

@@ -69,26 +69,44 @@ class Impact extends CommonDBRelation {
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
       global $DB;
 
-      // Number of directs dependencies
-      $it = $DB->request([
-         'FROM'   => 'glpi_impacts',
-         'WHERE'  => [
-            'OR' => [
-               [
-                  'source_asset_type' => get_class($item),
-                  'source_asset_id'   => $item->getID(),
-               ],
-               [
-               'impacted_asset_type' => get_class($item),
-               'impacted_asset_id'   => $item->getID(),
-               ]
-            ]
-         ]
-      ]);
+      // GLPI core conf
+      $conf = Config::getConfigurationValues('core');
 
+      // Class of the current item
+      $class = get_class($item);
+
+      // List of classes that will display this tab
+      $assetClasses = $conf['impact_assets_list'];
+      $ITILClasses = ["Ticket", "Incident", "Problem", "Change"];
+
+      // Tab name
       $tabName = _n('Impact', 'Impacts', Session::getPluralNumber(), 'impacts');
 
-      return self::createTabEntry($tabName, count($it));
+      if (array_search($class, $assetClasses) !== false) {
+         // Asset : get number of directs dependencies
+         $it = $DB->request([
+            'FROM'   => 'glpi_impacts',
+            'WHERE'  => [
+               'OR' => [
+                  [
+                     'source_asset_type' => get_class($item),
+                     'source_asset_id'   => $item->getID(),
+                  ],
+                  [
+                  'impacted_asset_type' => get_class($item),
+                  'impacted_asset_id'   => $item->getID(),
+                  ]
+               ]
+            ]
+         ]);
+         $total = count($it);
+
+      } else if (array_search($class, $ITILClasses) !== false) {
+         // ITIL object : no count
+         $total = 0;
+      }
+
+      return self::createTabEntry($tabName, $total);
    }
 
    /**
@@ -120,8 +138,22 @@ class Impact extends CommonDBRelation {
          return false;
       }
 
-      // Show the impact network
-      self::showImpactNetwork($item);
+      $class = get_class($item);
+      $conf = Config::getConfigurationValues('core');
+
+      // List of classes that will display this tab
+      $assetClasses = $conf['impact_assets_list'];
+      $ITILClasses = ["Ticket", "Incident", "Problem", "Change"];
+
+      if (array_search($class, $assetClasses) !== false) {
+         // Asset : show the impact network
+         self::prepareImpactNetwork();
+         self::buildNetwork($item);
+      } else if (array_search($class, $ITILClasses) !== false) {
+         // ITIL object : show asset selection form
+         self::printAssetSelectionForm($item->getLinkedItems());
+         self::prepareImpactNetwork();
+      }
 
       return true;
    }
@@ -156,6 +188,61 @@ class Impact extends CommonDBRelation {
             }
          </style>
       ';
+   }
+
+   /**
+    * Print the asset selection form used in the impact tab of ITIL objects
+    *
+    * @since 9.5
+    */
+   public static function printAssetSelectionForm($items) {
+      // prepare values
+      $values = [];
+      $values['default'] = Dropdown::EMPTY_VALUE;
+
+      foreach ($items as $item) {
+         // Add itemtype if not found yet
+         $itemTypeLabel = __($item['itemtype']);
+         if (!isset($values[$itemTypeLabel])) {
+            $values[$itemTypeLabel] = [];
+         }
+
+         $key = $item['itemtype'] . "::" . $item['items_id'];
+         $values[$itemTypeLabel][$key] = $item['name'];
+         // $values[$key] = $item['name'];
+      }
+
+      Dropdown::showFromArray("impact_assets_selection_dropdown", $values);
+
+      // Form interaction
+      echo HTML::scriptBlock('
+         var selector = "select[name=impact_assets_selection_dropdown]";
+
+         $(selector).change(function(){
+            var value = $(selector + " option:selected").val();
+
+            // Ignore default value (Dropdown::EMPTY_VALUE)
+            if (value == "default") {
+               return;
+            }
+
+            values = value.split("::");
+
+            $.ajax({
+               type: "POST",
+               url: "../ajax/impact.php",
+               data: {
+                  itemType:   values[0],
+                  itemID:     values[1],
+               },
+               success: function(data, textStatus, jqXHR) {
+                  window.data = data;
+                  initImpactNetwork(glpiLocales, value);
+               },
+               dataType: "json"
+            });
+         });
+      ');
    }
 
    /**
@@ -599,27 +686,17 @@ class Impact extends CommonDBRelation {
     * @param array $edges  Edges of the graph
     */
    public static function buildNetwork(CommonDBTM $item) {
-      // Load script
-      echo HTML::script("js/impact_network.js");
+      // // Load script
+      // echo HTML::script("js/impact_network.js");
 
       // Get needed var from php to init the network
-      $locales       = self::getVisJSLocales();
+     
       $currentItem   = self::getNodeID($item);
 
       $js = "
-         // Shared const
-         var FORWARD  = " . self::DIRECTION_FORWARD . ";
-         var BACKWARD = " . self::DIRECTION_BACKWARD . ";
-         var BOTH     = " . self::DIRECTION_BOTH . ";
-
-         var IMPACT_COLOR             = '" . self::IMPACT_COLOR . "';
-         var DEPENDS_COLOR            = '" . self::DEPENDS_COLOR . "';
-         var IMPACT_AND_DEPENDS_COLOR = '" . self::IMPACT_AND_DEPENDS_COLOR . "';
-
-         // Init network
-         var glpiLocales = '$locales';
          var currentItem = '$currentItem';
-         initImpactNetwork(glpiLocales, currentItem);";
+         initImpactNetwork(glpiLocales, currentItem);
+      ";
 
       echo HTML::scriptBlock($js);
    }
@@ -683,22 +760,41 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Show the impact network for a specified item
+    * Prepare the impact network
     *
     * @since 9.5
     *
     * @param CommonDBTM $item The specified item
     */
-   public static function showImpactNetwork(CommonDBTM $item) {
+   public static function prepareImpactNetwork() {
 
-      // Load the required elements
+      // Load requirements
       self::loadVisJS();
       self::loadNetworkContainerStyle();
       self::printImpactNetworkContainer();
       self::printAddNodeDialog();
 
-      // Start the network
-      self::buildNetwork($item);
+      $locales = self::getVisJSLocales();
+
+      // Get var from server side
+      $js = "
+         // Shared const
+         var FORWARD  = " . self::DIRECTION_FORWARD . ";
+         var BACKWARD = " . self::DIRECTION_BACKWARD . ";
+         var BOTH     = " . self::DIRECTION_BOTH . ";
+
+         var IMPACT_COLOR             = '" . self::IMPACT_COLOR . "';
+         var DEPENDS_COLOR            = '" . self::DEPENDS_COLOR . "';
+         var IMPACT_AND_DEPENDS_COLOR = '" . self::IMPACT_AND_DEPENDS_COLOR . "';
+
+         // Init network
+         var glpiLocales = '$locales';
+      ";
+
+      echo HTML::scriptBlock($js);
+
+      // Print impact script
+      echo HTML::script("js/impact_network.js");
    }
 
    /**

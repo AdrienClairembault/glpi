@@ -868,10 +868,18 @@ class Ticket extends CommonITILObject {
 
    function defineTabs($options = []) {
       $ong = [];
+      $conf = Config::getConfigurationValues("core");
+
       $this->defineDefaultObjectTabs($ong, $options);
       $this->addStandardTab('TicketValidation', $ong, $options);
       $this->addStandardTab('KnowbaseItem_Item', $ong, $options);
       $this->addStandardTab('Item_Ticket', $ong, $options);
+
+      // Show impact if enabled on at least one item
+      if (count($conf['impact_assets_list'])) {
+         $this->addStandardTab('Impact', $ong, $options);
+      }
+
       $this->addStandardTab('TicketCost', $ong, $options);
       $this->addStandardTab('Itil_Project', $ong, $options);
       $this->addStandardTab('ProjectTask_Ticket', $ong, $options);
@@ -7121,5 +7129,39 @@ class Ticket extends CommonITILObject {
       if (count($calendars)) {
          $input['_date_creation_calendars_id'] = $calendars;
       }
+   }
+
+   /**
+    * Get assets linked to this object
+    *
+    * @since 9.5
+    *
+    * @param bool $addNames Insert asset names
+    *
+    * @return array
+    */
+   public function getLinkedItems(bool $addNames = true) {
+      global $DB;
+
+      $assets = $DB->request([
+         'SELECT' => ["id", "itemtype", "items_id"],
+         'FROM'   => "glpi_items_tickets",
+         'WHERE'  => ["tickets_id" => $this->getID()]
+      ]);
+
+      $assets = iterator_to_array($assets);
+
+      if ($addNames) {
+         foreach ($assets as $key => $asset) {
+            /** @var CommonDBTM $item */
+            $item = new $asset['itemtype'];
+            $item->getFromDB($asset['id']);
+
+            // Add name
+            $assets[$key]['name'] = $item->fields['name'];
+         }
+      }
+
+      return $assets;
    }
 }

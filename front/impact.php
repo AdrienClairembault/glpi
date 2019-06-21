@@ -43,7 +43,8 @@ if (!empty($itemType) && !empty($itemID) &&
 
    $item = new $itemType;
    $item->getFromDB($itemID);
-   Impact::showImpactNetwork($item);
+   Impact::prepareImpactNetwork();
+   Impact::buildNetwork($item);
 }
 printForm();
 Html::footer();
