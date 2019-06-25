@@ -31,7 +31,7 @@ if (isset($_POST['save']) && isset($_POST['impacts'])) {
             break;
 
          default:
-            continue;
+            break;
       }
    }
 }

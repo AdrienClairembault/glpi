@@ -66,7 +66,8 @@ class Impact extends CommonDBRelation {
       }
 
       return self::createTabEntry(
-         _n('Impact', 'Impacts', Session::getPluralNumber()),
+         // TODO remove trailing space (cannot do it now due to pot plural form incompatibility)
+         _n('Impact ', 'Impacts ', Session::getPluralNumber()),
          $total
       );
    }
@@ -844,7 +845,7 @@ class Impact extends CommonDBRelation {
 
       try {
          // Check this asset type is enabled
-         if (in_array($itemType, $CFG_GLPI['impact_assets_list'])) {
+         if (!in_array($itemType, $CFG_GLPI['impact_assets_list'])) {
             return false;
          }
 
