@@ -980,7 +980,7 @@ class Impact extends CommonDBRelation {
          'createEdgeError'     => __('Cannot link edges to a cluster.'),
          'deleteClusterError'  => __('Clusters cannot be deleted.'),
          'editClusterError'    => __('Clusters cannot be edited.'),
-         'duplicateAsset'      => __('This asset already exist.'),
+         'duplicateAsset'      => __('This asset already exists.'),
          'linkToSelf'          => __("Can't link an asset to itself."),
          'duplicateEdge'       => __("An identical link already exist between theses two asset."),
          'unexpectedError'     => __("Unexpected error."),
