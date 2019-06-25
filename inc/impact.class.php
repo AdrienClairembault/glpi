@@ -9,6 +9,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class Impact extends CommonDBRelation {
 
+   static public $itemtype_1          = 'itemtype_source';
+   static public $items_id_1          = 'items_id_source';
+
+   static public $itemtype_2          = 'itemtype_impacted';
+   static public $items_id_2          = 'items_id_impacted';
+
    // Constants used to express the direction of a graph
    const DIRECTION_FORWARD    = 0b01;
    const DIRECTION_BACKWARD   = 0b10;
@@ -21,18 +27,6 @@ class Impact extends CommonDBRelation {
 
    public static function getTypeName($nb = 0) {
       return _n('Asset impact', 'Asset impacts', $nb);
-   }
-
-   public static function canView() {
-      return true;
-   }
-
-   public static function canUpdate() {
-      return true;
-   }
-
-   public static function canCreate() {
-      return true;
    }
 
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
@@ -48,12 +42,12 @@ class Impact extends CommonDBRelation {
             'WHERE'  => [
                'OR' => [
                   [
-                     'source_asset_type' => get_class($item),
-                     'source_asset_id'   => $item->getID(),
+                     'itemtype_source' => get_class($item),
+                     'items_id_source'   => $item->getID(),
                   ],
                   [
-                     'impacted_asset_type' => get_class($item),
-                     'impacted_asset_id'   => $item->getID(),
+                     'itemtype_impacted' => get_class($item),
+                     'items_id_impacted'   => $item->getID(),
                   ]
                ]
             ]
@@ -148,6 +142,9 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     */
    public static function printAssetSelectionForm($items) {
+
+      global $CFG_GLPI;
+
       // prepare values
       $values = [];
       $values['default'] = Dropdown::EMPTY_VALUE;
@@ -167,31 +164,33 @@ class Impact extends CommonDBRelation {
       Dropdown::showFromArray("impact_assets_selection_dropdown", $values);
 
       // Form interaction
-      echo HTML::scriptBlock('
-         var selector = "select[name=impact_assets_selection_dropdown]";
+      echo Html::scriptBlock('
+         $(function() {
+            var selector = "select[name=impact_assets_selection_dropdown]";
 
-         $(selector).change(function(){
-            var value = $(selector + " option:selected").val();
+            $(selector).change(function(){
+               var value = $(selector + " option:selected").val();
 
-            // Ignore default value (Dropdown::EMPTY_VALUE)
-            if (value == "default") {
-               return;
-            }
+               // Ignore default value (Dropdown::EMPTY_VALUE)
+               if (value == "default") {
+                  return;
+               }
 
-            values = value.split("::");
+               values = value.split("::");
 
-            $.ajax({
-               type: "POST",
-               url: CFG_GLPI.root_doc + "/ajax/impact.php",
-               data: {
-                  itemType:   values[0],
-                  itemID:     values[1],
-               },
-               success: function(data, textStatus, jqXHR) {
-                  window.data = data;
-                  initImpactNetwork(glpiLocales, value);
-               },
-               dataType: "json"
+               $.ajax({
+                  type: "POST",
+                  url: "'. $CFG_GLPI['root_doc'] . '/ajax/impact.php",
+                  data: {
+                     itemType:   values[0],
+                     itemID:     values[1],
+                  },
+                  success: function(data, textStatus, jqXHR) {
+                     window.data = data;
+                     initImpactNetwork(glpiLocales, value);
+                  },
+                  dataType: "json"
+               });
             });
          });
       ');
@@ -237,7 +236,7 @@ class Impact extends CommonDBRelation {
       echo Html::input("impacts", [
          'type' => 'hidden'
       ]);
-      HTML::closeForm();
+      Html::closeForm();
    }
 
    /**
@@ -282,7 +281,7 @@ class Impact extends CommonDBRelation {
       echo "<table class='tab_cadre_fixe'>";
       echo "<tr>";
       echo "<td>";
-      HTML::showColorField("depends_color", [
+      Html::showColorField("depends_color", [
          'value' => self::DEPENDS_COLOR
       ]);
       echo "<label>&nbsp;" . __("Depends") . "</label>";
@@ -290,7 +289,7 @@ class Impact extends CommonDBRelation {
       echo "</tr>";
       echo "<tr>";
       echo "<td>";
-      HTML::showColorField("impact_color", [
+      Html::showColorField("impact_color", [
          'value' => self::IMPACT_COLOR
       ]);
       echo "<label>&nbsp;" . __("Impact") . "</label>";
@@ -298,7 +297,7 @@ class Impact extends CommonDBRelation {
       echo "</tr>";
       echo "<tr>";
       echo "<td>";
-      HTML::showColorField("impact_and_depends_color", [
+      Html::showColorField("impact_and_depends_color", [
          'value' => self::IMPACT_AND_DEPENDS_COLOR
       ]);
       echo "<label>&nbsp;" . __("Impact and depends") . "</label>";
@@ -344,45 +343,47 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     */
    public static function printOptionFormInteractions() {
-      echo HTML::scriptBlock("
-         // Send data as JSON on submit
-         $('form[name=form_impact_network]').on('submit', function(event) {
-            $('input[name=impacts]').val(JSON.stringify(delta));
-         });
+      echo Html::scriptBlock("
+         $(function() {
+            // Send data as JSON on submit
+            $('form[name=form_impact_network]').on('submit', function(event) {
+               $('input[name=impacts]').val(JSON.stringify(delta));
+            });
 
-         // Update the graph direction
-         $('#showDepends, #showImpacted').on('change', function () {
-            var showDepends   = $('#showDepends').prop('checked');
-            var showImpact    = $('#showImpacted').prop('checked');
-            var direction     = 0;
+            // Update the graph direction
+            $('#showDepends, #showImpacted').on('change', function () {
+               var showDepends   = $('#showDepends').prop('checked');
+               var showImpact    = $('#showImpacted').prop('checked');
+               var direction     = 0;
 
-            if (showDepends && showImpact) {
-               direction = " . self::DIRECTION_BOTH . ";
-            } else if (!showDepends && showImpact) {
-               direction = " . self::DIRECTION_FORWARD . ";
-            } else if (showDepends && !showImpact) {
-               direction = " . self::DIRECTION_BACKWARD . ";
-            }
+               if (showDepends && showImpact) {
+                  direction = " . self::DIRECTION_BOTH . ";
+               } else if (!showDepends && showImpact) {
+                  direction = " . self::DIRECTION_FORWARD . ";
+               } else if (showDepends && !showImpact) {
+                  direction = " . self::DIRECTION_BACKWARD . ";
+               }
 
-            hideDisabledNodes(direction);
-         });
+               hideDisabledNodes(direction);
+            });
 
-         // Update graph colors
-         $('input[name=depends_color]').change(function(){
-            setColor(BACKWARD, $('input[name=depends_color]').val());
-         });
-         $('input[name=impact_color]').change(function(){
-            setColor(FORWARD, $('input[name=impact_color]').val());
-         });
-         $('input[name=impact_and_depends_color]').change(function(){
-            setColor(BOTH, $('input[name=impact_and_depends_color]').val());
-         });
+            // Update graph colors
+            $('input[name=depends_color]').change(function(){
+               setColor(BACKWARD, $('input[name=depends_color]').val());
+            });
+            $('input[name=impact_color]').change(function(){
+               setColor(FORWARD, $('input[name=impact_color]').val());
+            });
+            $('input[name=impact_and_depends_color]').change(function(){
+               setColor(BOTH, $('input[name=impact_and_depends_color]').val());
+            });
 
-         // Export graph to png
-         $('#export_network').on('click', function (e) {
-            var format = $('select[name=\"impact_format\"] option:selected').val();
-            $('#export_link').prop('download', 'impact.' + format);
-            exportCanvas(format);
+            // Export graph to png
+            $('#export_network').on('click', function (e) {
+               var format = $('select[name=\"impact_format\"] option:selected').val();
+               $('#export_link').prop('download', 'impact.' + format);
+               exportCanvas(format);
+            });
          });
       ");
    }
@@ -455,12 +456,12 @@ class Impact extends CommonDBRelation {
       // exploring the graph
       switch ($direction) {
          case self::DIRECTION_BACKWARD:
-            $source = "source_asset";
-            $target = "impacted_asset";
+            $source = "source";
+            $target = "impacted";
             break;
          case self::DIRECTION_FORWARD:
-            $source = "impacted_asset";
-            $target = "source_asset";
+            $source = "impacted";
+            $target = "source";
             break;
       }
 
@@ -468,8 +469,8 @@ class Impact extends CommonDBRelation {
       $relations = $DB->request([
          'FROM'   => 'glpi_impacts',
          'WHERE'  => [
-            $target . '_type'  => get_class($node),
-            $target . '_id'    => $node->getID()
+            'itemtype_' . $target => get_class($node),
+            'items_id_' . $target => $node->getID()
          ]
       ]);
 
@@ -480,8 +481,8 @@ class Impact extends CommonDBRelation {
 
       foreach ($relations as $relatedItem) {
          // Add the related node
-         $relatedNode = new $relatedItem[$source . '_type'];
-         $relatedNode->getFromDB($relatedItem[$source . '_id']);
+         $relatedNode = new $relatedItem['itemtype_' . $source];
+         $relatedNode->getFromDB($relatedItem['items_id_' . $source]);
          self::addNode($nodes, $relatedNode);
 
          // Add or update the relation on the graph
@@ -640,18 +641,20 @@ class Impact extends CommonDBRelation {
     */
    public static function buildNetwork(CommonDBTM $item) {
       // // Load script
-      // echo HTML::script("js/impact_network.js");
+      // echo Html::script("js/impact_network.js");
 
       // Get needed var from php to init the network
 
       $currentItem   = self::getNodeID($item);
 
       $js = "
-         var currentItem = '$currentItem';
-         initImpactNetwork(glpiLocales, currentItem);
+         $(function() {
+            var currentItem = '$currentItem';
+            initImpactNetwork(glpiLocales, currentItem);
+         });
       ";
 
-      echo HTML::scriptBlock($js);
+      echo Html::scriptBlock($js);
    }
 
    /**
@@ -742,10 +745,10 @@ class Impact extends CommonDBRelation {
          var glpiLocales = '$locales';
       ";
 
-      echo HTML::scriptBlock($js);
+      echo Html::scriptBlock($js);
 
       // Print impact script
-      echo HTML::script("js/impact_network.js");
+      echo Html::script("js/impact_network.js");
    }
 
    /**
@@ -762,10 +765,10 @@ class Impact extends CommonDBRelation {
 
       // Check that mandatory values are set
       $required = [
-         "source_asset_type",
-         "source_asset_id",
-         "impacted_asset_type",
-         "impacted_asset_id"
+         "itemtype_source",
+         "items_id_source",
+         "itemtype_impacted",
+         "items_id_impacted"
       ];
 
       if (array_diff($required, array_keys($input))) {
@@ -773,8 +776,8 @@ class Impact extends CommonDBRelation {
       }
 
       // Check that source and impacted are different items
-      if ($input['source_asset_type'] == $input['impacted_asset_type'] &&
-          $input['source_asset_id'] == $input['impacted_asset_id']) {
+      if ($input['itemtype_source'] == $input['itemtype_impacted'] &&
+          $input['items_id_source'] == $input['items_id_impacted']) {
          return false;
       }
 
@@ -782,10 +785,10 @@ class Impact extends CommonDBRelation {
       $it = $DB->request([
          'FROM'   => 'glpi_impacts',
          'WHERE'  => [
-            'source_asset_type'     => $input['source_asset_type'],
-            'source_asset_id'       => $input['source_asset_id'],
-            'impacted_asset_type'   => $input['impacted_asset_type'],
-            'impacted_asset_id'     => $input['impacted_asset_id']
+            'itemtype_source'   => $input['itemtype_source'],
+            'items_id_source'   => $input['items_id_source'],
+            'itemtype_impacted' => $input['itemtype_impacted'],
+            'items_id_impacted' => $input['items_id_impacted']
          ]
       ]);
 
@@ -795,11 +798,11 @@ class Impact extends CommonDBRelation {
 
       // Check if source and impacted are valid objets
       if (!self::assetExist(
-            $input['source_asset_type'],
-            $input['source_asset_id']) ||
+            $input['itemtype_source'],
+            $input['items_id_source']) ||
          !self::assetExist(
-            $input['impacted_asset_type'],
-            $input['impacted_asset_id'])) {
+            $input['itemtype_impacted'],
+            $input['items_id_impacted'])) {
          return false;
       }
 
@@ -822,10 +825,10 @@ class Impact extends CommonDBRelation {
       $it = $DB->request([
          'FROM'   => 'glpi_impacts',
          'WHERE'  => [
-            'source_asset_type'     => $input['source_asset_type'],
-            'source_asset_id'       => $input['source_asset_id'],
-            'impacted_asset_type'   => $input['impacted_asset_type'],
-            'impacted_asset_id'     => $input['impacted_asset_id']
+            'itemtype_source'   => $input['itemtype_source'],
+            'items_id_source'   => $input['items_id_source'],
+            'itemtype_impacted' => $input['itemtype_impacted'],
+            'items_id_impacted' => $input['items_id_impacted']
          ]
       ]);
 

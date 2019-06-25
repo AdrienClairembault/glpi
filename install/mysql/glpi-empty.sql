@@ -1386,19 +1386,19 @@ INSERT INTO `glpi_configs` VALUES ('210','core','impact_assets_list','[]');
 
 CREATE TABLE `glpi_impacts` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
-	`source_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
-	`source_asset_id` INT(11) NOT NULL DEFAULT '0',
-	`impacted_asset_type` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
-	`impacted_asset_id` INT(11) NOT NULL DEFAULT '0',
+	`itemtype_source` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`items_id_source` INT(11) NOT NULL DEFAULT '0',
+	`itemtype_impacted` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`items_id_impacted` INT(11) NOT NULL DEFAULT '0',
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `unicity` (
-    `source_asset_type`,
-    `source_asset_id`,
-    `impacted_asset_type`,
-    `impacted_asset_id`
+    `itemtype_source`,
+    `items_id_source`,
+    `itemtype_impacted`,
+    `items_id_impacted`
   ),
-	KEY `source_asset` (`source_asset_type`, `source_asset_id`),
-	KEY `impacted_asset` (`impacted_asset_type`, `impacted_asset_id`)
+	KEY `source_asset` (`itemtype_source`, `items_id_source`),
+	KEY `impacted_asset` (`itemtype_impacted`, `items_id_impacted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 ### Dump table glpi_consumableitems

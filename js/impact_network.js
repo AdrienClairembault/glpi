@@ -367,10 +367,10 @@ function updateDelta (action, edge) {
 
    window.delta[key] = {
       action:              action,
-      source_asset_type:   source[0],
-      source_asset_id:     source[1],
-      impacted_asset_type: impacted[0],
-      impacted_asset_id:   impacted[1]
+      itemtype_source:   source[0],
+      items_id_source:     source[1],
+      itemtype_impacted: impacted[0],
+      items_id_impacted:   impacted[1]
    };
 }
 
