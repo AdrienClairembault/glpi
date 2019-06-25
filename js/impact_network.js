@@ -29,8 +29,8 @@
  * ---------------------------------------------------------------------
  */
 
-const NODE = 1;
-const EDGE = 2;
+var NODE = 1;
+var EDGE = 2;
 
 // Start impact network
 function initImpactNetwork (glpiLocales, startNode) {
