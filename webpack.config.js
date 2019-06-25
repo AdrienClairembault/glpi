@@ -84,6 +84,7 @@ var libsConfig = {
                     path.resolve(__dirname, 'node_modules/gridstack'),
                     path.resolve(__dirname, 'node_modules/jstree'),
                     path.resolve(__dirname, 'node_modules/spectrum-colorpicker'),
+                    path.resolve(__dirname, 'node_modules/vis'),
                 ],
                 use: ['script-loader'],
             },

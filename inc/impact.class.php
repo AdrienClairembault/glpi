@@ -147,10 +147,12 @@ class Impact extends CommonDBRelation {
 
       if (array_search($class, $assetClasses) !== false) {
          // Asset : show the impact network
+         self::loadVisJS();
          self::prepareImpactNetwork();
          self::buildNetwork($item);
       } else if (array_search($class, $ITILClasses) !== false) {
          // ITIL object : show asset selection form
+         self::loadVisJS();
          self::printAssetSelectionForm($item->getLinkedItems());
          self::prepareImpactNetwork();
       }
@@ -164,10 +166,11 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     */
    public static function loadVisJS() {
-      $baseURL = "lib/vis";
 
-      echo HTML::script("$baseURL/vis.min.js", [], false);
-      echo HTML::css("$baseURL/vis.min.css", [], false);
+      echo Html::css('public/lib/spectrum-colorpicker.css');
+      echo Html::script("public/lib/spectrum-colorpicker.js");
+      echo Html::css('public/lib/vis.css');
+      echo Html::script("public/lib/vis.js");
    }
 
    /**
@@ -690,7 +693,7 @@ class Impact extends CommonDBRelation {
       // echo HTML::script("js/impact_network.js");
 
       // Get needed var from php to init the network
-     
+
       $currentItem   = self::getNodeID($item);
 
       $js = "
@@ -769,7 +772,6 @@ class Impact extends CommonDBRelation {
    public static function prepareImpactNetwork() {
 
       // Load requirements
-      self::loadVisJS();
       self::loadNetworkContainerStyle();
       self::printImpactNetworkContainer();
       self::printAddNodeDialog();

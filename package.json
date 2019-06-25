@@ -40,7 +40,8 @@
         "spin.js": "^2.3.2",
         "tinymce": "^4.9.4",
         "tinymce-i18n": "^19.5.15",
-        "unorm": "^1.5.0"
+        "unorm": "^1.5.0",
+        "vis": "^4.21.0"
     },
     "scripts": {
         "build": "webpack --config webpack.config.js --mode=production",

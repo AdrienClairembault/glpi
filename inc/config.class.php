@@ -642,7 +642,7 @@ class Config extends CommonDBTM {
          'impact_assets_list',
          $this->getAllAssetList(),
          [
-            'values'   => $enabled,
+            'values'   => $enabled ? $enabled : [],
             'width'    => '100%',
             'multiple' => true
          ]

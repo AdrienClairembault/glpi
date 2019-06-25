@@ -1285,6 +1285,11 @@ class Html {
             echo Html::css('public/lib/codemirror.css');
             Html::requireJs('codemirror');
          }
+
+         if (in_array('vis', $jslibs)) {
+            echo Html::css('public/lib/vis.css');
+            Html::requireJs('vis');
+         }
       }
 
       if (Session::getCurrentInterface() == "helpdesk") {
@@ -5935,6 +5940,9 @@ class Html {
             break;
          case 'codemirror':
             $_SESSION['glpi_js_toload'][$name][] = 'public/lib/codemirror.js';
+            break;
+         case 'vis':
+            $_SESSION['glpi_js_toload'][$name][] = 'public/lib/vis.js';
             break;
          default:
             $found = false;
