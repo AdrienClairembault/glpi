@@ -533,6 +533,7 @@ class Impact extends CommonDBRelation {
          'label'  => $item->fields['name'],
          'shape'  => "image",
          'image'  => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
+         // 'size'   => '22',
          'font'   => [
             'multi' => 'html',
             'face'  => 'FontAwesome',

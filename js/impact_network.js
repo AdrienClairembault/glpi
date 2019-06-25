@@ -68,6 +68,11 @@ function initImpactNetwork (glpiLocales, startNode) {
    window.colors[BACKWARD]  = DEPENDS_COLOR;
    window.colors[BOTH]      = IMPACT_AND_DEPENDS_COLOR;
 
+   // Store if the different direction of the graph should be colorized
+   window.visibility = {};
+   window.visibility[FORWARD] = true;
+   window.visibility[BACKWARD] = true;
+
    // Get start node type and id
    var startNodeDetails = window.startNode.split('::');
 
@@ -82,9 +87,56 @@ function initImpactNetwork (glpiLocales, startNode) {
       success: function(data, textStatus, jqXHR) {
          window.data = data;
          createNetwork();
+         addCustomOptions();
       },
       dataType: "json"
    });
+}
+
+function addCustomOptions() {
+   // Custom button 1 : Toggle depends div
+   var toggleDependsDiv =
+      '<div id="toggleDependsDiv" class="vis-edit-mode" style="display: block; left: 80px">' +
+      '   <div class="vis-button vis-edit vis-edit-mode" style="touch-action: pan-y; -moz-user-select: none;">' +
+      '      <div class="vis-label">Toggle depends</div>' +
+      '   </div>' +
+      '</div>'
+   ;
+
+   $("div.vis-edit-mode").eq(0).after(toggleDependsDiv);
+   $("#toggleDependsDiv").click(function() {
+      window.visibility[FORWARD] = !window.visibility[FORWARD];
+      updateVisibility();
+   });
+
+   // Custom button 1 : Toggle depends div
+   var toggleImpactDiv =
+      '<div id="toggleImpactDiv" class="vis-edit-mode" style="display: block; left: 229px">' +
+      '   <div class="vis-button vis-edit vis-edit-mode" style="touch-action: pan-y; -moz-user-select: none;">' +
+      '      <div class="vis-label">Toggle impact</div>' +
+      '   </div>' +
+      '</div>'
+   ;
+
+   $("div.vis-edit-mode").eq(0).after(toggleImpactDiv);
+   $("#toggleImpactDiv").click(function() {
+      window.visibility[BACKWARD] = !window.visibility[BACKWARD];
+      updateVisibility();
+   });
+}
+
+function updateVisibility() {
+   if (window.visibility[FORWARD] && window.visibility[BACKWARD]) {
+      direction = BOTH;
+   } else if (!window.visibility[FORWARD] && window.visibility[BACKWARD]) {
+      direction = FORWARD;
+   } else if (window.visibility[FORWARD] && !window.visibility[BACKWARD]) {
+      direction = BACKWARD;
+   } else {
+      direction = 0;
+   }
+
+   hideDisabledNodes(direction);
 }
 
 // Create the vis.js network
@@ -130,6 +182,11 @@ function createNetwork () {
       // Enter edit mode
       if (!window.editMode && $(".vis-close:visible").length == 1) {
          window.editMode = true;
+
+         // Hide custom buttons
+         $("#toggleDependsDiv").hide();
+         $("#toggleImpactDiv").hide();
+
          // Force total visibility
          if (!$('#showDepends').prop('checked')) {
             $('#showDepends').prop('checked', true);
@@ -146,6 +203,11 @@ function createNetwork () {
       // Exit edit mode
       else if (window.editMode && $(".vis-close:visible").length == 0) {
          window.editMode = false;
+
+         // Show custom buttons
+         $("#toggleDependsDiv").show();
+         $("#toggleImpactDiv").show();
+
          // Enable visibility changes
          $('#showDepends').prop('disabled', false);
          $('#showImpacted').prop('disabled', false);
