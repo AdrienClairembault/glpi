@@ -1292,7 +1292,7 @@ class Change extends CommonITILObject {
 
       $assets = $DB->request([
          'SELECT' => ["id", "itemtype", "items_id"],
-         'FROM'   => "glpi_items_changes",
+         'FROM'   => "glpi_changes_items",
          'WHERE'  => ["changes_id" => $this->getID()]
       ]);
 

@@ -2,15 +2,15 @@
 
 include ( "../inc/includes.php");
 
-// Session::checkLoginUser();
+Session::checkLoginUser();
 
 if (isset($_POST['save']) && isset($_POST['impacts'])) {
    $em = new Impact();
 
    // Decode data (should be json)
-   $data = json_decode(stripslashes($_POST['impacts']), true);
+   $data = Toolbox::jsonDecode($_POST['impacts'], true);
 
-   if (!$data || !is_array($data)) {
+   if (!is_array($data)) {
       print_r($data);
       Html::back();
       die;

@@ -282,28 +282,10 @@ function update94to95() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
       $DB->queryOrDie($query, "add table glpi_itilfollowuptemplates");
    }
+
    /** Impact analysis */
-
    // Impact config
-   $impactConfig = $DB->request([
-      'SELECT' => "id",
-      'FROM'   => "glpi_configs",
-      'WHERE'  => [
-         'name'      => "impact_assets_list",
-         'context'   => "core"
-      ]
-   ]);
-
-   if (count($impactConfig) === 0) {
-      $DB->insertOrDie(
-         "glpi_configs", [
-            'name'      => "impact_assets_list",
-            'context'   => "core",
-            'value'     => ""
-         ],
-         "impact_assets_list"
-      );
-   }
+   $migration->addConfig(['impact_assets_list' => '[]']);
 
    // Impact table
    if (!$DB->tableExists('glpi_impacts')) {
@@ -325,7 +307,6 @@ function update94to95() {
          ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
       $DB->queryOrDie($query, "add table glpi_impacts");
    }
-
    /** /Impact analysis */
 
    // ************ Keep it at the end **************

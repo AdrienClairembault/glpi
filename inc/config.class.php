@@ -232,6 +232,10 @@ class Config extends CommonDBTM {
                                                       ? $input['lock_item_list'] : []));
       }
 
+      $input['impact_assets_list'] = exportArrayToDB(
+         isset($input['impact_assets_list']) ? $input['impact_assets_list'] : []
+      );
+
       // Beware : with new management system, we must update each value
       unset($input['id']);
       unset($input['_glpi_csrf_token']);
@@ -622,7 +626,7 @@ class Config extends CommonDBTM {
    **/
    public function showImpactFieldSet() {
 
-      $enabled = $this->getConfigurationValues("core")["impact_assets_list"];
+      global $CFG_GLPI;
 
       echo "<br>";
       echo "<table class='tab_cadre_fixe'>";
@@ -635,14 +639,14 @@ class Config extends CommonDBTM {
       // Asset list
       echo "<tr class='tab_bg_2'>";
       echo "<td width='30%'>";
-      echo "<label>" . __('Asset list', 'impacts') . "</label>";
+      echo "<label>" . __('Asset list') . "</label>";
       echo "</td>";
       echo "<td colspan='3'>";
       Dropdown::showFromArray(
          'impact_assets_list',
          $this->getAllAssetList(),
          [
-            'values'   => $enabled ? $enabled : [],
+            'values'   => $CFG_GLPI['impact_assets_list'],
             'width'    => '100%',
             'multiple' => true
          ]
@@ -2814,14 +2818,7 @@ class Config extends CommonDBTM {
       $iterator = $DB->request($query);
       $result = [];
       while ($line = $iterator->next()) {
-         switch ($line['name']) {
-            case 'impact_assets_list':
-               $result[$line['name']] = json_decode($line['value']);
-               break;
-
-            default:
-               $result[$line['name']] = $line['value'];
-         }
+         $result[$line['name']] = $line['value'];
       }
       return $result;
    }
@@ -2923,6 +2920,10 @@ class Config extends CommonDBTM {
           $CFG_GLPI['lock_item_list'] = importArrayFromDB($CFG_GLPI['lock_item_list']);
       }
 
+      $CFG_GLPI['impact_assets_list'] = isset($CFG_GLPI['impact_assets_list'])
+         ? importArrayFromDB($CFG_GLPI['impact_assets_list'])
+         : [];
+
       if (isset($CFG_GLPI['lock_lockprofile_id'])
           && $CFG_GLPI['lock_use_lock_item']
           && $CFG_GLPI['lock_lockprofile_id'] > 0
@@ -2956,13 +2957,6 @@ class Config extends CommonDBTM {
 
       $config = new self();
       foreach ($values as $name => $value) {
-
-         switch ($name) {
-            case 'impact_assets_list':
-               $value = json_encode($value);
-               break;
-         }
-         error_log("$name = $value");
          if ($config->getFromDBByCrit([
             'context'   => $context,
             'name'      => $name

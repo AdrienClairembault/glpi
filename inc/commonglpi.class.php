@@ -315,11 +315,10 @@ class CommonGLPI {
     * @return CommonGLPI
    **/
    function addImpactTab(array &$ong, array $options) {
-      $conf = Config::getConfigurationValues("core");
-      $type = get_class($this);
+      global $CFG_GLPI;
 
       // Check if impact analysis is enabled for this item type
-      if (array_search($type, $conf['impact_assets_list']) !== false) {
+      if (in_array(static::class, $CFG_GLPI['impact_assets_list'])) {
          $this->addStandardTab('Impact', $ong, $options);
       }
 

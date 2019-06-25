@@ -1584,7 +1584,7 @@ class Problem extends CommonITILObject {
     *
     * @return integer
     */
-   public function GetActiveProblemsForItem($itemtype, $items_id) {
+   public function getActiveProblemsForItem($itemtype, $items_id) {
       global $DB;
 
       return $DB->request([

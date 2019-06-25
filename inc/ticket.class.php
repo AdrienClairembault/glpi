@@ -867,8 +867,9 @@ class Ticket extends CommonITILObject {
 
 
    function defineTabs($options = []) {
+      global $CFG_GLPI;
+
       $ong = [];
-      $conf = Config::getConfigurationValues("core");
 
       $this->defineDefaultObjectTabs($ong, $options);
       $this->addStandardTab('TicketValidation', $ong, $options);
@@ -876,7 +877,7 @@ class Ticket extends CommonITILObject {
       $this->addStandardTab('Item_Ticket', $ong, $options);
 
       // Show impact if enabled on at least one item
-      if (count($conf['impact_assets_list'])) {
+      if (count($CFG_GLPI['impact_assets_list'])) {
          $this->addStandardTab('Impact', $ong, $options);
       }
 

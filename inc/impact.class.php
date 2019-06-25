@@ -4,6 +4,9 @@ if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
+/**
+ * @since 9.5.0
+ */
 class Impact extends CommonDBRelation {
 
    // Constants used to express the direction of a graph
@@ -16,73 +19,29 @@ class Impact extends CommonDBRelation {
    const DEPENDS_COLOR              = '#000080';
    const IMPACT_AND_DEPENDS_COLOR   = '#4B0082';
 
-   /**
-    * Return the localized name of the current Type (Asset impacts)
-    *
-    * @since 9.5
-    *
-    * @param integer $nb Number of items
-    *
-    * @return string
-    */
    public static function getTypeName($nb = 0) {
       return _n('Asset impact', 'Asset impacts', $nb);
    }
 
-   /**
-    * Do I have the global right to "view" the Object
-    *
-    * @return boolean
-    */
    public static function canView() {
       return true;
    }
 
-   /**
-    * Do I have the right to "update" the Object
-    *
-    * @return boolean
-    */
    public static function canUpdate() {
       return true;
    }
 
-   /**
-    * Do I have the global right to "create" the Object
-    *
-    * @return boolean
-    */
    public static function canCreate() {
       return true;
    }
 
-   /**
-    * Get Tab Name used for itemtype
-    *
-    * @since 9.5
-    *
-    * @param CommonGLPI $item         Item on which the tab need to be displayed
-    * @param boolean    $withtemplate is a template object ? (default 0)
-    *
-    * @return string tab name
-    */
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
-      global $DB;
-
-      // GLPI core conf
-      $conf = Config::getConfigurationValues('core');
+      global $CFG_GLPI, $DB;
 
       // Class of the current item
       $class = get_class($item);
 
-      // List of classes that will display this tab
-      $assetClasses = $conf['impact_assets_list'];
-      $ITILClasses = ["Ticket", "Incident", "Problem", "Change"];
-
-      // Tab name
-      $tabName = _n('Impact', 'Impacts', Session::getPluralNumber(), 'impacts');
-
-      if (array_search($class, $assetClasses) !== false) {
+      if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
          // Asset : get number of directs dependencies
          $it = $DB->request([
             'FROM'   => 'glpi_impacts',
@@ -93,37 +52,31 @@ class Impact extends CommonDBRelation {
                      'source_asset_id'   => $item->getID(),
                   ],
                   [
-                  'impacted_asset_type' => get_class($item),
-                  'impacted_asset_id'   => $item->getID(),
+                     'impacted_asset_type' => get_class($item),
+                     'impacted_asset_id'   => $item->getID(),
                   ]
                ]
             ]
          ]);
          $total = count($it);
 
-      } else if (array_search($class, $ITILClasses) !== false) {
+      } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
          // ITIL object : no count
          $total = 0;
       }
 
-      return self::createTabEntry($tabName, $total);
+      return self::createTabEntry(
+         _n('Impact', 'Impacts', Session::getPluralNumber()),
+         $total
+      );
    }
 
-   /**
-    * Show the impact network of the specified item
-    *
-    * @since 9.5
-    *
-    * @param CommonGLPI $item         Starting point of the network
-    * @param integer    $tabnum       tab number (default 1)
-    * @param boolean    $withtemplate is a template object ? (default 0)
-    *
-    * @return boolean
-    */
    public static function displayTabContentForItem(
       CommonGLPI $item,
       $tabnum = 1,
       $withtemplate = 0) {
+
+      global $CFG_GLPI;
 
       $ID = $item->getID();
 
@@ -139,18 +92,13 @@ class Impact extends CommonDBRelation {
       }
 
       $class = get_class($item);
-      $conf = Config::getConfigurationValues('core');
 
-      // List of classes that will display this tab
-      $assetClasses = $conf['impact_assets_list'];
-      $ITILClasses = ["Ticket", "Incident", "Problem", "Change"];
-
-      if (array_search($class, $assetClasses) !== false) {
+      if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
          // Asset : show the impact network
          self::loadVisJS();
          self::prepareImpactNetwork();
          self::buildNetwork($item);
-      } else if (array_search($class, $ITILClasses) !== false) {
+      } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
          // ITIL object : show asset selection form
          self::loadVisJS();
          self::printAssetSelectionForm($item->getLinkedItems());
@@ -233,7 +181,7 @@ class Impact extends CommonDBRelation {
 
             $.ajax({
                type: "POST",
-               url: "../ajax/impact.php",
+               url: CFG_GLPI.root_doc + "/ajax/impact.php",
                data: {
                   itemType:   values[0],
                   itemID:     values[1],
@@ -364,9 +312,9 @@ class Impact extends CommonDBRelation {
       echo "<tr>";
       echo "<td>";
       echo "<label>" . __("File format: ") . "</label>";
-      $dropdown = Dropdown::showFromArray("impact_format", [
-            'png' => "PNG",
-            'jpeg' => "JPEG",
+      Dropdown::showFromArray("impact_format", [
+         'png' => "PNG",
+         'jpeg' => "JPEG",
       ]);
       echo "</td>";
       echo "</tr>";
@@ -460,8 +408,6 @@ class Impact extends CommonDBRelation {
     *      ]
     */
    public static function buildGraph(CommonDBTM $item) {
-      global $DB;
-
       $nodes = [];
       $edges = [];
 
@@ -568,6 +514,8 @@ class Impact extends CommonDBRelation {
     */
    public static function addNode(array &$nodes, CommonDBTM $item) {
 
+      global $CFG_GLPI;
+
       // Check if the node already exist
       $key = self::getNodeID($item);
       if (isset($nodes[$key])) {
@@ -583,7 +531,7 @@ class Impact extends CommonDBRelation {
          'id'     => $key,
          'label'  => $item->fields['name'],
          'shape'  => "image",
-         'image'  => "../pics/impact/$imageName.png",
+         'image'  => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
          'font'   => [
             'multi' => 'html',
             'face'  => 'FontAwesome',
@@ -711,7 +659,6 @@ class Impact extends CommonDBRelation {
     */
    public static function printAddNodeDialog() {
       global $CFG_GLPI;
-      $conf = Config::getConfigurationValues('Core');
       $rand = mt_rand();
 
       echo '<div id="addNodedialog" title="' . __('New asset') . '">';
@@ -723,7 +670,7 @@ class Impact extends CommonDBRelation {
       echo "<td>";
       Dropdown::showItemTypes(
          'item_type',
-         $conf['impact_assets_list'],
+         $CFG_GLPI['impact_assets_list'],
          [
             'value'        => null,
             'width'        => '100%',
@@ -893,11 +840,11 @@ class Impact extends CommonDBRelation {
     * @param string $itemID id of the asset
     */
    public static function assetExist(string $itemType, string $itemID) {
+      global $CFG_GLPI;
+
       try {
          // Check this asset type is enabled
-         $conf = Config::getConfigurationValues('core');
-         $enabledClasses = $conf['impact_assets_list'];
-         if (array_search($itemType, $enabledClasses) === false) {
+         if (in_array($itemType, $CFG_GLPI['impact_assets_list'])) {
             return false;
          }
 
@@ -951,11 +898,6 @@ class Impact extends CommonDBRelation {
       return null;
    }
 
-   /**
-    * Get search function for Impacts
-    *
-    * @return array
-    */
    public function rawSearchOptions() {
       return [];
    }

@@ -74,7 +74,7 @@ function initImpactNetwork (glpiLocales, startNode) {
    // Load the graph
    $.ajax({
       type: "POST",
-      url: "../ajax/impact.php",
+      url: CFG_GLPI.root_doc + "/ajax/impact.php",
       data: {
          itemType:   startNodeDetails[0],
          itemID:     startNodeDetails[1],
@@ -355,7 +355,7 @@ var addNodeHandler = function (node, callback) {
                  from this node */
                $.ajax({
                   type: "POST",
-                  url: "../ajax/impact.php",
+                  url: CFG_GLPI.root_doc + "/ajax/impact.php",
                   data: {
                      itemType:   itemType,
                      itemID:     itemID

@@ -52,7 +52,6 @@ Html::footer();
 // Print the item_type and item_id selection form
 function printForm() {
    global $CFG_GLPI;
-   $conf = Config::getConfigurationValues('Core');
    $rand = mt_rand();
    // Session::checkRight("impact", READ);
 
@@ -71,7 +70,7 @@ function printForm() {
    echo "<td>";
    Dropdown::showItemTypes(
       'type',
-      $conf['impact_assets_list'],
+      $CFG_GLPI['impact_assets_list'],
       [
          'value'        => null,
          'width'        => '100%',
@@ -87,8 +86,7 @@ function printForm() {
    echo "<td> <label>" . __('Item') . "</label> </td>";
    echo "<td>";
    Ajax::updateItemOnSelectEvent("dropdown_type$rand", "form_results",
-      $CFG_GLPI["root_doc"].
-      "/ajax/dropdownTrackingDeviceType.php",
+      $CFG_GLPI["root_doc"] . "/ajax/dropdownTrackingDeviceType.php",
       [
          'itemtype'        => '__VALUE__',
          'entity_restrict' => 0,
