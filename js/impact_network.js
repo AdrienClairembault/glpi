@@ -93,35 +93,132 @@ function initImpactNetwork (glpiLocales, startNode) {
    });
 }
 
+function updateEditLabel() {
+   var editLabel = '<i class="fas fa-pencil-alt fa-impact-manipulation"></i>&nbsp;' + getLocale("edit");
+   $("div.vis-edit-mode div.vis-label").eq(0).html(editLabel);
+}
+
 function addCustomOptions() {
+   // Add fa icon to edit
+   updateEditLabel();
+
+   // Offset from previous button
+   var offset = 15 + $("div.vis-edit-mode").eq(0)
+      .find('div.vis-button.vis-edit.vis-edit-mode')[0]
+      .getBoundingClientRect()
+      .width;
+
    // Custom button 1 : Toggle depends div
-   var toggleDependsDiv =
-      '<div id="toggleDependsDiv" class="vis-edit-mode" style="display: block; left: 80px">' +
+   $("div.vis-edit-mode").eq(0).after(
+      '<div id="toggleDependsDiv" class="vis-edit-mode" style="display: block; left: ' + offset + 'px">' +
       '   <div class="vis-button vis-edit vis-edit-mode" style="touch-action: pan-y; -moz-user-select: none;">' +
-      '      <div class="vis-label">Toggle depends</div>' +
+      '      <div class="vis-label">' +
+      '         <i class="fas fa-toggle-on fa-impact-manipulation"></i><i class="fas fa-toggle-off fa-impact-manipulation" style="display:none;"></i>&nbsp;' + getLocale("showDepends").replace(" ", " ") +
+      '      </div>' +
       '   </div>' +
       '</div>'
-   ;
+   );
 
-   $("div.vis-edit-mode").eq(0).after(toggleDependsDiv);
    $("#toggleDependsDiv").click(function() {
+      $("#toggleDependsDiv .fas").toggle();
       window.visibility[FORWARD] = !window.visibility[FORWARD];
       updateVisibility();
    });
 
-   // Custom button 1 : Toggle depends div
-   var toggleImpactDiv =
-      '<div id="toggleImpactDiv" class="vis-edit-mode" style="display: block; left: 229px">' +
+   // Offset from previous button
+   offset += 15 + $("div.vis-edit-mode").eq(2)
+      .find('div.vis-button.vis-edit.vis-edit-mode')[0]
+      .getBoundingClientRect()
+      .width;
+
+   // Custom button 2 : Toggle depends div
+   $("div.vis-edit-mode").eq(2).after(
+      '<div id="toggleImpactDiv" class="vis-edit-mode" style="display: block; left: ' + offset + 'px">' +
       '   <div class="vis-button vis-edit vis-edit-mode" style="touch-action: pan-y; -moz-user-select: none;">' +
-      '      <div class="vis-label">Toggle impact</div>' +
+      '      <div class="vis-label">' +
+      '         <i class="fas fa-toggle-on fa-impact-manipulation"></i><i class="fas fa-toggle-off fa-impact-manipulation" style="display:none;"></i>&nbsp;' + getLocale("showImpact").replace(" ", " ") +
+      '      </div>' +
       '   </div>' +
       '</div>'
-   ;
+   );
 
-   $("div.vis-edit-mode").eq(0).after(toggleImpactDiv);
    $("#toggleImpactDiv").click(function() {
+      $("#toggleImpactDiv .fas").toggle();
       window.visibility[BACKWARD] = !window.visibility[BACKWARD];
       updateVisibility();
+   });
+
+   // Offset from previous button
+   offset += 15 + $("div.vis-edit-mode").eq(4)
+      .find('div.vis-button.vis-edit.vis-edit-mode')[0]
+      .getBoundingClientRect()
+      .width;
+
+   // Custom button 3 : color picker
+   $("div.vis-edit-mode").eq(4).after(
+      '<div id="configColorsDiv" class="vis-edit-mode" style="display: block; left: ' + offset + 'px">' +
+      '   <div class="vis-button vis-edit vis-edit-mode" style="touch-action: pan-y; -moz-user-select: none;">' +
+      '      <div class="vis-label">' +
+      '         <i class="fas fa-palette fa-impact-manipulation"></i>&nbsp;' + getLocale("colorConfiguration").replace(" ", " ") +
+      '      </div>' +
+      '   </div>' +
+      '</div>'
+   );
+
+   $("#configColorsDiv").click(function() {
+      $("#configColorDialog").dialog({
+         modal: true,
+         width: 'auto',
+         draggable: false,
+         title: getLocale("colorConfiguration"),
+         buttons: [{
+            text: "Update",
+            click: function() {
+               setColor(BACKWARD, $('input[name=depends_color]').val());
+               setColor(FORWARD, $('input[name=impact_color]').val());
+               setColor(BOTH, $('input[name=impact_and_depends_color]').val());
+               $(this).dialog( "close" );
+            }
+         }]
+      });
+   });
+
+   // Offset from previous button
+   offset += 15 + $("div.vis-edit-mode").eq(6)
+      .find('div.vis-button.vis-edit.vis-edit-mode')[0]
+      .getBoundingClientRect()
+      .width;
+
+   // Custom button 4 : export
+   $("div.vis-edit-mode").eq(6).after(
+      '<div id="exportDiv" class="vis-edit-mode" style="display: block; left: ' + offset + 'px">' +
+      '   <div class="vis-button vis-edit vis-edit-mode" style="touch-action: pan-y; -moz-user-select: none;">' +
+      '      <div class="vis-label">' +
+      '         <i class="fas fa-download fa-impact-manipulation"></i>&nbsp;' + getLocale("export").replace(" ", " ") +
+      '      </div>' +
+      '   </div>' +
+      '</div>'
+   );
+
+   $("#exportDiv").click(function() {
+      $("#exportDialog").dialog({
+         modal: true,
+         width: 'auto',
+         draggable: false,
+         title: getLocale("export"),
+         buttons: [{
+            text: "Export",
+            click: function() {
+               var format = $('select[name=\"impact_format\"] option:selected')
+                  .val();
+               $('#export_link').prop('download', 'impact.' + format);
+               var img = window.$("#networkContainer canvas").get(0)
+                  .toDataURL("image/" + format);
+               $("#export_link").prop("href", img);
+               $('#export_link')[0].click();
+            }
+         }]
+      });
    });
 }
 
@@ -183,9 +280,19 @@ function createNetwork () {
       if (!window.editMode && $(".vis-close:visible").length == 1) {
          window.editMode = true;
 
+         // Reset visibily toggles as we show the entire graph in edit mode
+         $("#toggleDependsDiv .fa-toggle-on").show();
+         $("#toggleDependsDiv .fa-toggle-off").hide();
+         $("#toggleImpactDiv .fa-toggle-on").show();
+         $("#toggleImpactDiv .fa-toggle-off").hide();
+         window.visibility[FORWARD] = true;
+         window.visibility[BACKWARD] = true;
+
          // Hide custom buttons
          $("#toggleDependsDiv").hide();
          $("#toggleImpactDiv").hide();
+         $("#configColorsDiv").hide();
+         $("#exportDiv").hide();
 
          // Force total visibility
          if (!$('#showDepends').prop('checked')) {
@@ -197,7 +304,7 @@ function createNetwork () {
 
          $('#showDepends').prop('disabled', true);
          $('#showImpacted').prop('disabled', true);
-         hideDisabledNodes(BOTH);
+         updateVisibility();
       }
 
       // Exit edit mode
@@ -207,10 +314,15 @@ function createNetwork () {
          // Show custom buttons
          $("#toggleDependsDiv").show();
          $("#toggleImpactDiv").show();
+         $("#configColorsDiv").show();
+         $("#exportDiv").show();
 
          // Enable visibility changes
          $('#showDepends').prop('disabled', false);
          $('#showImpacted').prop('disabled', false);
+
+         // Our custom edit label need to be rebuilt
+         updateEditLabel();
       }
    };
    var observer = new MutationObserver(callback);
@@ -523,16 +635,6 @@ function makeID (type, a, b) {
    }
 
    return null;
-}
-
-// Export canvas to png
-function exportCanvas(format) {
-
-   // TODO : set a white background for format that doens't support non-opaque pixels
-   var img = window.$("#networkContainer canvas")
-      .get(0)
-      .toDataURL("image/" + format);
-   $("#export_link").prop("href", img);
 }
 
 // Client side flag calculations

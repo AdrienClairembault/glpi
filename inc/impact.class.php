@@ -126,11 +126,26 @@ class Impact extends CommonDBRelation {
          <style type="text/css">
             #networkContainer {
                width: 100%;
-               height: 50vh;
+               height: 65vh;
                border: 1px solid lightgray;
             }
-            #addNodedialog {
+            #addNodedialog,
+            #configColorDialog,
+            #exportDialog {
                display: none;
+            }
+
+            i.fa-impact-manipulation {
+               display: inline;
+               font-size: 14px;
+            }
+
+            div.vis-network div.vis-edit-mode div.vis-button.vis-edit {
+               background-image: url() !important;
+            }
+
+            div.vis-network div.vis-edit-mode div.vis-label {
+               margin: 0 !important;;
             }
          </style>
       ';
@@ -245,93 +260,6 @@ class Impact extends CommonDBRelation {
     * @since 9.5
     */
    public static function printOptionForm() {
-      // Table that will contains the options related to the Impact graph
-      echo "<table class='tab_cadre_fixe'>";
-
-      // First row : Headers
-      echo "<tr class='tab_bg_2'>";
-      echo "<th>" . __('Visibility') . "</th>";
-      echo "<th>" . __('Colors') . "</th>";
-      echo "<th>" . __('Export') . "</th>";
-      echo "</tr>";
-
-      // Second row : options (separated in individuals tables)
-      echo "<tr>";
-
-      // First option table : visility
-      echo "<td style=\"vertical-align:top;width:33%\">";
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<input type=\"checkbox\" id=\"showDepends\" checked>";
-      echo "<label>&nbsp;" . __("Show assets that depends on the current item") . "</label>";
-      echo "</td>";
-      echo "</tr>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<input type=\"checkbox\" id=\"showImpacted\" checked>";
-      echo "<label>&nbsp;" . __("Show assets that impact the current item") . "</label>";
-      echo "</td>";
-      echo "</tr>";
-      echo "</table>";
-      echo "</td>";
-
-      // Second option table  : colors of the arrows
-      echo "<td style=\"vertical-align:top;width:33%\">";
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr>";
-      echo "<td>";
-      Html::showColorField("depends_color", [
-         'value' => self::DEPENDS_COLOR
-      ]);
-      echo "<label>&nbsp;" . __("Depends") . "</label>";
-      echo "</td>";
-      echo "</tr>";
-      echo "<tr>";
-      echo "<td>";
-      Html::showColorField("impact_color", [
-         'value' => self::IMPACT_COLOR
-      ]);
-      echo "<label>&nbsp;" . __("Impact") . "</label>";
-      echo "</td>";
-      echo "</tr>";
-      echo "<tr>";
-      echo "<td>";
-      Html::showColorField("impact_and_depends_color", [
-         'value' => self::IMPACT_AND_DEPENDS_COLOR
-      ]);
-      echo "<label>&nbsp;" . __("Impact and depends") . "</label>";
-      echo "</td>";
-      echo "</tr>";
-      echo "</table>";
-      echo "</td>";
-
-      // Third option table : export
-      echo "<td style=\"vertical-align:top;width:33%\">";
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<label>" . __("File format: ") . "</label>";
-      Dropdown::showFromArray("impact_format", [
-         'png' => "PNG",
-         'jpeg' => "JPEG",
-      ]);
-      echo "</td>";
-      echo "</tr>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<a id=\"export_link\" href=\"\" download=\"impact.png\">";
-      echo "<button class=\"x-button\" type=\"button\" id=\"export_network\">Export</button>";
-      echo "</a>";
-      echo "</td>";
-      echo "</tr>";
-      echo "</table>";
-      echo "</td>";
-
-      echo "</tr>";
-
-      echo "</table>";
-
       // JS to handle the options
       self::printOptionFormInteractions();
    }
@@ -348,41 +276,6 @@ class Impact extends CommonDBRelation {
             // Send data as JSON on submit
             $('form[name=form_impact_network]').on('submit', function(event) {
                $('input[name=impacts]').val(JSON.stringify(delta));
-            });
-
-            // Update the graph direction
-            $('#showDepends, #showImpacted').on('change', function () {
-               var showDepends   = $('#showDepends').prop('checked');
-               var showImpact    = $('#showImpacted').prop('checked');
-               var direction     = 0;
-
-               if (showDepends && showImpact) {
-                  direction = " . self::DIRECTION_BOTH . ";
-               } else if (!showDepends && showImpact) {
-                  direction = " . self::DIRECTION_FORWARD . ";
-               } else if (showDepends && !showImpact) {
-                  direction = " . self::DIRECTION_BACKWARD . ";
-               }
-
-               hideDisabledNodes(direction);
-            });
-
-            // Update graph colors
-            $('input[name=depends_color]').change(function(){
-               setColor(BACKWARD, $('input[name=depends_color]').val());
-            });
-            $('input[name=impact_color]').change(function(){
-               setColor(FORWARD, $('input[name=impact_color]').val());
-            });
-            $('input[name=impact_and_depends_color]').change(function(){
-               setColor(BOTH, $('input[name=impact_and_depends_color]').val());
-            });
-
-            // Export graph to png
-            $('#export_network').on('click', function (e) {
-               var format = $('select[name=\"impact_format\"] option:selected').val();
-               $('#export_link').prop('download', 'impact.' + format);
-               exportCanvas(format);
             });
          });
       ");
@@ -714,6 +607,54 @@ class Impact extends CommonDBRelation {
       echo '<div id="ticketsDialog"></div>';
    }
 
+   public static function printColorConfigDialog() {
+      echo '<div id="configColorDialog">';
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr>";
+      echo "<td>";
+      Html::showColorField("depends_color", [
+         'value' => self::DEPENDS_COLOR
+      ]);
+      echo "<label>&nbsp;" . __("Depends") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      Html::showColorField("impact_color", [
+         'value' => self::IMPACT_COLOR
+      ]);
+      echo "<label>&nbsp;" . __("Impact") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      Html::showColorField("impact_and_depends_color", [
+         'value' => self::IMPACT_AND_DEPENDS_COLOR
+      ]);
+      echo "<label>&nbsp;" . __("Impact and depends") . "</label>";
+      echo "</td>";
+      echo "</tr>";
+      echo "</table>";
+      echo "</div>";
+   }
+
+   public static function printExportDialog() {
+      echo '<div id="exportDialog">';
+      echo "<table>";
+      echo "<tr>";
+      echo "<td>";
+      echo "<label>" . __("File format: ") . "</label>";
+      Dropdown::showFromArray("impact_format", [
+         'png' => "PNG",
+         'jpeg' => "JPEG",
+      ]);
+      echo "</td>";
+      echo "</tr>";
+      echo "</table>";
+      echo "<a id=\"export_link\" href=\"\" download=\"impact.png\" style=\"display:none;\">";
+      echo "</div>";
+   }
+
    /**
     * Prepare the impact network
     *
@@ -727,6 +668,8 @@ class Impact extends CommonDBRelation {
       self::loadNetworkContainerStyle();
       self::printImpactNetworkContainer();
       self::printAddNodeDialog();
+      self::printColorConfigDialog();
+      self::printExportDialog();
 
       $locales = self::getVisJSLocales();
 
@@ -935,6 +878,10 @@ class Impact extends CommonDBRelation {
          'Requests'            => __("Requests"),
          'Changes'             => __("Changes"),
          'Problems'            => __("Problems"),
+         'showDepends'         => __("Show depends"),
+         'showImpact'          => __("Show impact"),
+         'colorConfiguration'  => __("Configure colors"),
+         'export'              => __("Export"),
       ];
 
       return addslashes(json_encode($locales));
