@@ -212,14 +212,31 @@ function addCustomOptions() {
                var format = $('select[name=\"impact_format\"] option:selected')
                   .val();
                $('#export_link').prop('download', 'impact.' + format);
-               var img = window.$("#networkContainer canvas").get(0)
-                  .toDataURL("image/" + format);
-               $("#export_link").prop("href", img);
+               $("#export_link").prop("href", exportCanvasToURI(
+                  window.$("#networkContainer canvas").get(0),
+                  format
+               ));
                $('#export_link')[0].click();
             }
          }]
       });
    });
+}
+
+function exportCanvasToURI(canvas, format) {
+   switch (format) {
+      // No change needed, return the canvas as it is
+      case 'png':
+         return canvas.toDataURL("image/png");
+      // We need to paste the canvas on a white background
+      case 'jpeg':
+         var newCanvas = canvas.cloneNode(true);
+         var ctx = newCanvas.getContext('2d');
+         ctx.fillStyle = "#FFF";
+         ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+         ctx.drawImage(canvas, 0, 0);
+         return newCanvas.toDataURL("image/jpeg");
+   }
 }
 
 function updateVisibility() {
