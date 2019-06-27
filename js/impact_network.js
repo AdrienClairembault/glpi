@@ -269,13 +269,16 @@ function createNetwork () {
          deleteEdge:       deleteHandler
       },
       physics: {
-         enabled: true,
-         maxVelocity: 5,
-         minVelocity: 0.1
+         enabled: false,
+         // maxVelocity: 5,
+         // minVelocity: 0.1
       },
       edges: {
          color: {
             inherit: false
+         },
+         smooth: {
+            enabled: false
          }
       },
       locales: locales,
@@ -369,7 +372,7 @@ function createNetwork () {
             // },
             width: 'auto',
             draggable: false,
-            title: targetNode.label.substring(0, targetNode.label.length - 2),
+            title: targetNode.label,
          });
 
          // Set dialog content

@@ -427,10 +427,10 @@ class Impact extends CommonDBRelation {
          'label'  => $item->fields['name'],
          'shape'  => "image",
          'image'  => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
-         // 'size'   => '22',
+         'size'   => '22',
          'font'   => [
             'multi' => 'html',
-            'face'  => 'FontAwesome',
+         //    'face'  => 'FontAwesome',
          ],
          'incidents' => iterator_to_array(
             $ticket->getActiveTicketsForItem(
@@ -464,10 +464,12 @@ class Impact extends CommonDBRelation {
          ),
       ];
 
+      $count = count($newNode['incidents']) + count($newNode['requests'])
+             + count($newNode['changes']) + count($newNode['problems']);
+
       // Warning icon and tooltip if at least one ticket is found
-      if (count($newNode['incidents'] + $newNode['requests']
-              + $newNode['changes']   + $newNode['problems']) > 0) {
-         $newNode['label'] .= ' \uf071';
+      if ($count) {
+         $newNode['label'] .= " ($count)";
          $newNode['title'] = __("Click to see ongoing tickets...");
       }
 
@@ -878,9 +880,9 @@ class Impact extends CommonDBRelation {
          'Requests'            => __("Requests"),
          'Changes'             => __("Changes"),
          'Problems'            => __("Problems"),
-         'showDepends'         => __("Show depends"),
-         'showImpact'          => __("Show impact"),
-         'colorConfiguration'  => __("Configure colors"),
+         'showDepends'         => __("Depends"),
+         'showImpact'          => __("Impact"),
+         'colorConfiguration'  => __("Colors"),
          'export'              => __("Export"),
       ];
 
