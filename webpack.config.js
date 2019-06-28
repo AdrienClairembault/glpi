@@ -85,6 +85,7 @@ var libsConfig = {
                     path.resolve(__dirname, 'node_modules/jstree'),
                     path.resolve(__dirname, 'node_modules/spectrum-colorpicker'),
                     path.resolve(__dirname, 'node_modules/vis'),
+                    path.resolve(__dirname, 'node_modules/cystoscape'),
                 ],
                 use: ['script-loader'],
             },

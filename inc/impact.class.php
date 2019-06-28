@@ -112,8 +112,8 @@ class Impact extends CommonDBRelation {
 
       echo Html::css('public/lib/spectrum-colorpicker.css');
       echo Html::script("public/lib/spectrum-colorpicker.js");
-      echo Html::css('public/lib/vis.css');
-      echo Html::script("public/lib/vis.js");
+      // echo Html::css('public/lib/vis.css');
+      echo Html::script("public/lib/cytoscape.js");
    }
 
    /**
@@ -423,15 +423,8 @@ class Impact extends CommonDBRelation {
       $imageName = strtolower(get_class($item));
 
       $newNode = [
-         'id'     => $key,
          'label'  => $item->fields['name'],
-         'shape'  => "image",
          'image'  => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
-         'size'   => '22',
-         'font'   => [
-            'multi' => 'html',
-         //    'face'  => 'FontAwesome',
-         ],
          'incidents' => iterator_to_array(
             $ticket->getActiveTicketsForItem(
                get_class($item),
@@ -535,21 +528,44 @@ class Impact extends CommonDBRelation {
     * @param array $edges  Edges of the graph
     */
    public static function buildNetwork(CommonDBTM $item) {
-      // // Load script
-      // echo Html::script("js/impact_network.js");
-
       // Get needed var from php to init the network
 
+      // var currentItem = '$currentItem';
       $currentItem   = self::getNodeID($item);
+      $graph = self::makeDataForCytoscape(Impact::buildGraph($item));
 
-      $js = "
+      echo Html::scriptBlock("
          $(function() {
-            var currentItem = '$currentItem';
-            initImpactNetwork(glpiLocales, currentItem);
+            impact.buildNetwork($graph);
          });
-      ";
+      ");
+   }
 
-      echo Html::scriptBlock($js);
+   public static function makeDataForCytoscape(array $graph) {
+      $data = [];
+
+      foreach ($graph['nodes'] as $id => $node) {
+         $data[] = [
+            'data' => [
+               'id'    => $id,
+               'label' => $node['label'],
+               'image' => $node['image'],
+            ]
+         ];
+      }
+
+      foreach ($graph['edges'] as $id => $edge) {
+         $data[] = [
+            'data' => [
+               'id' => $id,
+               'source' => $edge['from'],
+               'target' => $edge['to'],
+               'flag'   => $edge['flag']
+            ]
+         ];
+      }
+
+      return json_encode($data);
    }
 
    /**
@@ -673,27 +689,30 @@ class Impact extends CommonDBRelation {
       self::printColorConfigDialog();
       self::printExportDialog();
 
-      $locales = self::getVisJSLocales();
+      // Print impact script
+      echo Html::script("js/impact.js");
+
+      $locales  = self::getVisJSLocales();
+      $default  = "black";
+      $forward  = self::IMPACT_COLOR;
+      $backward = self::DEPENDS_COLOR;
+      $both     = self::IMPACT_AND_DEPENDS_COLOR;
 
       // Get var from server side
       $js = "
-         // Shared const
-         var FORWARD  = " . self::DIRECTION_FORWARD . ";
-         var BACKWARD = " . self::DIRECTION_BACKWARD . ";
-         var BOTH     = " . self::DIRECTION_BOTH . ";
-
-         var IMPACT_COLOR             = '" . self::IMPACT_COLOR . "';
-         var DEPENDS_COLOR            = '" . self::DEPENDS_COLOR . "';
-         var IMPACT_AND_DEPENDS_COLOR = '" . self::IMPACT_AND_DEPENDS_COLOR . "';
-
-         // Init network
-         var glpiLocales = '$locales';
+         impact.prepareNetwork(
+            $(\"#networkContainer\"),
+            '$locales',
+            {
+               default : '$default',
+               forward : '$forward',
+               backward: '$backward',
+               both    : '$both',
+            }
+         )
       ";
 
       echo Html::scriptBlock($js);
-
-      // Print impact script
-      echo Html::script("js/impact_network.js");
    }
 
    /**
