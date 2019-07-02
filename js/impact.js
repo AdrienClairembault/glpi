@@ -74,6 +74,9 @@ var impact = {
    // The graph edition mode
    editionMode: EDITION_DEFAULT,
 
+   // Start node of the graph
+   startNode: null,
+
    /**
     * Get network style
     *
@@ -84,11 +87,11 @@ var impact = {
          {
             selector: 'node[image]',
             style: {
-               'label': 'data(label)',
-               'shape': 'rectangle',
-               'background-color': '#666',
-               'background-image': 'data(image)',
-               'background-fit': 'contain',
+               'label'             : 'data(label)',
+               'shape'             : 'rectangle',
+               'background-color'  : '#666',
+               'background-image'  : 'data(image)',
+               'background-fit'    : 'contain',
                'background-opacity': '0',
             }
          },
@@ -101,29 +104,32 @@ var impact = {
          {
             selector: 'edge',
             style: {
-               'width': 3,
-               'line-color': this.edgeColors[0],
-               'target-arrow-color': '#0c0',
+               'width'             : 3,
+               'line-color'        : this.edgeColors[0],
+               'target-arrow-color': this.edgeColors[0],
                'target-arrow-shape': 'triangle',
-               'curve-style': 'bezier'
+               'curve-style'       : 'bezier'
             }
          },
          {
             selector: '[flag=' + FORWARD + ']',
             style: {
-               'line-color': this.edgeColors[FORWARD],
+               'line-color'        : this.edgeColors[FORWARD],
+               'target-arrow-color': this.edgeColors[FORWARD],
             }
          },
          {
             selector: '[flag=' + BACKWARD + ']',
             style: {
-               'line-color': this.edgeColors[BACKWARD],
+               'line-color'        : this.edgeColors[BACKWARD],
+               'target-arrow-color': this.edgeColors[BACKWARD],
             }
          },
          {
             selector: '[flag=' + BOTH + ']',
             style: {
-               'line-color': this.edgeColors[BOTH],
+               'line-color'        : this.edgeColors[BOTH],
+               'target-arrow-color': this.edgeColors[BOTH],
             }
          }
       ];
@@ -155,8 +161,9 @@ var impact = {
     * @param {JQuery} impactContainer
     * @param {string} locales (json)
     * @param {Object} colors properties: default, forward, backward, both
+    * @param {string} startNode
     */
-   prepareNetwork: function(impactContainer, locales, colors) {
+   prepareNetwork: function(impactContainer, locales, colors, startNode) {
       // Set container
       this.impactContainer = impactContainer;
 
@@ -172,6 +179,9 @@ var impact = {
       this.edgeColors[FORWARD]   = colors.forward;
       this.edgeColors[BACKWARD]  = colors.backward;
       this.edgeColors[BOTH]      = colors.both;
+
+      // Set start node
+      this.startNode = startNode;
    },
 
    /**
@@ -212,6 +222,77 @@ var impact = {
       }
 
       return null;
+   },
+
+   /**
+    * Update the flags of the edges of the graph
+    * Explore the graph forward then backward
+    */
+   updateFlags: function() {
+      // Keep track of visited nodes
+      var exploredNodes;
+
+      // Set all flag to the default value (0)
+      this.cy.edges().forEach(function(edge) {
+         edge.data("flag", 0);
+      });
+
+      // Run through the graph forward
+      exploredNodes = {};
+      exploredNodes[this.startNode] = true;
+      this.exploreGraph(exploredNodes, FORWARD, this.startNode);
+
+      // Run through the graph backward
+      exploredNodes = {};
+      exploredNodes[this.startNode] = true;
+      this.exploreGraph(exploredNodes, BACKWARD, this.startNode);
+   },
+
+   /**
+    * Explore a graph in a given direction using recursion
+    *
+    * @param {Array} exploredNodes
+    * @param {number} direction
+    * @param {string} currentNodeID
+    */
+   exploreGraph: function(exploredNodes, direction, currentNodeID) {
+
+      // Depending on the direction, we are looking for edge that either begin
+      // from the current node (source) or end on the current node (target)
+      var sourceOrTarget;
+
+      // The next node is the opposite of sourceOrTarget : if our node is at
+      // the start (source) then the next is at the end (target)
+      var nextNode;
+
+      switch (direction) {
+         case FORWARD:
+            sourceOrTarget = "source";
+            nextNode       = "target";
+            break;
+         case BACKWARD:
+            sourceOrTarget = "target";
+            nextNode       = "source";
+            break;
+      }
+
+      // Find the edges connected to the current node
+      this.cy.elements('edge[' + sourceOrTarget + '="' + currentNodeID + '"]')
+         .forEach(function(edge) {
+
+         // Get target node from computer nextNode att name
+         targetNode = edge.data(nextNode);
+
+         // Set flag
+         edge.data("flag", direction | edge.data("flag"));
+
+         // Check we haven't go through this node yet
+         if(exploredNodes[targetNode] == undefined) {
+            exploredNodes[targetNode] = true;
+            // Go to next node
+            impact.exploreGraph(exploredNodes, direction, targetNode);
+         }
+      });
    },
 
    /**
@@ -257,7 +338,12 @@ var impact = {
          return;
       }
 
-      // Otpion 3: Edge between two nodes that does not exist yet -> create it!
+      // Option 3: Both end of the edge are actually the same node -> ignore
+      if (startEdge == this.data('id')) {
+         return;
+      }
+
+      // Option 4: Edge between two nodes that does not exist yet -> create it!
       event.cy.add({
          group: 'edges',
          data: {
@@ -267,6 +353,8 @@ var impact = {
          }
       });
 
+      // Update dependencies flags according to the new link
+      impact.updateFlags();
    },
 
    /**

@@ -91,13 +91,14 @@ class Impact extends CommonDBRelation {
       if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
          // Asset : show the impact network
          self::loadVisJS();
-         self::prepareImpactNetwork();
+         self::prepareImpactNetwork($item);
          self::buildNetwork($item);
-      } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
-         // ITIL object : show asset selection form
-         self::loadVisJS();
-         self::printAssetSelectionForm($item->getLinkedItems());
-         self::prepareImpactNetwork();
+         // TODO: fix after cytoscape
+         // } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
+         //    // ITIL object : show asset selection form
+         //    self::loadVisJS();
+         //    self::printAssetSelectionForm($item->getLinkedItems());
+         //    self::prepareImpactNetwork();
       }
 
       return true;
@@ -679,9 +680,9 @@ class Impact extends CommonDBRelation {
     *
     * @since 9.5
     *
-    * @param CommonDBTM $item The specified item
+    * @param CommonGLPI $item The specified item
     */
-   public static function prepareImpactNetwork() {
+   public static function prepareImpactNetwork(CommonGLPI $item) {
 
       // Load requirements
       self::loadNetworkContainerStyle();
@@ -693,11 +694,12 @@ class Impact extends CommonDBRelation {
       // Print impact script
       echo Html::script("js/impact.js");
 
-      $locales  = self::getVisJSLocales();
-      $default  = "black";
-      $forward  = self::IMPACT_COLOR;
-      $backward = self::DEPENDS_COLOR;
-      $both     = self::IMPACT_AND_DEPENDS_COLOR;
+      $locales   = self::getVisJSLocales();
+      $default   = "black";
+      $forward   = self::IMPACT_COLOR;
+      $backward  = self::DEPENDS_COLOR;
+      $both      = self::IMPACT_AND_DEPENDS_COLOR;
+      $startNode = self::getNodeID($item);
 
       // Get var from server side
       $js = "
@@ -709,7 +711,8 @@ class Impact extends CommonDBRelation {
                forward : '$forward',
                backward: '$backward',
                both    : '$both',
-            }
+            },
+            '$startNode'
          )
       ";
 
