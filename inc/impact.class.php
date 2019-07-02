@@ -219,7 +219,8 @@ class Impact extends CommonDBRelation {
    public static function printImpactNetworkContainer() {
       $action = Toolbox::getItemTypeFormURL(__CLASS__);
       $formName = "form_impact_network";
-
+      echo "<button id=add_node>add node</button>";
+      echo "<button id=add_edge>add egde</button>";
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
       echo "<table class='tab_cadre_fixe'>";
 
