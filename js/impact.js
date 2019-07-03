@@ -358,24 +358,39 @@ var impact = {
     * @returns {Array|null}
     */
    buildGraphFromNode: function(node) {
-      var graph = null;
+      var dfd = jQuery.Deferred();
 
       // Request to backend
       $.ajax({
-         type: "POST",
+         type: "GET",
          url: CFG_GLPI.root_doc + "/ajax/impact.php",
          dataType: "json",
          data: node,
          success: function(data, textStatus, jqXHR) {
-            graph = data;
+            dfd.resolve(JSON.parse(data));
          },
+         error: function (data, textStatus, jqXHR) {
+            dfd.reject();
+         }
       });
 
-      return graph;
+      return dfd.promise();
    },
 
-   insertGraph: function(){
-
+   /**
+    * Insert another new graph into the current one
+    *
+    * @param {Array} graph
+    */
+   insertGraph: function(graph) {
+      for (var i=0; i<graph.length; i++) {
+         // Check that the element is not already on the graph,
+         var id = graph[i].data.id;
+         if (this.cy.filter('[id="' + id + '"]').length > 0) {
+            continue;
+         }
+         this.cy.add(graph[i]);
+      }
    },
 
    /**
@@ -386,7 +401,7 @@ var impact = {
    onClick: function (event) {
       // Click in EDITION_ADD_NODE : add a new node
       if (impact.editionMode == EDITION_ADD_NODE) {
-         $( "#addNodedialog" ).dialog({
+         $("#addNodedialog").dialog({
             modal: true,
             buttons: [
                {
@@ -399,25 +414,23 @@ var impact = {
                      // Check if the node is already on the graph
                      if (event.cy.filter('node[id="' + nodeID + '"]')
                         .length > 0) {
-                        alert(getLocale("duplicateAsset"));
+                        alert(impact.getLocale("duplicateAsset"));
                         return;
                      }
 
                      // Build the new subgraph
-                     var graph = impact.buildGraphFromNode(node);
-
-                     // Ajax call failed in buildGraphFromNode
-                     if (graph == null) {
-                        alert(getLocale("unexpectedError"));
-                        $(this).dialog("close");
-                        return;
-                     }
-
-                     // Insert the new graph data into the current graph
-                     impact.insertGraph(graph);
-                     impact.updateFlags();
-
-                     $(this).dialog("close");
+                     $.when(impact.buildGraphFromNode(node)).then(
+                        function (graph) {
+                           // Insert the new graph data into the current graph
+                           impact.insertGraph(graph);
+                           impact.updateFlags();
+                           $("#addNodedialog").dialog("close");
+                        },
+                        function () {
+                           // Ajax failed
+                           alert(impact.getLocale("unexpectedError"));
+                        },
+                     );
                   }
                },
                {
@@ -428,18 +441,6 @@ var impact = {
                   }
                }
             ]
-         });
-
-         console.log("New node at " + event.position.x + ";" + event.position.y);
-         event.cy.add({
-            group: 'nodes',
-            data: {
-               id: 'node ' + event.position.x + ";" + event.position.y,
-            },
-            position: {
-               x: event.position.x,
-               y: event.position.y
-            }
          });
       }
    },

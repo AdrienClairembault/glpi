@@ -57,7 +57,7 @@ if (!Impact::assetExist($itemType, $itemID)) {
 
 $item = new $itemType;
 $item->getFromDB($itemID);
-$graph = Impact::buildGraph($item);
+$graph = Impact::makeDataForCytoscape(Impact::buildGraph($item));
 
 // Remove array keys
 $graph['nodes'] = array_values($graph['nodes']);
