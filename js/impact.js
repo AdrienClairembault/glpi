@@ -202,6 +202,7 @@ var impact = {
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
       this.cy.on('mouseup', 'node', this.nodeOnMouseup);
       this.cy.on('mousemove', this.onMousemove);
+      this.cy.on('click', this.onClick);
    },
 
    /**
@@ -296,6 +297,154 @@ var impact = {
    },
 
    /**
+    * Update the delta to be sent to the backend
+    *
+    * @param {string} action
+    * @param {string} edgeID
+    */
+   updateDelta: function(action, edgeID) {
+      var nodesID = edgeID.split('->');
+
+      // Remove useless changes (add + delete the same edge)
+      if (this.delta.hasOwnProperty(edgeID)) {
+
+         if (this.delta[edgeID] == action) {
+            // Duplicate delta, should not be possible, ignore it
+            return;
+         } else {
+            // An edge was added then delete : remove the delta
+            delete this.delta[edgeID];
+            return;
+         }
+      }
+
+      var source = nodesID[0].split("::");
+      var impacted = nodesID[1].split("::");
+
+      this.delta[edgeID] = {
+         action           : action,
+         itemtype_source  : source[0],
+         items_id_source  : source[1],
+         itemtype_impacted: impacted[0],
+         items_id_impacted: impacted[1]
+      };
+   },
+
+   /**
+    * Get translated value for a given key
+    *
+    * @param {string} key
+    */
+   getLocale: function(key) {
+      return this.locales[key];
+   },
+
+   /**
+    * Get the node selected in the Add Node dialog
+    *
+    * @returns {Object}
+    */
+   getAddNodeDialogSelectedNode: function() {
+      return {
+         'itemType': $("select[name=item_type] option:selected").val(),
+         'itemID'  : $("select[name=item_id] option:selected").val()
+      };
+   },
+
+   /**
+    * Ask the backend to build a graph from a specific node
+    *
+    * @param {Object} node
+    * @returns {Array|null}
+    */
+   buildGraphFromNode: function(node) {
+      var graph = null;
+
+      // Request to backend
+      $.ajax({
+         type: "POST",
+         url: CFG_GLPI.root_doc + "/ajax/impact.php",
+         dataType: "json",
+         data: node,
+         success: function(data, textStatus, jqXHR) {
+            graph = data;
+         },
+      });
+
+      return graph;
+   },
+
+   insertGraph: function(){
+
+   },
+
+   /**
+    * Handle click events
+    *
+    * @param {JQuery.Event} event
+    */
+   onClick: function (event) {
+      // Click in EDITION_ADD_NODE : add a new node
+      if (impact.editionMode == EDITION_ADD_NODE) {
+         $( "#addNodedialog" ).dialog({
+            modal: true,
+            buttons: [
+               {
+                  text: impact.getLocale("add"),
+                  // Build a new graph from the selected node and insert it
+                  click: function() {
+                     var node = impact.getAddNodeDialogSelectedNode();
+                     var nodeID = impact.makeID(NODE, node.itemType, node.itemID);
+
+                     // Check if the node is already on the graph
+                     if (event.cy.filter('node[id="' + nodeID + '"]')
+                        .length > 0) {
+                        alert(getLocale("duplicateAsset"));
+                        return;
+                     }
+
+                     // Build the new subgraph
+                     var graph = impact.buildGraphFromNode(node);
+
+                     // Ajax call failed in buildGraphFromNode
+                     if (graph == null) {
+                        alert(getLocale("unexpectedError"));
+                        $(this).dialog("close");
+                        return;
+                     }
+
+                     // Insert the new graph data into the current graph
+                     impact.insertGraph(graph);
+                     impact.updateFlags();
+
+                     $(this).dialog("close");
+                  }
+               },
+               {
+                  text: impact.getLocale("cancel"),
+                  // Cancel
+                  click: function() {
+                     $(this).dialog("close");
+                  }
+               }
+            ]
+         });
+
+         console.log("New node at " + event.position.x + ";" + event.position.y);
+         event.cy.add({
+            group: 'nodes',
+            data: {
+               id: 'node ' + event.position.x + ";" + event.position.y,
+            },
+            position: {
+               x: event.position.x,
+               y: event.position.y
+            }
+         });
+      }
+   },
+
+   /**
     * Handle mouse down events on nodes
     * Used by the new edge action
     *
@@ -314,7 +463,7 @@ var impact = {
     * @param {JQuery.Event} event
     */
    nodeOnMouseup: function (event) {
-      // Just in case, should not be possible
+      // Exit if no start node
       if (eventData.addEdgeStart == null) {
          return;
       }
@@ -352,6 +501,7 @@ var impact = {
             target: this.data('id')
          }
       });
+      impact.updateDelta("add", edgeID);
 
       // Update dependencies flags according to the new link
       impact.updateFlags();
@@ -440,8 +590,23 @@ var impact = {
 
 // Impact toolbar
 $(document).ready(function() {
+
    /**
-    * Add a new edge of the graph
+    * Add a new node on the graph
+    */
+   $("#add_node").click(function() {
+      if (impact.editionMode == EDITION_DEFAULT) {
+         // Enter add edge mode and disable node dragging
+         impact.editionMode = EDITION_ADD_NODE;
+      } else {
+         // Exit add node
+         impact.editionMode = EDITION_DEFAULT;
+      }
+   });
+
+
+   /**
+    * Add a new edge on the graph
     */
    $("#add_edge").click(function() {
       if (impact.editionMode == EDITION_DEFAULT) {
@@ -449,7 +614,7 @@ $(document).ready(function() {
          impact.editionMode = EDITION_ADD_EDGE;
          impact.cy.nodes().ungrabify();
       } else {
-         //
+         // Exit add edge
          impact.editionMode = EDITION_DEFAULT;
          impact.cy.nodes().grabify();
       }

@@ -277,7 +277,7 @@ class Impact extends CommonDBRelation {
          $(function() {
             // Send data as JSON on submit
             $('form[name=form_impact_network]').on('submit', function(event) {
-               $('input[name=impacts]').val(JSON.stringify(delta));
+               $('input[name=impacts]').val(JSON.stringify(impact.delta));
             });
          });
       ");
@@ -548,7 +548,8 @@ class Impact extends CommonDBRelation {
 
       foreach ($graph['nodes'] as $id => $node) {
          $data[] = [
-            'data' => [
+            'group' => 'nodes',
+            'data'  => [
                'id'    => $id,
                'label' => $node['label'],
                'image' => $node['image'],
@@ -558,7 +559,8 @@ class Impact extends CommonDBRelation {
 
       foreach ($graph['edges'] as $id => $edge) {
          $data[] = [
-            'data' => [
+            'group' => 'edges',
+            'data'  => [
                'id' => $id,
                'source' => $edge['from'],
                'target' => $edge['to'],
@@ -882,6 +884,8 @@ class Impact extends CommonDBRelation {
     */
    public static function getVisJSLocales() {
       $locales = [
+         'add'                 => __('Add'),
+         'cancel'              => __('Cancel'),
          'edit'                => __('Edit'),
          'del'                 => __('Delete selected'),
          'back'                => __('Back'),
