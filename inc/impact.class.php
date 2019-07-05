@@ -222,6 +222,11 @@ class Impact extends CommonDBRelation {
       $formName = "form_impact_network";
       echo "<button id=add_node>add node</button>";
       echo "<button id=add_edge>add egde</button>";
+      echo "<button id=delete_element>delete_element</button>";
+      echo "<button id=toggle_impact>toggle_impact</button>";
+      echo "<button id=toggle_depends>toggle_depends</button>";
+      echo "<button id=color_picker>color_picker</button>";
+      echo "<button id=export>export</button>";
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
       echo "<table class='tab_cadre_fixe'>";
 
