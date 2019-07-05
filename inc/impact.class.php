@@ -130,7 +130,7 @@ class Impact extends CommonDBRelation {
                height: 65vh;
                border: 1px solid lightgray;
             }
-            #addNodedialog,
+            #addNodeDialog,
             #configColorDialog,
             #exportDialog {
                display: none;
@@ -462,6 +462,7 @@ class Impact extends CommonDBRelation {
             ),
             false
          ),
+         'link' => $item->getLinkURL()
       ];
 
       $count = count($newNode['incidents']) + count($newNode['requests'])
@@ -558,6 +559,7 @@ class Impact extends CommonDBRelation {
                'id'    => $id,
                'label' => $node['label'],
                'image' => $node['image'],
+               'link'  => $node['link'],
             ]
          ];
       }
@@ -586,7 +588,7 @@ class Impact extends CommonDBRelation {
       global $CFG_GLPI;
       $rand = mt_rand();
 
-      echo '<div id="addNodedialog" title="' . __('New asset') . '">';
+      echo '<div id="addNodeDialog" title="' . __('New asset') . '">';
       echo '<table class="tab_cadre_fixe">';
 
       // Item type field
@@ -677,6 +679,16 @@ class Impact extends CommonDBRelation {
       ]);
       echo "</td>";
       echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      echo Html::getCheckbox([
+         "id"    => "transparentBackground",
+         "name"  => "transparentBackground",
+         "title" => __("Transparent background (only available for png)")
+      ]);
+      echo "&nbsp;<label>" . __("Transparent background (only available for png)") . "</label>";
+      echo "</td>";
+      echo "</tr>";
       echo "</table>";
       echo "<a id=\"export_link\" href=\"\" download=\"impact.png\" style=\"display:none;\">";
       echo "</div>";
@@ -707,6 +719,43 @@ class Impact extends CommonDBRelation {
       $backward  = self::DEPENDS_COLOR;
       $both      = self::IMPACT_AND_DEPENDS_COLOR;
       $startNode = self::getNodeID($item);
+      $dialogs = json_encode([
+         [
+            'key'    => 'addNode',
+            'id'     => "#addNodeDialog",
+            'inputs' => [
+               'itemType' => "select[name=item_type]",
+               'itemID'   => "select[name=item_id]"
+            ]
+         ],
+         [
+            'key'    => 'configColor',
+            'id'     => '#configColorDialog',
+            'inputs' => [
+               'dependsColor'          => "input[name=depends_color]",
+               'impactColor'           => "input[name=impact_color]",
+               'impactAndDependsColor' => "input[name=impact_and_depends_color]",
+            ]
+         ],
+         [
+            'key'    => 'exportDialog',
+            'id'     => '#exportDialog',
+            'inputs' => [
+               'format'     => "select[name=impact_format]",
+               'background' => "#transparentBackground",
+               'link'       => "#export_link",
+            ]
+         ]
+      ]);
+      $toolbar = json_encode([
+         ['key'    => 'addNode',       'id' => "#add_node"],
+         ['key'    => 'addEdge',       'id' => "#add_edge"],
+         ['key'    => 'deleteElement', 'id' => "#delete_element"],
+         ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
+         ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
+         ['key'    => 'colorPicker',   'id' => "#color_picker"],
+         ['key'    => 'export',        'id' => "#export"]
+      ]);
 
       // Get var from server side
       $js = "
@@ -719,7 +768,9 @@ class Impact extends CommonDBRelation {
                backward: '$backward',
                both    : '$both',
             },
-            '$startNode'
+            '$startNode',
+            '$dialogs',
+            '$toolbar'
          )
       ";
 
