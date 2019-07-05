@@ -97,6 +97,18 @@ var impact = {
             }
          },
          {
+            selector: '[hidden=1]',
+            style: {
+               'opacity': '0',
+            }
+         },
+         {
+            selector: '[hidden=0]',
+            style: {
+               'opacity': '1',
+            }
+         },
+         {
             selector: '[id="tmp_node"]',
             style: {
                'opacity': '0',
@@ -263,6 +275,44 @@ var impact = {
       exploredNodes = {};
       exploredNodes[this.startNode] = true;
       this.exploreGraph(exploredNodes, BACKWARD, this.startNode);
+   },
+
+   toggleVisibility: function(toToggle) {
+      // Update visibility setting
+      impact.directionVisibility[toToggle] = !impact.directionVisibility[toToggle];
+
+      // Compute direction
+      var forward = impact.directionVisibility[FORWARD];
+      var backward = impact.directionVisibility[BACKWARD];
+
+      if (forward && backward) {
+         direction = BOTH;
+      } else if (!forward && backward) {
+         direction = BACKWARD;
+      } else if (forward && !backward) {
+         direction = FORWARD;
+      } else {
+         direction = 0;
+      }
+
+      // Hide all nodes
+      impact.cy.filter("node").data('hidden', 1);
+
+      impact.cy.filter("edge").forEach(function(edge) {
+
+         // Show/Hide edges according to the direction
+         if (edge.data('flag') & direction) {
+            edge.data('hidden', 0);
+
+            // If the edge is visible, show the nodes they are connected to it
+            var sourceFilter = "node[id='" + edge.data('source') + "']";
+            var targetFilter = "node[id='" + edge.data('target') + "']";
+            impact.cy.filter(sourceFilter + ", " + targetFilter)
+               .data("hidden", 0);
+         } else {
+            edge.data('hidden', 1);
+         }
+      });
    },
 
    /**
@@ -840,5 +890,19 @@ $(document).ready(function() {
     */
    $("#delete_element").click(function() {
       impact.tryEditionMode(EDITION_DELETE);
+   });
+
+   /**
+    * Toggle impact visibility
+    */
+   $("#toggle_impact").click(function() {
+      impact.toggleVisibility(FORWARD);;
+   });
+
+   /**
+    * Toggle depends visibility
+    */
+   $("#toggle_depends").click(function() {
+      impact.toggleVisibility(BACKWARD);;
    });
 });
