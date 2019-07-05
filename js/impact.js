@@ -40,6 +40,7 @@ var NODE = 1;
 var EDGE = 2;
 
 // Constant for graph direction (bitmask)
+var DEFAULT  = 0;   // 0b00
 var FORWARD  = 1;   // 0b01
 var BACKWARD = 2;   // 0b10
 var BOTH     = 3;   // 0b11
@@ -156,6 +157,7 @@ var impact = {
    getNetworkLayout: function () {
       return {
          name: 'grid',
+         rows: 3,
          // transform: function(node, position) {
          //    var sin = Math.sin(90);
          //    var cos = Math.cos(90);
@@ -188,10 +190,11 @@ var impact = {
       this.directionVisibility[BACKWARD] = true;
 
       // Set colors for edges
-      this.edgeColors[0]         = colors.default;
-      this.edgeColors[FORWARD]   = colors.forward;
-      this.edgeColors[BACKWARD]  = colors.backward;
-      this.edgeColors[BOTH]      = colors.both;
+      this.setEdgeColors(colors);
+      // this.edgeColors[0]         = colors.default;
+      // this.edgeColors[FORWARD]   = colors.forward;
+      // this.edgeColors[BACKWARD]  = colors.backward;
+      // this.edgeColors[BOTH]      = colors.both;
 
       // Set start node
       this.startNode = startNode;
@@ -254,6 +257,13 @@ var impact = {
    },
 
    /**
+    * Reload the graph style
+    */
+   updateStyle: function() {
+      this.cy.style(this.getNetworkStyle());
+   },
+
+   /**
     * Update the flags of the edges of the graph
     * Explore the graph forward then backward
     */
@@ -277,6 +287,11 @@ var impact = {
       this.exploreGraph(exploredNodes, BACKWARD, this.startNode);
    },
 
+   /**
+    * Toggle impact/depends visibility
+    *
+    * @param {*} toToggle
+    */
    toggleVisibility: function(toToggle) {
       // Update visibility setting
       impact.directionVisibility[toToggle] = !impact.directionVisibility[toToggle];
@@ -313,6 +328,10 @@ var impact = {
             edge.data('hidden', 1);
          }
       });
+
+      // Start node should always be visible
+      impact.cy.filter(impact.makeIDSelector(impact.startNode))
+         .data("hidden", 0);
    },
 
    /**
@@ -480,6 +499,29 @@ var impact = {
    },
 
    /**
+    * Set the colors
+    *
+    * @param {object} colors default, backward, forward, both
+    */
+   setEdgeColors: function (colors) {
+      this.setColorIfExist(DEFAULT, colors.default);
+      this.setColorIfExist(BACKWARD, colors.backward)
+      this.setColorIfExist(FORWARD, colors.forward)
+      this.setColorIfExist(BOTH, colors.both)
+   },
+
+   /**
+    * Set color if exist
+    *
+    * @param {object} colors default, backward, forward, both
+    */
+   setColorIfExist: function (index, color) {
+      if (color !== undefined) {
+         this.edgeColors[index] = color;
+      }
+   },
+
+   /**
     * Go to a specific edition mode unless we are already in that mode, in this
     * case we go back to the default mode
     *
@@ -551,6 +593,8 @@ var impact = {
     *
     * @param {Cytosocape} cy
     * @param {Object} position x, y
+    *
+    * @returns {Object}
     */
    getAddNodeDialog: function(cy, position) {
       // Build a new graph from the selected node and insert it
@@ -600,6 +644,34 @@ var impact = {
       return {
          modal: true,
          buttons: [buttonAdd, buttonCancel]
+      };
+   },
+
+   /**
+    * Build the color picker dialog
+    *
+    * @returns {Object}
+    */
+   getColorPickerDialog: function() {
+      var buttonUpdate = {
+         text: "Update",
+         click: function() {
+            impact.setEdgeColors({
+               backward: $('input[name=depends_color]').val(),
+               forward : $('input[name=impact_color]').val(),
+               both    : $('input[name=impact_and_depends_color]').val(),
+            });
+            impact.updateStyle();
+            $(this).dialog( "close" );
+         }
+      };
+
+      return {
+         modal: true,
+         width: 'auto',
+         draggable: false,
+         title: this.getLocale("colorConfiguration"),
+         buttons: [buttonUpdate]
       };
    },
 
@@ -896,13 +968,20 @@ $(document).ready(function() {
     * Toggle impact visibility
     */
    $("#toggle_impact").click(function() {
-      impact.toggleVisibility(FORWARD);;
+      impact.toggleVisibility(FORWARD);
    });
 
    /**
     * Toggle depends visibility
     */
    $("#toggle_depends").click(function() {
-      impact.toggleVisibility(BACKWARD);;
+      impact.toggleVisibility(BACKWARD);
+   });
+
+   /**
+    * Color picker
+    */
+   $("#color_picker").click(function() {
+      $("#configColorDialog").dialog(impact.getColorPickerDialog());
    });
 });
