@@ -876,9 +876,13 @@ class Ticket extends CommonITILObject {
       $this->addStandardTab('KnowbaseItem_Item', $ong, $options);
       $this->addStandardTab('Item_Ticket', $ong, $options);
 
-      // Show impact if enabled on at least one item
-      if (count($CFG_GLPI['impact_assets_list'])) {
-         $this->addStandardTab('Impact', $ong, $options);
+      // Enable impact tab if there is a valid linked item
+      foreach ($this->getLinkedItems() as $linkedItem) {
+         $class = $linkedItem['itemtype'];
+         if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
+            $this->addStandardTab('Impact', $ong, $options);
+            break;
+         }
       }
 
       $this->addStandardTab('TicketCost', $ong, $options);
@@ -7156,7 +7160,7 @@ class Ticket extends CommonITILObject {
          foreach ($assets as $key => $asset) {
             /** @var CommonDBTM $item */
             $item = new $asset['itemtype'];
-            $item->getFromDB($asset['id']);
+            $item->getFromDB($asset['items_id']);
 
             // Add name
             $assets[$key]['name'] = $item->fields['name'];

@@ -88,6 +88,29 @@ class Impact extends CommonDBRelation {
 
       $class = get_class($item);
 
+      // For an ITIL object, load the first linked element by default
+      if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
+         $linkedItems = $item->getLinkedItems();
+
+         // Search for a valid linked item
+         $found = false;
+         foreach ($linkedItems as $linkedItem) {
+            $class = $linkedItem['itemtype'];
+            if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
+               self::printAssetSelectionForm($linkedItems);
+               $found = true;
+               $item = new $class;
+               $item->getFromDB($linkedItem['items_id']);
+               break;
+            }
+         }
+
+         // No impact to display, tab shouldn't be visible
+         if (!$found) {
+            return true;
+         }
+      }
+
       if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
          // Asset : show the impact network
          self::loadLibs();
@@ -162,21 +185,22 @@ class Impact extends CommonDBRelation {
 
       // prepare values
       $values = [];
-      $values['default'] = Dropdown::EMPTY_VALUE;
 
       foreach ($items as $item) {
-         // Add itemtype if not found yet
-         $itemTypeLabel = __($item['itemtype']);
-         if (!isset($values[$itemTypeLabel])) {
-            $values[$itemTypeLabel] = [];
-         }
+         if (in_array($item['itemtype'], $CFG_GLPI['impact_assets_list'])) {
+            // Add itemtype if not found yet
+            $itemTypeLabel = __($item['itemtype']);
+            if (!isset($values[$itemTypeLabel])) {
+               $values[$itemTypeLabel] = [];
+            }
 
-         $key = $item['itemtype'] . "::" . $item['items_id'];
-         $values[$itemTypeLabel][$key] = $item['name'];
-         // $values[$key] = $item['name'];
+            $key = $item['itemtype'] . "::" . $item['items_id'];
+            $values[$itemTypeLabel][$key] = $item['name'];
+         }
       }
 
       Dropdown::showFromArray("impact_assets_selection_dropdown", $values);
+      echo "<br><br>";
 
       // Form interaction
       echo Html::scriptBlock('
@@ -201,8 +225,8 @@ class Impact extends CommonDBRelation {
                      itemID:     values[1],
                   },
                   success: function(data, textStatus, jqXHR) {
-                     window.data = data;
-                     initImpactNetwork(glpiLocales, value);
+                     console.log(data);
+                     impact.replaceGraph(JSON.parse(data));
                   },
                   dataType: "json"
                });
@@ -498,10 +522,7 @@ class Impact extends CommonDBRelation {
     * @param array $edges  Edges of the graph
     */
    public static function buildNetwork(CommonDBTM $item) {
-      // Get needed var from php to init the network
-
-      // var currentItem = '$currentItem';
-      $currentItem   = self::getNodeID($item);
+      // Build the graph
       $graph = self::makeDataForCytoscape(Impact::buildGraph($item));
 
       echo Html::scriptBlock("

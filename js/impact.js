@@ -492,6 +492,15 @@ var impact = {
       this.cy.on('click', 'node', this.nodeOnClick);
    },
 
+   replaceGraph(newGraph) {
+      // Remove current graph
+      this.cy.remove("");
+      this.delta = {};
+
+      // Set the new graph
+      var layout = this.cy.add(newGraph).layout(impact.getNetworkLayout());
+      layout.run();
+   },
 
    /**
     * Create ID for nodes and egdes
