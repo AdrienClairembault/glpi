@@ -90,13 +90,13 @@ class Impact extends CommonDBRelation {
 
       if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
          // Asset : show the impact network
-         self::loadVisJS();
+         self::loadLibs();
          self::prepareImpactNetwork($item);
          self::buildNetwork($item);
          // TODO: fix after cytoscape
          // } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
          //    // ITIL object : show asset selection form
-         //    self::loadVisJS();
+         //    self::loadLibs();
          //    self::printAssetSelectionForm($item->getLinkedItems());
          //    self::prepareImpactNetwork();
       }
@@ -105,15 +105,14 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Load the vis.js library used to build the impact analysis graph
+    * Load the cytoscape and spectrum-colorpicker librairies
     *
     * @since 9.5
     */
-   public static function loadVisJS() {
-
+   public static function loadLibs() {
       echo Html::css('public/lib/spectrum-colorpicker.css');
       echo Html::script("public/lib/spectrum-colorpicker.js");
-      // echo Html::css('public/lib/vis.css');
+      echo Html::css('public/lib/cytoscape.css');
       echo Html::script("public/lib/cytoscape.js");
    }
 
@@ -415,7 +414,6 @@ class Impact extends CommonDBRelation {
     * @return bool true if the node was missing, else false
     */
    public static function addNode(array &$nodes, CommonDBTM $item) {
-
       global $CFG_GLPI;
 
       // Check if the node already exist
@@ -423,55 +421,20 @@ class Impact extends CommonDBRelation {
       if (isset($nodes[$key])) {
          return false;
       }
-
-      $ticket = new Ticket();
-      $problem = new Problem();
-      $change = new Change();
       $imageName = strtolower(get_class($item));
 
       $newNode = [
-         'label'  => $item->fields['name'],
-         'image'  => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
-         'incidents' => iterator_to_array(
-            $ticket->getActiveTicketsForItem(
-               get_class($item),
-               $item->getID(),
-               Ticket::INCIDENT_TYPE
-            ),
-            false
-         ),
-         'requests'  => iterator_to_array(
-            $ticket->getActiveTicketsForItem(
-               get_class($item),
-               $item->getID(),
-               Ticket::DEMAND_TYPE
-            ),
-            false
-         ),
-         'changes'   => iterator_to_array(
-            $change->getActiveChangesForItem(
-               get_class($item),
-               $item->getID()
-            ),
-            false
-         ),
-         'problems'  => iterator_to_array(
-            $problem->getActiveProblemsForItem(
-               get_class($item),
-               $item->getID()
-            ),
-            false
-         ),
-         'link' => $item->getLinkURL()
+         'id'          => $key,
+         'label'       => $item->fields['name'],
+         'image'       => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
+         'ITILObjects' => $item->getITILTickets(true),
+         'link'        => $item->getLinkURL()
       ];
 
-      $count = count($newNode['incidents']) + count($newNode['requests'])
-             + count($newNode['changes']) + count($newNode['problems']);
-
-      // Warning icon and tooltip if at least one ticket is found
-      if ($count) {
-         $newNode['label'] .= " ($count)";
-         $newNode['title'] = __("Click to see ongoing tickets...");
+      $itilTicketsCount = $newNode['ITILObjects']['count'];
+      if ($itilTicketsCount > 0) {
+         $newNode['label'] .= " ($itilTicketsCount)";
+         $newNode['hasITILObjects'] = 1;
       }
 
       // Insert the node
@@ -519,11 +482,10 @@ class Impact extends CommonDBRelation {
 
       // Add the new edge
       $edges[$key] = [
-         'id'        => $key,
-         'from'      => $from,
-         'to'        => $to,
-         'arrows'    => "to",
-         'flag'      => $direction
+         'id'     => $key,
+         'source' => $from,
+         'target' => $to,
+         'flag'   => $direction
       ];
    }
 
@@ -549,30 +511,40 @@ class Impact extends CommonDBRelation {
       ");
    }
 
+   /**
+    * Convert the php array reprensenting the graph into the format required by
+    * the Cytoscape library
+    *
+    * @param array $graph
+    *
+    * @return string json data
+    */
    public static function makeDataForCytoscape(array $graph) {
       $data = [];
 
       foreach ($graph['nodes'] as $id => $node) {
          $data[] = [
             'group' => 'nodes',
-            'data'  => [
-               'id'    => $id,
-               'label' => $node['label'],
-               'image' => $node['image'],
-               'link'  => $node['link'],
-            ]
+            'data'  => $node,
+         //    'data'  => [
+         //       'id'    => $id,
+         //       'label' => $node['label'],
+         //       'image' => $node['image'],
+         //       'link'  => $node['link'],
+         //    ]
          ];
       }
 
       foreach ($graph['edges'] as $id => $edge) {
          $data[] = [
             'group' => 'edges',
-            'data'  => [
-               'id' => $id,
-               'source' => $edge['from'],
-               'target' => $edge['to'],
-               'flag'   => $edge['flag']
-            ]
+            'data'  => $edge,
+            // 'data'  => [
+               // 'id' => $id,
+               // 'source' => $edge['from'],
+               // 'target' => $edge['to'],
+               // 'flag'   => $edge['flag']
+            // ]
          ];
       }
 
@@ -633,7 +605,8 @@ class Impact extends CommonDBRelation {
       echo "</table>";
       echo "</div>";
 
-      echo '<div id="ticketsDialog"></div>';
+      // This dialog will be built on the front end
+      echo '<div id="ongoingDialog"></div>';
    }
 
    public static function printColorConfigDialog() {
@@ -745,6 +718,10 @@ class Impact extends CommonDBRelation {
                'background' => "#transparentBackground",
                'link'       => "#export_link",
             ]
+         ],
+         [
+            'key' => "ongoingDialog",
+            'id'  => "#ongoingDialog"
          ]
       ]);
       $toolbar = json_encode([
@@ -967,6 +944,11 @@ class Impact extends CommonDBRelation {
          'showImpact'          => __("Impact"),
          'colorConfiguration'  => __("Colors"),
          'export'              => __("Export"),
+         'goTo'                => __("Go to"),
+         'goTo+'               => __("Open this element in a new tab"),
+         'showOngoing'         => __("Show ongoing tickets"),
+         'showOngoing+'        => __("Show ongoing tickets for this item"),
+         'ongoingTickets'      => __("Ongoing tickets"),
       ];
 
       return addslashes(json_encode($locales));

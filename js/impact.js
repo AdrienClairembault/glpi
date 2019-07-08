@@ -103,6 +103,9 @@ var impact = {
             background: null,
             link      : null
          }
+      },
+      ongoingDialog: {
+         id: null
       }
    },
 
@@ -209,6 +212,185 @@ var impact = {
    },
 
    /**
+    * Get the context menu items
+    *
+    * @returns {Array}
+    */
+   getContextMenuItems: function(){
+      return [
+         {
+            id: 'goTo',
+            content: this.getLocale("goTo"),
+            tooltipText: this.getLocale("goTo+"),
+            selector: 'node',
+            onClickFunction: this.menuOnGoTo
+         },
+         {
+            id: 'showOngoing',
+            content: this.getLocale("showOngoing"),
+            tooltipText: this.getLocale("showOngoing+"),
+            selector: 'node[hasITILObjects=1]',
+            onClickFunction: this.menuOnShowOngoing
+         },
+         // {
+         //    id: 'add-node',
+         //    content: 'add node',
+         //    tooltipText: 'add node',
+         //    image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
+         //    selector: 'node',
+         //    coreAsWell: true,
+         //    onClickFunction: function () {
+         //    console.log('add node');
+         //    }
+         // }
+      ];
+   },
+
+   /**
+    * Build the add node dialog
+    *
+    * @param {string} itemID
+    * @param {string} itemType
+    * @param {Object} position x, y
+    *
+    * @returns {Object}
+    */
+   getAddNodeDialog: function(itemID, itemType, position) {
+      // Build a new graph from the selected node and insert it
+      var buttonAdd = {
+         text: impact.getLocale("add"),
+         click: function() {
+            var node = {
+               itemType: $(itemID).val(),
+               itemID  : $(itemType).val(),
+            };
+            var nodeID = impact.makeID(NODE, node.itemType, node.itemID);
+
+            // Check if the node is already on the graph
+            if (impact.cy.filter('node[id="' + nodeID + '"]')
+               .length > 0) {
+               alert(impact.getLocale("duplicateAsset"));
+               return;
+            }
+
+            // Build the new subgraph
+            $.when(impact.buildGraphFromNode(node)).then(
+               function (graph) {
+                  // Insert the new graph data into the current graph
+                  impact.insertGraph(graph, {
+                     id: nodeID,
+                     x: position.x,
+                     y: position.y
+                  });
+                  impact.updateFlags();
+                  $(impact.dialogs.addNode.id).dialog("close");
+                  impact.setEditionMode(EDITION_DEFAULT);
+               },
+               function () {
+                  // Ajax failed
+                  alert(impact.getLocale("unexpectedError"));
+               },
+            );
+         }
+      }
+
+      // Exit edit mode
+      var buttonCancel = {
+         text: impact.getLocale("cancel"),
+         click: function() {
+            $(this).dialog("close");
+            impact.setEditionMode(EDITION_DEFAULT);
+         }
+      };
+
+      return {
+         modal: true,
+         buttons: [buttonAdd, buttonCancel]
+      };
+   },
+
+   /**
+    * Build the color picker dialog
+    *
+    * @param {JQuery} backward
+    * @param {JQuery} forward
+    * @param {JQuery} both
+    *
+    * @returns {Object}
+    */
+   getColorPickerDialog: function(backward, forward, both) {
+      var buttonUpdate = {
+         text: "Update",
+         click: function() {
+            impact.setEdgeColors({
+               backward: backward.val(),
+               forward : forward.val(),
+               both    : both.val(),
+            });
+            impact.updateStyle();
+            $(this).dialog( "close" );
+         }
+      };
+
+      return {
+         modal: true,
+         width: 'auto',
+         draggable: false,
+         title: this.getLocale("colorConfiguration"),
+         buttons: [buttonUpdate]
+      };
+   },
+
+   /**
+    * Build the export dialog
+    *
+    * @param {JQuery} format
+    * @param {JQuery} transparentBackground
+    * @param {JQuery} link
+    *
+    * @returns {Object}
+    */
+   getExportDialog: function(format, transparentBackground, link) {
+      var exportButton = {
+         text: this.getLocale("export"),
+         click: function() {
+            var exportData = impact.exportGraph(
+               format.find("option:selected").val(),
+               transparentBackground.is(':checked')
+            );
+            link.prop('download', exportData.filename);
+            link.prop("href", exportData.filecontent);
+            link[0].click();
+         }
+      };
+
+      return {
+         modal: true,
+         width: 'auto',
+         draggable: false,
+         title: this.getLocale("export"),
+         buttons: [exportButton]
+      };
+   },
+
+    /**
+    * Build the add node dialog
+    *
+    * @param {string} itemID
+    * @param {string} itemType
+    * @param {Object} position x, y
+    *
+    * @returns {Object}
+    */
+   getOngoingDialog: function(itemID, itemType, position) {
+      return {
+         title: impact.getLocale("ongoingTickets"),
+         modal: true,
+         buttons: []
+      };
+   },
+
+   /**
     * Register the dialogs generated by the backend server
     *
     * @param {string} key
@@ -217,9 +399,11 @@ var impact = {
     */
    registerDialog: function(key, id, inputs) {
       impact.dialogs[key]['id'] = id;
-      Object.keys(inputs).forEach(function (inputKey){
-         impact.dialogs[key]['inputs'][inputKey] = inputs[inputKey];
-      });
+      if (inputs) {
+         Object.keys(inputs).forEach(function (inputKey){
+            impact.dialogs[key]['inputs'][inputKey] = inputs[inputKey];
+         });
+      }
    },
 
    /**
@@ -292,15 +476,22 @@ var impact = {
          layout   : this.getNetworkLayout(),
       });
 
-      // Register events handlers
+      // Enable context menu
+      window.ctxm = this.cy.contextMenus({
+         menuItems: this.getContextMenuItems(),
+         menuItemClasses: [],
+         contextMenuClasses: []
+      });
+
+      // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
       this.cy.on('mouseup', 'node', this.nodeOnMouseup);
       this.cy.on('mousemove', this.onMousemove);
       this.cy.on('click', this.onClick);
       this.cy.on('click', 'edge', this.edgeOnClick);
       this.cy.on('click', 'node', this.nodeOnClick);
-      this.cy.on('dblclick', 'node', this.nodeOnDblclick);
    },
+
 
    /**
     * Create ID for nodes and egdes
@@ -682,130 +873,25 @@ var impact = {
    },
 
    /**
-    * Build the add node dialog
+    * Get node at target position
     *
-    * @param {string} itemID
-    * @param {string} itemType
     * @param {Object} position x, y
-    *
-    * @returns {Object}
+    * @param {function} filter if false return null
     */
-   getAddNodeDialog: function(itemID, itemType, position) {
-      // Build a new graph from the selected node and insert it
-      var buttonAdd = {
-         text: impact.getLocale("add"),
-         click: function() {
-            var node = {
-               itemType: $(itemID).val(),
-               itemID  : $(itemType).val(),
-            };
-            var nodeID = impact.makeID(NODE, node.itemType, node.itemID);
+   getNodeAt: function(position, filter) {
+      var nodes = this.cy.nodes();
 
-            // Check if the node is already on the graph
-            if (impact.cy.filter('node[id="' + nodeID + '"]')
-               .length > 0) {
-               alert(impact.getLocale("duplicateAsset"));
-               return;
-            }
-
-            // Build the new subgraph
-            $.when(impact.buildGraphFromNode(node)).then(
-               function (graph) {
-                  // Insert the new graph data into the current graph
-                  impact.insertGraph(graph, {
-                     id: nodeID,
-                     x: position.x,
-                     y: position.y
-                  });
-                  impact.updateFlags();
-                  $(impact.dialogs.addNode.id).dialog("close");
-                  impact.setEditionMode(EDITION_DEFAULT);
-               },
-               function () {
-                  // Ajax failed
-                  alert(impact.getLocale("unexpectedError"));
-               },
-            );
+      for (var i=0; i<nodes.length; i++) {
+         if (nodes[i].boundingBox().x1 < position.x
+          && nodes[i].boundingBox().x2 > position.x
+          && nodes[i].boundingBox().y1 < position.y
+          && nodes[i].boundingBox().y2 > position.y) {
+            // Check if the node is excluded
+            return filter(nodes[i].id()) ? nodes[i].id() : null;
          }
       }
 
-      // Exit edit mode
-      var buttonCancel = {
-         text: impact.getLocale("cancel"),
-         click: function() {
-            $(this).dialog("close");
-            impact.setEditionMode(EDITION_DEFAULT);
-         }
-      };
-
-      return {
-         modal: true,
-         buttons: [buttonAdd, buttonCancel]
-      };
-   },
-
-   /**
-    * Build the color picker dialog
-    *
-    * @param {JQuery} backward
-    * @param {JQuery} forward
-    * @param {JQuery} both
-    *
-    * @returns {Object}
-    */
-   getColorPickerDialog: function(backward, forward, both) {
-      var buttonUpdate = {
-         text: "Update",
-         click: function() {
-            impact.setEdgeColors({
-               backward: backward.val(),
-               forward : forward.val(),
-               both    : both.val(),
-            });
-            impact.updateStyle();
-            $(this).dialog( "close" );
-         }
-      };
-
-      return {
-         modal: true,
-         width: 'auto',
-         draggable: false,
-         title: this.getLocale("colorConfiguration"),
-         buttons: [buttonUpdate]
-      };
-   },
-
-   /**
-    * Build the export dialog
-    *
-    * @param {JQuery} format
-    * @param {JQuery} transparentBackground
-    * @param {JQuery} link
-    *
-    * @returns {Object}
-    */
-   getExportDialog: function(format, transparentBackground, link) {
-      var exportButton = {
-         text: this.getLocale("export"),
-         click: function() {
-            var exportData = impact.exportGraph(
-               format.find("option:selected").val(),
-               transparentBackground.is(':checked')
-            );
-            link.prop('download', exportData.filename);
-            link.prop("href", exportData.filecontent);
-            link[0].click();
-         }
-      };
-
-      return {
-         modal: true,
-         width: 'auto',
-         draggable: false,
-         title: this.getLocale("export"),
-         buttons: [exportButton]
-      };
+      return null;
    },
 
    /**
@@ -865,38 +951,6 @@ var impact = {
     * @param {JQuery.Event} event
     */
    nodeOnClick: function (event) {
-      switch (impact.editionMode) {
-         case EDITION_DEFAULT:
-            break;
-
-         case EDITION_ADD_NODE:
-            break;
-
-         case EDITION_ADD_EDGE:
-            break;
-
-         case EDITION_DELETE:
-            // Remove all edges connected to this node from graph and delta
-            var sourceFilter = "edge[source='" + this.data('id') + "']";
-            var targetFilter = "edge[target='" + this.data('id') + "']";
-
-            event.cy.filter(sourceFilter + ", " + targetFilter)
-               .forEach(function(edge) {
-                  impact.updateDelta("delete", edge.data('id'));
-               }
-            );
-
-            event.cy.remove(impact.makeIDSelector(this.data('id')));
-            break;
-      }
-   },
-
-   /**
-    * Handle double click on node
-    *
-    * @param {JQuery.Event} event
-    */
-   nodeOnDblclick: function (event) {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             break;
@@ -1014,7 +1068,7 @@ var impact = {
     *
     * @param {JQuery.Event} event
     */
-   onMousemove: function (event) {
+   onMousemove: function(event) {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             break;
@@ -1033,33 +1087,25 @@ var impact = {
                event.cy.remove(eventData.tmpEles);
             }
 
-            // Check if there is a node at the current mouse position
-            // This node can't be the starting node or a node already linked to us
-            var nodes = event.cy.nodes();
-            var node = null;
-
-            for (var i=0; i<nodes.length; i++) {
-               if (nodes[i].boundingBox().x1 < event.position.x
-                  && nodes[i].boundingBox().x2 > event.position.x
-                  && nodes[i].boundingBox().y1 < event.position.y
-                  && nodes[i].boundingBox().y2 > event.position.y
-                  && nodes[i].id() != eventData.addEdgeStart) {
-
-                  var edgeID = impact.makeID(
-                     EDGE,
-                     eventData.addEdgeStart,
-                     nodes[i].id()
-                  );
-
-                  if (event.cy.filter('edge[id="' + edgeID + '"]').length > 0) {
-                     break;
-                  }
-
-                  // Correct node found, set node id
-                  node = nodes[i].id();
-                  break;
+            var node = impact.getNodeAt(event.position, function(nodeID) {
+               // Can't link to itself
+               if (nodeID == eventData.addEdgeStart) {
+                  return false;
                }
-            }
+
+               // The created edge shouldn't already exist
+               var edgeID = impact.makeID(EDGE, eventData.addEdgeStart, nodeID);
+               if (impact.cy.filter('edge[id="' + edgeID + '"]').length > 0) {
+                  return false;
+               }
+
+               // The node must be visible
+               if (impact.cy.getElementById(nodeID).data('hidden')) {
+                  return false;
+               }
+
+               return true;
+            });
 
             if (node != null) {
                // Add temporary edge to node hovered by the user
@@ -1107,43 +1153,98 @@ var impact = {
       }
    },
 
-   initToolbar: function () {
+   /**
+    * Handle 'goTo' menu event
+    *
+    * @param {JQuery.Event} event
+    */
+   menuOnGoTo: function(event) {
+      window.open(event.target.data('link'), 'blank');
+   },
+
+   /**
+    * Build the ongoing dialog content according to the list of ITILObjects
+    *
+    * @param {Object} ITILObjects requests, incidents, changes, problems
+    *
+    * @returns {string}
+    */
+   buildOngoingDialogContent: function(ITILObjects) {
+      return this.listElements("Requests", ITILObjects.requests, "ticket")
+         + this.listElements("Incidents", ITILObjects.incidents, "ticket")
+         + this.listElements("Changes", ITILObjects.changes , "change")
+         + this.listElements("Problems", ITILObjects.problems, "problem");
+   },
+
+   /**
+    * Build an html list
+    *
+    * @param {string} title requests, incidents, changes, problems
+    * @param {string} elements requests, incidents, changes, problems
+    * @param {string} url key used to generate the URL
+    *
+    * @returns {string}
+    */
+   listElements: function(title, elements, url) {
+      html = "";
+
+      if (elements.length > 0) {
+         html += "<h3>" + this.getLocale(title) + "</h3>";
+         html += "<ul>";
+
+         elements.forEach(function(element) {
+            var link = "./" + url + ".form.php?id=" + element.id;
+            html += '<li><a target="_blank" href="' + link + '">' + element.name
+               + '</a></li>';
+         });
+         html += "</ul>";
+      }
+
+      return html;
+   },
+
+   /**
+    * Handle 'showOngoing' menu event
+    *
+    * @param {JQuery.Event} event
+    */
+   menuOnShowOngoing: function(event) {
+      $(impact.dialogs.ongoingDialog.id).html(
+         impact.buildOngoingDialogContent(event.target.data('ITILObjects'))
+      );
+      $(impact.dialogs.ongoingDialog.id).dialog(impact.getOngoingDialog());
+   },
+
+   /**
+    * Set event handler for toolbar events
+    */
+   initToolbar: function() {
       // Add a new node on the graph
       $(impact.toolbar.addNode).click(function() {
          impact.tryEditionMode(EDITION_ADD_NODE);
       });
 
-      /**
-       * Add a new edge on the graph
-       */
+      // Add a new edge on the graph
       $(impact.toolbar.addEdge).click(function() {
          impact.tryEditionMode(EDITION_ADD_EDGE);
       });
 
-      /**
-       * Enter delete mode
-       */
+      // Enter delete mode
       $(impact.toolbar.deleteElement).click(function() {
          impact.tryEditionMode(EDITION_DELETE);
       });
 
-      /**
-       * Toggle impact visibility
-       */
+      // Toggle impact visibility
       $(impact.toolbar.toggleImpact).click(function() {
          impact.toggleVisibility(FORWARD);
       });
 
-      /**
-       * Toggle depends visibility
-       */
+      // Toggle depends visibility
       $(impact.toolbar.toggleDepends).click(function() {
          impact.toggleVisibility(BACKWARD);
       });
 
-      /**
-       * Color picker
-       */
+      // Color picker
       $(impact.toolbar.colorPicker).click(function() {
          $(impact.dialogs.configColor.id).dialog(impact.getColorPickerDialog(
             $(impact.dialogs.configColor.inputs.dependsColor),
@@ -1152,9 +1253,7 @@ var impact = {
          ));
       });
 
-      /**
-       * Export graph
-       */
+      // Export graph
       $(impact.toolbar.export).click(function() {
          $(impact.dialogs.exportDialog.id).dialog(impact.getExportDialog(
             $(impact.dialogs.exportDialog.inputs.format),
