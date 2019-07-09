@@ -148,7 +148,7 @@ class Impact extends CommonDBRelation {
       echo '
          <style type="text/css">
             #networkContainer {
-               width: 100%;
+              /* width: 100%;*/
                height: 65vh;
                border: 1px solid lightgray;
             }
@@ -170,6 +170,29 @@ class Impact extends CommonDBRelation {
             div.vis-network div.vis-edit-mode div.vis-label {
                margin: 0 !important;;
             }
+
+            .impact_toolbar {
+               width: 100%;
+               background-color: #3a5693;
+               overflow: auto;
+            }
+
+            .impact_toolbar span {
+               float: left;
+               color: white;
+               font-size: 20px;
+               padding: 8px 16px;
+               transition: all 0.3s ease;
+            }
+
+            .impact_toolbar span:hover {
+               background-color: #8cabdb;
+            }
+
+            .impact_toolbar .active {
+               background-color: #8cabdb;
+            }
+
          </style>
       ';
    }
@@ -243,13 +266,7 @@ class Impact extends CommonDBRelation {
    public static function printImpactNetworkContainer() {
       $action = Toolbox::getItemTypeFormURL(__CLASS__);
       $formName = "form_impact_network";
-      echo "<button id=add_node>add node</button>";
-      echo "<button id=add_edge>add egde</button>";
-      echo "<button id=delete_element>delete_element</button>";
-      echo "<button id=toggle_impact>toggle_impact</button>";
-      echo "<button id=toggle_depends>toggle_depends</button>";
-      echo "<button id=color_picker>color_picker</button>";
-      echo "<button id=export>export</button>";
+
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
       echo "<table class='tab_cadre_fixe'>";
 
@@ -260,6 +277,19 @@ class Impact extends CommonDBRelation {
 
       // Second row : network graph
       echo "<tr><td>";
+      echo '<div class="impact_toolbar">';
+      $hidden = 'style="display: none;"';
+      echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
+      echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
+      echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
+      echo '<span id="exportGraph"><i class="fas fa-download"></i></span>';
+      echo '<span id="expandToolbar"><i class="fas fa-caret-right"></i></span>';
+      echo '<span id="toggle_impact" ' . $hidden . '><i class="fas fa-eye"></i> Impact </span>';
+      echo '<span id="toggle_depends"' . $hidden . '><i class="fas fa-eye"></i> Depends </span>';
+      echo '<span id="color_picker"' . $hidden . '><i class="fas fa-palette"></i></span>';
+      echo '<span id="retractToolbar"' . $hidden . '><i class="fas fa-caret-left"></i></span>';
+
+      echo '</div>';
       echo '<div id="networkContainer"></div>';
       echo "</td></tr>";
 
@@ -749,10 +779,12 @@ class Impact extends CommonDBRelation {
          ['key'    => 'addNode',       'id' => "#add_node"],
          ['key'    => 'addEdge',       'id' => "#add_edge"],
          ['key'    => 'deleteElement', 'id' => "#delete_element"],
+         ['key'    => 'export',        'id' => "#exportGraph"],
+         ['key'    => 'expandToolbar', 'id' => "#expandToolbar"],
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
-         ['key'    => 'export',        'id' => "#export"]
+         ['key'    => 'retractToolbar','id' => "#retractToolbar"]
       ]);
 
       // Get var from server side

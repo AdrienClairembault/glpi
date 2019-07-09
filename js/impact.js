@@ -74,7 +74,7 @@ var impact = {
    impactContainer: null,
 
    // The graph edition mode
-   editionMode: EDITION_DEFAULT,
+   editionMode: null,
 
    // Start node of the graph
    startNode: null,
@@ -111,13 +111,15 @@ var impact = {
 
    // Store registered toolbar items
    toolbar: {
-      addNode      : null,
-      addEdge      : null,
-      deleteElement: null,
-      toggleImpact : null,
-      toggleDepends: null,
-      colorPicker  : null,
-      export       : null,
+      addNode       : null,
+      addEdge       : null,
+      deleteElement : null,
+      export        : null,
+      expandToolbar : null,
+      toggleImpact  : null,
+      toggleDepends : null,
+      colorPicker   : null,
+      retractToolbar: null,
    },
 
    /**
@@ -127,6 +129,19 @@ var impact = {
     */
    getNetworkStyle: function() {
       return [
+         {
+            selector: ':selected',
+            style: {
+               'overlay-opacity': 0.2,
+            }
+         },
+         {
+            selector: '[todelete=1]:selected',
+            style: {
+               'overlay-opacity': 0.2,
+               'overlay-color': 'red',
+            }
+         },
          {
             selector: 'node[image]',
             style: {
@@ -487,17 +502,27 @@ var impact = {
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
       this.cy.on('mouseup', 'node', this.nodeOnMouseup);
       this.cy.on('mousemove', this.onMousemove);
+      this.cy.on('mouseover', this.onMouseover);
+      this.cy.on('mouseout', this.onMouseout);
       this.cy.on('click', this.onClick);
       this.cy.on('click', 'edge', this.edgeOnClick);
       this.cy.on('click', 'node', this.nodeOnClick);
+
+      // Enter EDITION_DEFAULT mode
+      this.setEditionMode(EDITION_DEFAULT);
    },
 
+   /**
+    * Load another graph
+    *
+    * @param {Array} newGraph
+    */
    replaceGraph(newGraph) {
       // Remove current graph
       this.cy.remove("");
       this.delta = {};
 
-      // Set the new graph
+      // Set the new graph and apply layout to nodes
       var layout = this.cy.add(newGraph).layout(impact.getNetworkLayout());
       layout.run();
    },
@@ -789,25 +814,16 @@ var impact = {
    },
 
    /**
-    * Go to a specific edition mode unless we are already in that mode, in this
-    * case we go back to the default mode
-    *
-    * @param {number} mode
-    */
-   tryEditionMode: function (mode) {
-      if (this.editionMode != mode) {
-         this.setEditionMode(mode);
-      } else {
-         this.setEditionMode(EDITION_DEFAULT)
-      }
-   },
-
-   /**
     * Exit current edition mode and enter a new one
     *
     * @param {number} mode
     */
    setEditionMode: function (mode) {
+      // Switching to a mode we are already in -> go to default
+      if (this.editionMode == mode) {
+         mode = EDITION_DEFAULT
+      }
+
       this.exitEditionMode();
       this.enterEditionMode(mode);
       this.editionMode = mode;
@@ -822,13 +838,18 @@ var impact = {
             break;
 
          case EDITION_ADD_NODE:
+            $(this.toolbar.addNode).removeClass("active");
             break;
 
          case EDITION_ADD_EDGE:
+            $(impact.toolbar.addEdge).removeClass("active");
             impact.cy.nodes().grabify();
             break;
 
          case EDITION_DELETE:
+            this.cy.filter().unselect();
+            this.cy.data('todelete', 0);
+            $(impact.toolbar.deleteElement).removeClass("active");
             break;
       }
    },
@@ -841,16 +862,23 @@ var impact = {
    enterEditionMode: function(mode) {
       switch (mode) {
          case EDITION_DEFAULT:
+            $(this.impactContainer).css('cursor', "move");
             break;
 
          case EDITION_ADD_NODE:
+            $(impact.toolbar.addNode).addClass("active");
+            $(this.impactContainer).css('cursor', "copy");
             break;
 
          case EDITION_ADD_EDGE:
             impact.cy.nodes().ungrabify();
+            $(impact.toolbar.addEdge).addClass("active");
+            $(this.impactContainer).css('cursor', "crosshair");
             break;
 
          case EDITION_DELETE:
+            this.cy.filter().unselect();
+            $(impact.toolbar.deleteElement).addClass("active");
             break;
       }
    },
@@ -987,13 +1015,14 @@ var impact = {
    },
 
    /**
-    * Handle mouse down events on nodes
+    * Handle mousedown events on nodes
     *
     * @param {JQuery.Event} event
     */
    nodeOnMousedown: function (event) {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
+            $(impact.impactContainer).css('cursor', "grabbing");
             break;
 
          case EDITION_ADD_NODE:
@@ -1009,13 +1038,14 @@ var impact = {
    },
 
    /**
-    * Handle mouse down events on nodes
+    * Handle mouseup events on nodes
     *
     * @param {JQuery.Event} event
     */
    nodeOnMouseup: function (event) {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
+            $(impact.impactContainer).css('cursor', "grab");
             break;
 
          case EDITION_ADD_NODE:
@@ -1072,8 +1102,7 @@ var impact = {
    },
 
    /**
-    * Handle mouse move events on nodes
-    * Used by the new edge action
+    * Handle mousemove events on nodes
     *
     * @param {JQuery.Event} event
     */
@@ -1163,6 +1192,76 @@ var impact = {
    },
 
    /**
+    * Handle global mouseout events
+    *
+    * @param {JQuery.Event} event
+    */
+   onMouseout: function(event) {
+      switch (impact.editionMode) {
+         case EDITION_DEFAULT:
+            $(impact.impactContainer).css('cursor', "move");
+            break;
+
+         case EDITION_ADD_NODE:
+            break;
+
+         case EDITION_ADD_EDGE:
+            break;
+
+         case EDITION_DELETE:
+            // Remove red overlay
+            event.cy.filter().data('todelete', 0);
+            event.cy.filter().unselect();
+            break;
+      }
+   },
+
+   /**
+    * Handle global mouseover events
+    *
+    * @param {JQuery.Event} event
+    */
+   onMouseover: function(event) {
+      switch (impact.editionMode) {
+         case EDITION_DEFAULT:
+            if (event.target.data('id') == undefined || !event.target.isNode()) {
+               break;
+            }
+            $(impact.impactContainer).css('cursor', "grab");
+            break;
+
+         case EDITION_ADD_NODE:
+            break;
+
+         case EDITION_ADD_EDGE:
+            break;
+
+         case EDITION_DELETE:
+            if (event.target.data('id') == undefined) {
+               break;
+            }
+            var id = event.target.data('id');
+
+            // Remove red overlay
+            event.cy.filter().data('todelete', 0);
+            event.cy.filter().unselect();
+
+            // Add red overlay
+            event.target.data('todelete', 1);
+            event.target.select();
+
+            if (event.target.isNode()){
+               var sourceFilter = "edge[source='" + id + "']";
+               var targetFilter = "edge[target='" + id + "']";
+               event.cy.filter(sourceFilter + ", " + targetFilter)
+                  .data('todelete', 1)
+                  .select();
+            }
+            break;
+      }
+   },
+
+   /**
     * Handle 'goTo' menu event
     *
     * @param {JQuery.Event} event
@@ -1230,27 +1329,49 @@ var impact = {
    initToolbar: function() {
       // Add a new node on the graph
       $(impact.toolbar.addNode).click(function() {
-         impact.tryEditionMode(EDITION_ADD_NODE);
+         impact.setEditionMode(EDITION_ADD_NODE);
       });
 
       // Add a new edge on the graph
       $(impact.toolbar.addEdge).click(function() {
-         impact.tryEditionMode(EDITION_ADD_EDGE);
+         impact.setEditionMode(EDITION_ADD_EDGE);
       });
 
       // Enter delete mode
       $(impact.toolbar.deleteElement).click(function() {
-         impact.tryEditionMode(EDITION_DELETE);
+         impact.setEditionMode(EDITION_DELETE);
+      });
+
+      // Export graph
+      $(impact.toolbar.export).click(function() {
+         $(impact.dialogs.exportDialog.id).dialog(impact.getExportDialog(
+            $(impact.dialogs.exportDialog.inputs.format),
+            $(impact.dialogs.exportDialog.inputs.background),
+            $(impact.dialogs.exportDialog.inputs.link)
+         ));
+      });
+
+      // Expand toolbar
+      $(impact.toolbar.expandToolbar).click(function() {
+         $(impact.toolbar.expandToolbar).hide();
+         $(impact.toolbar.toggleImpact).show();
+         $(impact.toolbar.toggleDepends).show();
+         $(impact.toolbar.colorPicker).show();
+         $(impact.toolbar.retractToolbar).show();
       });
 
       // Toggle impact visibility
       $(impact.toolbar.toggleImpact).click(function() {
          impact.toggleVisibility(FORWARD);
+         $(impact.toolbar.toggleImpact).find('i')
+            .toggleClass("fa-eye fa-eye-slash");
       });
 
       // Toggle depends visibility
       $(impact.toolbar.toggleDepends).click(function() {
          impact.toggleVisibility(BACKWARD);
+         $(impact.toolbar.toggleDepends).find('i')
+            .toggleClass("fa-eye fa-eye-slash");
       });
 
       // Color picker
@@ -1262,13 +1383,13 @@ var impact = {
          ));
       });
 
-      // Export graph
-      $(impact.toolbar.export).click(function() {
-         $(impact.dialogs.exportDialog.id).dialog(impact.getExportDialog(
-            $(impact.dialogs.exportDialog.inputs.format),
-            $(impact.dialogs.exportDialog.inputs.background),
-            $(impact.dialogs.exportDialog.inputs.link)
-         ));
+      // Retract toolbar
+      $(impact.toolbar.retractToolbar).click(function() {
+         $(impact.toolbar.expandToolbar).show();
+         $(impact.toolbar.toggleImpact).hide();
+         $(impact.toolbar.toggleDepends).hide();
+         $(impact.toolbar.colorPicker).hide();
+         $(impact.toolbar.retractToolbar).hide();
       });
    }
 };
