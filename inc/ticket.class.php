@@ -5909,7 +5909,7 @@ class Ticket extends CommonITILObject {
          }
       }
       if ($forgroup) {
-         if (Session::haveRight("show_group_ticket", '1')
+         if (Session::haveRight(self::$rightname, self::READGROUP)
             && isset($_SESSION["glpigroups"])
             && count($_SESSION["glpigroups"])) {
             $query .= " LEFT JOIN `glpi_groups_tickets`
