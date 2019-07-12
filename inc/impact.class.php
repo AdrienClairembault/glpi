@@ -152,9 +152,7 @@ class Impact extends CommonDBRelation {
                height: 65vh;
                border: 1px solid lightgray;
             }
-            #addNodeDialog,
-            #configColorDialog,
-            #exportDialog {
+            .impactDialog {
                display: none;
             }
 
@@ -185,7 +183,11 @@ class Impact extends CommonDBRelation {
                transition: all 0.3s ease;
             }
 
-            .impact_toolbar span:hover {
+            .impact_toolbar_right {
+               float: right !important;
+            }
+
+            #impactTools span:hover, .networkToolbarHightlight:hover {
                background-color: #8cabdb;
             }
 
@@ -279,6 +281,11 @@ class Impact extends CommonDBRelation {
       echo "<tr><td>";
       echo '<div class="impact_toolbar">';
       $hidden = 'style="display: none;"';
+      echo '<div>';
+      echo '<span id="helpText" ' . $hidden . '></span>';
+      echo '<span id="cancel" ' . $hidden . ' class="impact_toolbar_right networkToolbarHightlight"><i class="fas fa-times"></i></span>';
+      echo '</div>';
+      echo '<div id="impactTools">';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
       echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
@@ -288,6 +295,7 @@ class Impact extends CommonDBRelation {
       echo '<span id="toggle_depends"' . $hidden . '><i class="fas fa-eye"></i> Depends </span>';
       echo '<span id="color_picker"' . $hidden . '><i class="fas fa-palette"></i></span>';
       echo '<span id="retractToolbar"' . $hidden . '><i class="fas fa-caret-left"></i></span>';
+      echo '</div>';
 
       echo '</div>';
       echo '<div id="networkContainer"></div>';
@@ -611,7 +619,7 @@ class Impact extends CommonDBRelation {
       global $CFG_GLPI;
       $rand = mt_rand();
 
-      echo '<div id="addNodeDialog" title="' . __('New asset') . '">';
+      echo '<div id="addNodeDialog" title="' . __('New asset') . '" class="impactDialog">';
       echo '<table class="tab_cadre_fixe">';
 
       // Item type field
@@ -661,7 +669,7 @@ class Impact extends CommonDBRelation {
    }
 
    public static function printColorConfigDialog() {
-      echo '<div id="configColorDialog">';
+      echo '<div id="configColorDialog" class="impactDialog">';
       echo "<table class='tab_cadre_fixe'>";
       echo "<tr>";
       echo "<td>";
@@ -692,7 +700,7 @@ class Impact extends CommonDBRelation {
    }
 
    public static function printExportDialog() {
-      echo '<div id="exportDialog">';
+      echo '<div id="exportDialog" class="impactDialog">';
       echo "<table>";
       echo "<tr>";
       echo "<td>";
@@ -718,6 +726,31 @@ class Impact extends CommonDBRelation {
       echo "</div>";
    }
 
+   public static function printEditCompoundDialog() {
+      echo '<div id="editCompoundDialog"  class="impactDialog">';
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr>";
+      echo "<td>";
+      echo "<label>&nbsp;" . __("Name") . "</label>";
+      echo "</td>";
+      echo "<td>";
+      echo Html::input("compoundName", []);
+      echo "</td>";
+      echo "</tr>";
+      echo "<tr>";
+      echo "<td>";
+      echo "<label>&nbsp;" . __("Color") . "</label>";
+      echo "</td>";
+      echo "<td>";
+      Html::showColorField("compoundColor", [
+         'value' => '#d2d2d2'
+      ]);
+      echo "</td>";
+      echo "</tr>";
+      echo "</table>";
+      echo "</div>";
+   }
+
    /**
     * Prepare the impact network
     *
@@ -733,6 +766,7 @@ class Impact extends CommonDBRelation {
       self::printAddNodeDialog();
       self::printColorConfigDialog();
       self::printExportDialog();
+      self::printEditCompoundDialog();
 
       // Print impact script
       echo Html::script("js/impact.js");
@@ -773,9 +807,19 @@ class Impact extends CommonDBRelation {
          [
             'key' => "ongoingDialog",
             'id'  => "#ongoingDialog"
+         ],
+         [
+            'key'    => "editCompoundDialog",
+            'id'     => "#editCompoundDialog",
+            'inputs' => [
+               'name'  => "input[name=compoundName]",
+               'color' => "input[name=compoundColor]",
+            ]
          ]
       ]);
       $toolbar = json_encode([
+         ['key'    => 'helpText',      'id' => "#helpText"],
+         ['key'    => 'tools',         'id' => "#impactTools"],
          ['key'    => 'addNode',       'id' => "#add_node"],
          ['key'    => 'addEdge',       'id' => "#add_edge"],
          ['key'    => 'deleteElement', 'id' => "#delete_element"],
@@ -784,7 +828,8 @@ class Impact extends CommonDBRelation {
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
-         ['key'    => 'retractToolbar','id' => "#retractToolbar"]
+         ['key'    => 'retractToolbar','id' => "#retractToolbar"],
+         ['key'    => 'cancel',        'id' => "#cancel"]
       ]);
 
       // Get var from server side
@@ -970,38 +1015,54 @@ class Impact extends CommonDBRelation {
     */
    public static function getVisJSLocales() {
       $locales = [
-         'add'                 => __('Add'),
-         'cancel'              => __('Cancel'),
-         'edit'                => __('Edit'),
-         'del'                 => __('Delete selected'),
-         'back'                => __('Back'),
-         'addNode'             => __('Add Asset'),
-         'addEdge'             => __('Add Impact relation'),
-         'editNode'            => __('Edit Asset'),
-         'editEdge'            => __('Edit Impact relation'),
-         'addDescription'      => __('Click in an empty space to place a new asset.'),
-         'edgeDescription'     => __('Click on an asset and drag the link to another asset to connect them.'),
-         'editEdgeDescription' => __('Click on the control points and drag them to a asset to connect to it.'),
-         'createEdgeError'     => __('Cannot link edges to a cluster.'),
-         'deleteClusterError'  => __('Clusters cannot be deleted.'),
-         'editClusterError'    => __('Clusters cannot be edited.'),
-         'duplicateAsset'      => __('This asset already exists.'),
-         'linkToSelf'          => __("Can't link an asset to itself."),
-         'duplicateEdge'       => __("An identical link already exist between theses two asset."),
-         'unexpectedError'     => __("Unexpected error."),
-         'Incidents'           => __("Incidents"),
-         'Requests'            => __("Requests"),
-         'Changes'             => __("Changes"),
-         'Problems'            => __("Problems"),
-         'showDepends'         => __("Depends"),
-         'showImpact'          => __("Impact"),
-         'colorConfiguration'  => __("Colors"),
-         'export'              => __("Export"),
-         'goTo'                => __("Go to"),
-         'goTo+'               => __("Open this element in a new tab"),
-         'showOngoing'         => __("Show ongoing tickets"),
-         'showOngoing+'        => __("Show ongoing tickets for this item"),
-         'ongoingTickets'      => __("Ongoing tickets"),
+         'add'                   => __('Add'),
+         'cancel'                => __('Cancel'),
+         'edit'                  => __('Edit'),
+         'del'                   => __('Delete selected'),
+         'back'                  => __('Back'),
+         'addNode'               => __('Add Asset'),
+         'addEdge'               => __('Add Impact relation'),
+         'editNode'              => __('Edit Asset'),
+         'editEdge'              => __('Edit Impact relation'),
+         'addDescription'        => __('Click in an empty space to place a new asset.'),
+         'edgeDescription'       => __('Click on an asset and drag the link to another asset to connect them.'),
+         'editEdgeDescription'   => __('Click on the control points and drag them to a asset to connect to it.'),
+         'createEdgeError'       => __('Cannot link edges to a cluster.'),
+         'deleteClusterError'    => __('Clusters cannot be deleted.'),
+         'editClusterError'      => __('Clusters cannot be edited.'),
+         'duplicateAsset'        => __('This asset already exists.'),
+         'linkToSelf'            => __("Can't link an asset to itself."),
+         'duplicateEdge'         => __("An identical link already exist between theses two asset."),
+         'unexpectedError'       => __("Unexpected error."),
+         'Incidents'             => __("Incidents"),
+         'Requests'              => __("Requests"),
+         'Changes'               => __("Changes"),
+         'Problems'              => __("Problems"),
+         'showDepends'           => __("Depends"),
+         'showImpact'            => __("Impact"),
+         'colorConfiguration'    => __("Colors"),
+         'export'                => __("Export"),
+         'goTo'                  => __("Go to"),
+         'goTo+'                 => __("Open this element in a new tab"),
+         'showOngoing'           => __("Show ongoing tickets"),
+         'showOngoing+'          => __("Show ongoing tickets for this item"),
+         'ongoingTickets'        => __("Ongoing tickets"),
+         'addNodeTooltip'        => __("Add a new asset to the impact network"),
+         'addEdgeTooltip'        => __("Add a new impact relation"),
+         'deleteTooltip'         => __("Delete an element from the impact network"),
+         'downloadTooltip'       => __("Export the impact network"),
+         'expandToolbarTooltip'  => __("Show more options ..."),
+         'showImpactTooltip'     => __("Toggle \"impacted\" visibility"),
+         'showDependsTooltip'    => __("Toggle \"depends\" visibility"),
+         'showColorsTooltip'     => __("Edit relation's color"),
+         'retractToolbarTooltip' => __("Show less options ..."),
+         'addNodeHelpText'       => __("Click anywhere to add a new asset"),
+         'addEdgeHelpText'       => __("Draw a line between two assets to add an impact relation ..."),
+         'deleteHelpText'        => __("Click on an element to remove it from the network"),
+         'editGroup'             => __("Edit group"),
+         'save'                  => __("Save"),
+         'compoundProperties'    => __("Group properties..."),
+         'compoundProperties+'   => __("Set name and/or color for this group"),
       ];
 
       return addslashes(json_encode($locales));

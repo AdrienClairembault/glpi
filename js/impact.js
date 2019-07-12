@@ -106,11 +106,20 @@ var impact = {
       },
       ongoingDialog: {
          id: null
+      },
+      editCompoundDialog: {
+         id: null,
+         inputs: {
+            name : null,
+            color: null
+         }
       }
    },
 
    // Store registered toolbar items
    toolbar: {
+      helpText      : null,
+      tools         : null,
       addNode       : null,
       addEdge       : null,
       deleteElement : null,
@@ -120,6 +129,7 @@ var impact = {
       toggleDepends : null,
       colorPicker   : null,
       retractToolbar: null,
+      cancel        : null,
    },
 
    /**
@@ -129,6 +139,21 @@ var impact = {
     */
    getNetworkStyle: function() {
       return [
+         {
+            selector: 'node:parent',
+            style: {
+               'border-width' : '0',
+            }
+         },
+         {
+            selector: 'node:parent[label]',
+            style: {
+               'label'             : 'data(label)',
+               'border-color'      : 'data(color)',
+               'background-color'  : 'data(color)',
+               'background-opacity': '0.2',
+            }
+         },
          {
             selector: ':selected',
             style: {
@@ -247,17 +272,13 @@ var impact = {
             selector: 'node[hasITILObjects=1]',
             onClickFunction: this.menuOnShowOngoing
          },
-         // {
-         //    id: 'add-node',
-         //    content: 'add node',
-         //    tooltipText: 'add node',
-         //    image: {src : "add.svg", width : 12, height : 12, x : 6, y : 4},
-         //    selector: 'node',
-         //    coreAsWell: true,
-         //    onClickFunction: function () {
-         //    console.log('add node');
-         //    }
-         // }
+         {
+            id: 'editCompound',
+            content: this.getLocale("compoundProperties"),
+            tooltipText: this.getLocale("compoundProperties+"),
+            selector: 'node:parent',
+            onClickFunction: this.menuOnEditCompound
+         }
       ];
    },
 
@@ -320,6 +341,11 @@ var impact = {
 
       return {
          modal: true,
+         position: {
+            my: 'center',
+            at: 'center',
+            of: impact.impactContainer
+         },
          buttons: [buttonAdd, buttonCancel]
       };
    },
@@ -350,6 +376,11 @@ var impact = {
       return {
          modal: true,
          width: 'auto',
+         position: {
+            my: 'center',
+            at: 'center',
+            of: impact.impactContainer
+         },
          draggable: false,
          title: this.getLocale("colorConfiguration"),
          buttons: [buttonUpdate]
@@ -382,6 +413,11 @@ var impact = {
       return {
          modal: true,
          width: 'auto',
+         position: {
+            my: 'center',
+            at: 'center',
+            of: impact.impactContainer
+         },
          draggable: false,
          title: this.getLocale("export"),
          buttons: [exportButton]
@@ -401,7 +437,55 @@ var impact = {
       return {
          title: impact.getLocale("ongoingTickets"),
          modal: true,
+         position: {
+            my: 'center',
+            at: 'center',
+            of: impact.impactContainer
+         },
          buttons: []
+      };
+   },
+
+   /**
+    * Build the add node dialog
+    *
+    * @param {string} itemID
+    * @param {string} itemType
+    * @param {Object} position x, y
+    *
+    * @returns {Object}
+    */
+   getEditCompoundDialog: function(compound) {
+      // Save group details
+      var buttonSave = {
+         text: impact.getLocale("save"),
+         click: function() {
+            // Save compound name
+            compound.data(
+               'label',
+               $(impact.dialogs.editCompoundDialog.inputs.name).val()
+            );
+
+            // Save compound color
+            compound.data(
+               'color',
+               $(impact.dialogs.editCompoundDialog.inputs.color).val()
+            );
+
+            // Close dialog
+            $(this).dialog("close");
+         }
+      }
+
+      return {
+         title: impact.getLocale("editGroup"),
+         modal: true,
+         position: {
+            my: 'center',
+            at: 'center',
+            of: impact.impactContainer
+         },
+         buttons: [buttonSave]
       };
    },
 
@@ -429,6 +513,34 @@ var impact = {
     */
    registerToobar: function(key, id,) {
       impact.toolbar[key] = id;
+   },
+
+   /**
+    * Create a tooltip for a toolbar's item
+    *
+    * @param {string} content
+    *
+    * @returns {Object}
+    */
+   getTooltip: function(content) {
+      return {
+         position: {
+            my: 'bottom center',
+            at: 'top center'
+         },
+         content: this.getLocale(content),
+         style: {
+            classes: 'qtip-shadow qtip-bootstrap'
+         },
+         show: {
+            solo: true,
+            delay: 100
+         },
+         hide: {
+            fixed: true,
+            delay: 100
+         }
+      };
    },
 
    /**
@@ -497,6 +609,8 @@ var impact = {
          menuItemClasses: [],
          contextMenuClasses: []
       });
+
+      window.cdnd = this.cy.compoundDragAndDrop();
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -862,25 +976,46 @@ var impact = {
    enterEditionMode: function(mode) {
       switch (mode) {
          case EDITION_DEFAULT:
+            this.clearHelpText();
             $(this.impactContainer).css('cursor', "move");
             break;
 
          case EDITION_ADD_NODE:
-            $(impact.toolbar.addNode).addClass("active");
+            this.showHelpText("addNodeHelpText");
             $(this.impactContainer).css('cursor', "copy");
             break;
 
          case EDITION_ADD_EDGE:
             impact.cy.nodes().ungrabify();
-            $(impact.toolbar.addEdge).addClass("active");
+            this.showHelpText("addEdgeHelpText");
             $(this.impactContainer).css('cursor', "crosshair");
             break;
 
          case EDITION_DELETE:
             this.cy.filter().unselect();
-            $(impact.toolbar.deleteElement).addClass("active");
+            this.showHelpText("deleteHelpText");
             break;
       }
+   },
+
+   /**
+    * Hide the toolbar and show an help text
+    *
+    * @param {string} text
+    */
+   showHelpText: function(text) {
+      $(impact.toolbar.tools).hide();
+      $(impact.toolbar.helpText).html(this.getLocale(text)).show();
+      $(impact.toolbar.cancel).show();
+   },
+
+   /**
+    * Hide the help text and show the toolbar
+    */
+   clearHelpText: function() {
+      $(impact.toolbar.helpText).hide();
+      $(impact.toolbar.tools).show();
+      $(impact.toolbar.cancel).hide();
    },
 
    /**
@@ -1192,31 +1327,6 @@ var impact = {
    },
 
    /**
-    * Handle global mouseout events
-    *
-    * @param {JQuery.Event} event
-    */
-   onMouseout: function(event) {
-      switch (impact.editionMode) {
-         case EDITION_DEFAULT:
-            $(impact.impactContainer).css('cursor', "move");
-            break;
-
-         case EDITION_ADD_NODE:
-            break;
-
-         case EDITION_ADD_EDGE:
-            break;
-
-         case EDITION_DELETE:
-            // Remove red overlay
-            event.cy.filter().data('todelete', 0);
-            event.cy.filter().unselect();
-            break;
-      }
-   },
-
-   /**
     * Handle global mouseover events
     *
     * @param {JQuery.Event} event
@@ -1240,6 +1350,8 @@ var impact = {
             if (event.target.data('id') == undefined) {
                break;
             }
+
+            $(impact.impactContainer).css('cursor', "default");
             var id = event.target.data('id');
 
             // Remove red overlay
@@ -1257,6 +1369,32 @@ var impact = {
                   .data('todelete', 1)
                   .select();
             }
+            break;
+      }
+   },
+
+   /**
+    * Handle global mouseout events
+    *
+    * @param {JQuery.Event} event
+    */
+   onMouseout: function(event) {
+      switch (impact.editionMode) {
+         case EDITION_DEFAULT:
+            $(impact.impactContainer).css('cursor', "move");
+            break;
+
+         case EDITION_ADD_NODE:
+            break;
+
+         case EDITION_ADD_EDGE:
+            break;
+
+         case EDITION_DELETE:
+            // Remove red overlay
+            $(impact.impactContainer).css('cursor', "move");
+            event.cy.filter().data('todelete', 0);
+            event.cy.filter().unselect();
             break;
       }
    },
@@ -1324,6 +1462,15 @@ var impact = {
    },
 
    /**
+    * Handle 'EditCompound' menu event
+    */
+   menuOnEditCompound: function (event) {
+      $(impact.dialogs.editCompoundDialog.id).dialog(
+         impact.getEditCompoundDialog(event.target)
+      );
+   },
+
+   /**
     * Set event handler for toolbar events
     */
    initToolbar: function() {
@@ -1331,16 +1478,19 @@ var impact = {
       $(impact.toolbar.addNode).click(function() {
          impact.setEditionMode(EDITION_ADD_NODE);
       });
+      $(impact.toolbar.addNode).qtip(this.getTooltip("addNodeTooltip"));
 
       // Add a new edge on the graph
       $(impact.toolbar.addEdge).click(function() {
          impact.setEditionMode(EDITION_ADD_EDGE);
       });
+      $(impact.toolbar.addEdge).qtip(this.getTooltip("addEdgeTooltip"));
 
       // Enter delete mode
       $(impact.toolbar.deleteElement).click(function() {
          impact.setEditionMode(EDITION_DELETE);
       });
+      $(impact.toolbar.deleteElement).qtip(this.getTooltip("deleteTooltip"));
 
       // Export graph
       $(impact.toolbar.export).click(function() {
@@ -1350,6 +1500,7 @@ var impact = {
             $(impact.dialogs.exportDialog.inputs.link)
          ));
       });
+      $(impact.toolbar.export).qtip(this.getTooltip("downloadTooltip"));
 
       // Expand toolbar
       $(impact.toolbar.expandToolbar).click(function() {
@@ -1359,6 +1510,7 @@ var impact = {
          $(impact.toolbar.colorPicker).show();
          $(impact.toolbar.retractToolbar).show();
       });
+      $(impact.toolbar.expandToolbar).qtip(this.getTooltip("expandToolbarTooltip"));
 
       // Toggle impact visibility
       $(impact.toolbar.toggleImpact).click(function() {
@@ -1366,6 +1518,7 @@ var impact = {
          $(impact.toolbar.toggleImpact).find('i')
             .toggleClass("fa-eye fa-eye-slash");
       });
+      $(impact.toolbar.toggleImpact).qtip(this.getTooltip("showImpactTooltip"));
 
       // Toggle depends visibility
       $(impact.toolbar.toggleDepends).click(function() {
@@ -1373,6 +1526,7 @@ var impact = {
          $(impact.toolbar.toggleDepends).find('i')
             .toggleClass("fa-eye fa-eye-slash");
       });
+      $(impact.toolbar.toggleDepends).qtip(this.getTooltip("showDependsTooltip"));
 
       // Color picker
       $(impact.toolbar.colorPicker).click(function() {
@@ -1382,6 +1536,7 @@ var impact = {
             $(impact.dialogs.configColor.inputs.impactAndDependsColor)
          ));
       });
+      $(impact.toolbar.colorPicker).qtip(this.getTooltip("showColorsTooltip"));
 
       // Retract toolbar
       $(impact.toolbar.retractToolbar).click(function() {
@@ -1390,6 +1545,12 @@ var impact = {
          $(impact.toolbar.toggleDepends).hide();
          $(impact.toolbar.colorPicker).hide();
          $(impact.toolbar.retractToolbar).hide();
+      });
+      $(impact.toolbar.retractToolbar).qtip(this.getTooltip("retractToolbarTooltip"));
+
+      // Go back to default mode
+      $(impact.toolbar.cancel).click(function() {
+         impact.setEditionMode(EDITION_DEFAULT);
       });
    }
 };
