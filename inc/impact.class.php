@@ -288,6 +288,7 @@ class Impact extends CommonDBRelation {
       echo '<div id="impactTools">';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
+      echo '<span id="addCompound"><i class="far fa-square"></i></span>';
       echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
       echo '<span id="exportGraph"><i class="fas fa-download"></i></span>';
       echo '<span id="expandToolbar"><i class="fas fa-caret-right"></i></span>';
@@ -839,6 +840,7 @@ class Impact extends CommonDBRelation {
          ['key'    => 'tools',         'id' => "#impactTools"],
          ['key'    => 'addNode',       'id' => "#add_node"],
          ['key'    => 'addEdge',       'id' => "#add_edge"],
+         ['key'    => 'addCompound',   'id' => "#addCompound"],
          ['key'    => 'deleteElement', 'id' => "#delete_element"],
          ['key'    => 'export',        'id' => "#exportGraph"],
          ['key'    => 'expandToolbar', 'id' => "#expandToolbar"],
@@ -1066,6 +1068,7 @@ class Impact extends CommonDBRelation {
          'ongoingTickets'        => __("Ongoing tickets"),
          'addNodeTooltip'        => __("Add a new asset to the impact network"),
          'addEdgeTooltip'        => __("Add a new impact relation"),
+         'addCompoundTooltip'    => __("Create a new group"),
          'deleteTooltip'         => __("Delete an element from the impact network"),
          'downloadTooltip'       => __("Export the impact network"),
          'expandToolbarTooltip'  => __("Show more options ..."),
@@ -1075,9 +1078,11 @@ class Impact extends CommonDBRelation {
          'retractToolbarTooltip' => __("Show less options ..."),
          'addNodeHelpText'       => __("Click anywhere to add a new asset"),
          'addEdgeHelpText'       => __("Draw a line between two assets to add an impact relation ..."),
+         'addCompoundHelpText'   => __("Draw a square containing the assets you wish to group ..."),
          'deleteHelpText'        => __("Click on an element to remove it from the network"),
          'editGroup'             => __("Edit group"),
          'save'                  => __("Save"),
+         'notEnoughItems'        => __("You need to select at least 2 assets to make a group"),
          'compoundProperties'    => __("Group properties..."),
          'compoundProperties+'   => __("Set name and/or color for this group"),
       ];

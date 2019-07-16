@@ -33,6 +33,7 @@
 var eventData = {
    addEdgeStart: null, // Store starting node of a new edge
    tmpEles     : null, // Temporary collection used when adding an edge
+   boxSelected : []
 };
 
 // Constants to represent nodes and edges
@@ -46,10 +47,11 @@ var BACKWARD = 2;   // 0b10
 var BOTH     = 3;   // 0b11
 
 // Constant for graph edition mode
-var EDITION_DEFAULT  = 1;
-var EDITION_ADD_NODE = 2;
-var EDITION_ADD_EDGE = 3;
-var EDITION_DELETE   = 4;
+var EDITION_DEFAULT      = 1;
+var EDITION_ADD_NODE     = 2;
+var EDITION_ADD_EDGE     = 3;
+var EDITION_DELETE       = 4;
+var EDITION_ADD_COMPOUND = 5;
 
 // Constant for ID separator
 var NODE_ID_SEPERATOR = "::";
@@ -135,6 +137,7 @@ var impact = {
       tools         : null,
       addNode       : null,
       addEdge       : null,
+      addCompound   : null,
       deleteElement : null,
       export        : null,
       expandToolbar : null,
@@ -152,6 +155,14 @@ var impact = {
     */
    getNetworkStyle: function() {
       return [
+         {
+            selector: 'core',
+            style: {
+               'selection-box-opacity': '0.2',
+               'selection-box-border-width': '0',
+               'selection-box-color': '#24acdf'
+            }
+         },
          {
             selector: 'node:parent',
             style: {
@@ -837,6 +848,8 @@ var impact = {
       this.cy.on('click', this.onClick);
       this.cy.on('click', 'edge', this.edgeOnClick);
       this.cy.on('click', 'node', this.nodeOnClick);
+      this.cy.on('box', this.onBox);
+      this.cy.on('boxend', this.onBoxend);
 
       // Enter EDITION_DEFAULT mode
       this.setEditionMode(EDITION_DEFAULT);
@@ -1146,6 +1159,12 @@ var impact = {
             this.cy.data('todelete', 0);
             $(impact.toolbar.deleteElement).removeClass("active");
             break;
+
+         case EDITION_ADD_COMPOUND:
+            impact.cy.panningEnabled(true);
+            impact.cy.boxSelectionEnabled(false);
+            impact.cy.nodes().grabify();
+            break;
       }
    },
 
@@ -1175,6 +1194,14 @@ var impact = {
          case EDITION_DELETE:
             this.cy.filter().unselect();
             this.showHelpText("deleteHelpText");
+            break;
+
+         case EDITION_ADD_COMPOUND:
+            impact.cy.panningEnabled(false);
+            impact.cy.boxSelectionEnabled(true);
+            impact.cy.nodes().ungrabify();
+            this.showHelpText("addCompoundHelpText");
+            $(this.impactContainer).css('cursor', "crosshair");
             break;
       }
    },
@@ -1319,6 +1346,80 @@ var impact = {
             break;
       }
    },
+
+   /**
+    * Handle end of box selection event
+    *
+    * @param {JQuery.Event} event
+    */
+   onBox: function (event) {
+      switch (impact.editionMode) {
+         case EDITION_DEFAULT:
+            break;
+
+         case EDITION_ADD_NODE:
+            break;
+
+         case EDITION_ADD_EDGE:
+            break;
+
+         case EDITION_DELETE:
+            break;
+
+         case EDITION_ADD_COMPOUND:
+            console.log("BOX EVENT");
+            var ele = event.target;
+            if (ele.isNode() && ele.isOrphan() && !ele.isParent()) {
+               eventData.boxSelected.push(ele);
+               impact.boxed();
+            }
+            break;
+      }
+   },
+
+   /**
+    * Handle end of box selection event
+    *
+    * @param {JQuery.Event} event
+    */
+   onBoxend: function (event) {
+      switch (impact.editionMode) {
+         case EDITION_DEFAULT:
+            break;
+
+         case EDITION_ADD_NODE:
+            break;
+
+         case EDITION_ADD_EDGE:
+            break;
+
+         case EDITION_DELETE:
+            break;
+
+         case EDITION_ADD_COMPOUND:
+            console.log("BOX END");
+            break;
+      }
+   },
+
+   boxed: debounce(function(){
+      console.log(eventData.boxSelected);
+      var newCompound = impact.cy.add({group: 'nodes'});
+      console.log("new id :" + newCompound.data('id'));
+
+      for(var i=0; i<eventData.boxSelected.length; i++){
+      // eventData.boxSelected.forEach(function(ele) {
+         ele = eventData.boxSelected[i];
+         console.log("setting parent to " + ele.data('id') +" -> " + newCompound.data('id'));
+         ele.move({
+            'parent': newCompound.data('id')
+         });
+      };
+
+      // Clear
+      eventData.boxSelected = [];
+      impact.cy.filter(":selected").unselect();
+   }, 100, false),
 
    /**
     * Handle mousedown events on nodes
@@ -1655,6 +1756,12 @@ var impact = {
          impact.setEditionMode(EDITION_ADD_EDGE);
       });
       $(impact.toolbar.addEdge).qtip(this.getTooltip("addEdgeTooltip"));
+
+      // Add a new compound on the graph
+      $(impact.toolbar.addCompound).click(function() {
+         impact.setEditionMode(EDITION_ADD_COMPOUND);
+      });
+      $(impact.toolbar.addCompound).qtip(this.getTooltip("addCompoundTooltip"));
 
       // Enter delete mode
       $(impact.toolbar.deleteElement).click(function() {
