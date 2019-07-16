@@ -501,6 +501,21 @@ class Impact extends CommonDBRelation {
          $newNode['hasITILObjects'] = 1;
       }
 
+      // Add parent if exist
+      $impactItem = ImpactItem::findForItem($item);
+      if ($impactItem) {
+         $newNode['parent'] = $impactItem['parent_id'];
+
+         // Add parent node if missing
+         if (!isset($nodes[$newNode['parent']])) {
+            $nodes[$newNode['parent']] = [
+               'id'    => $impactItem['parent_id'],
+               'label' => $impactItem['name'],
+               'color' => $impactItem['color'],
+            ];
+         }
+      }
+
       // Insert the node
       $nodes[$key] = $newNode;
       return true;

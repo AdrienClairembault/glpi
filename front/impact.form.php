@@ -76,7 +76,7 @@ if (isset($_POST['save']) && isset($_POST['impacts'])) {
    }
 
    // Save parent delta
-   $em = new ImpactParent();
+   $em = new ImpactItem();
    foreach ($data['parents'] as $parent) {
       // Extract action
       $action = $parent['action'];

@@ -1406,8 +1406,8 @@ CREATE TABLE `glpi_impacts` (
 
 ### Dump table glpi_impacts_compounds
 
-DROP TABLE IF EXISTS `glpi_impacts_compounds`;
-CREATE TABLE `glpi_impacts_compounds` (
+DROP TABLE IF EXISTS `glpi_impactcompounds`;
+CREATE TABLE `glpi_impactcompounds` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`name` VARCHAR(255) NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
 	`color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
@@ -1417,8 +1417,8 @@ CREATE TABLE `glpi_impacts_compounds` (
 
 ### Dump table glpi_impacts_parent
 
-DROP TABLE IF EXISTS `glpi_impacts_parent`;
-CREATE TABLE `glpi_impacts_parent` (
+DROP TABLE IF EXISTS `glpi_impactitems`;
+CREATE TABLE `glpi_impactitems` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`itemtype` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
 	`items_id` INT(11) NOT NULL DEFAULT '0',

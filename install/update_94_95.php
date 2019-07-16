@@ -310,8 +310,8 @@ function update94to95() {
    }
 
    // Impact compounds
-   if (!$DB->tableExists('glpi_impacts_compounds')) {
-      $query = "CREATE TABLE `glpi_impacts_compounds` (
+   if (!$DB->tableExists('glpi_impactcompounds')) {
+      $query = "CREATE TABLE `glpi_impactcompounds` (
             `id` INT(11) NOT NULL AUTO_INCREMENT,
             `name` VARCHAR(255) NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
             `color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
@@ -321,8 +321,8 @@ function update94to95() {
    }
 
    // Impact parents
-   if (!$DB->tableExists('glpi_impacts_parent')) {
-      $query = "CREATE TABLE `glpi_impacts_parent` (
+   if (!$DB->tableExists('glpi_impactitems')) {
+      $query = "CREATE TABLE `glpi_impactitems` (
             `id` INT(11) NOT NULL AUTO_INCREMENT,
             `itemtype` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
             `items_id` INT(11) NOT NULL DEFAULT '0',
