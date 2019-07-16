@@ -284,10 +284,11 @@ function update94to95() {
    }
 
    /** Impact analysis */
+
    // Impact config
    $migration->addConfig(['impact_assets_list' => '[]']);
 
-   // Impact table
+   // Impact dependencies
    if (!$DB->tableExists('glpi_impacts')) {
       $query = "CREATE TABLE `glpi_impacts` (
          `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -307,6 +308,36 @@ function update94to95() {
          ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
       $DB->queryOrDie($query, "add table glpi_impacts");
    }
+
+   // Impact compounds
+   if (!$DB->tableExists('glpi_impacts_compounds')) {
+      $query = "CREATE TABLE `glpi_impacts_compounds` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `name` VARCHAR(255) NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+            `color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+            PRIMARY KEY (`id`)
+         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
+      $DB->queryOrDie($query, "add table glpi_impacts_compounds");
+   }
+
+   // Impact parents
+   if (!$DB->tableExists('glpi_impacts_parent')) {
+      $query = "CREATE TABLE `glpi_impacts_parent` (
+            `id` INT(11) NOT NULL AUTO_INCREMENT,
+            `itemtype` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+            `items_id` INT(11) NOT NULL DEFAULT '0',
+            `parent_id` INT(11) NOT NULL DEFAULT '0',
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `unicity` (
+               `itemtype`,
+               `items_id`
+            ),
+            KEY `source` (`itemtype`, `items_id`),
+            KEY `parent_id` (`parent_id`)
+         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci";
+      $DB->queryOrDie($query, "add table glpi_impacts_parent");
+   }
+
    /** /Impact analysis */
 
    // ************ Keep it at the end **************

@@ -1382,8 +1382,10 @@ INSERT INTO `glpi_configs` VALUES ('208','core','purge_plugins','0');
 INSERT INTO `glpi_configs` VALUES ('209','core','display_login_source','1');
 INSERT INTO `glpi_configs` VALUES ('210','core','impact_assets_list','[]');
 
+
 ### Dump table glpi_impacts
 
+DROP TABLE IF EXISTS `glpi_impacts`;
 CREATE TABLE `glpi_impacts` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`itemtype_source` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
@@ -1400,6 +1402,36 @@ CREATE TABLE `glpi_impacts` (
 	KEY `source_asset` (`itemtype_source`, `items_id_source`),
 	KEY `impacted_asset` (`itemtype_impacted`, `items_id_impacted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+### Dump table glpi_impacts_compounds
+
+DROP TABLE IF EXISTS `glpi_impacts_compounds`;
+CREATE TABLE `glpi_impacts_compounds` (
+	`id` INT(11) NOT NULL AUTO_INCREMENT,
+	`name` VARCHAR(255) NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+### Dump table glpi_impacts_parent
+
+DROP TABLE IF EXISTS `glpi_impacts_parent`;
+CREATE TABLE `glpi_impacts_parent` (
+	`id` INT(11) NOT NULL AUTO_INCREMENT,
+	`itemtype` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`items_id` INT(11) NOT NULL DEFAULT '0',
+	`parent_id` INT(11) NOT NULL DEFAULT '0',
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `unicity` (
+    `itemtype`,
+    `items_id`
+  ),
+	KEY `source` (`itemtype`, `items_id`),
+	KEY `parent_id` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 
 ### Dump table glpi_consumableitems
 

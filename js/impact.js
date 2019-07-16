@@ -51,14 +51,24 @@ var EDITION_ADD_NODE = 2;
 var EDITION_ADD_EDGE = 3;
 var EDITION_DELETE   = 4;
 
+// Constant for ID separator
+var NODE_ID_SEPERATOR = "::";
+var EDGE_ID_SEPERATOR = "->";
+
+// Const for delta action
+var DELTA_ACTION_ADD    = 1;
+var DELTA_ACTION_UPDATE = 2;
+var DELTA_ACTION_DELETE = 3;
+
 // Load cytoscape
 var cytoscape = window.cytoscape;
 
 var impact = {
-   // Store the user modification
-   delta: {},
 
-   // Locales for the labels
+   // Store the initial state of the graph
+   initialState: null,
+
+   // Store translated labels
    locales: {},
 
    // Store if the different direction of the graph should be colorized
@@ -69,6 +79,9 @@ var impact = {
 
    // Cytoscape instance
    cy: null,
+
+   // Compounds drag and drop extension
+   cdnd: null,
 
    // The impact network container
    impactContainer: null,
@@ -249,6 +262,206 @@ var impact = {
          //    };
          // }
       };
+   },
+
+   /**
+    * Get the current state of the graph
+    *
+    * @returns {Object}
+    */
+   getCurrentState: function() {
+      var data = {edges: {}, compounds: {}, parents: {}};
+
+      // Load edges
+      impact.cy.edges().forEach(function(edge) {
+         data.edges[edge.data('id')] = {
+            source: edge.data('source'),
+            target: edge.data('target'),
+         };
+      });
+
+      // Load compounds
+      impact.cy.filter("node:parent").forEach(function(compound) {
+         data.compounds[compound.data('id')] = {
+            name: compound.data('label'),
+            color: compound.data('color'),
+         };
+      });
+
+      // Load parents
+      impact.cy.filter("node:child").forEach(function(node) {
+         data.parents[node.data('id')] = node.data('parent');
+      });
+
+      return data;
+   },
+
+   /**
+    * Delta computation for edges
+    *
+    * @returns {Object}
+    */
+   computeEdgeDelta: function(currentEdges) {
+      var edgesDelta = {};
+
+      // First iterate on the edges we had in the initial state
+      Object.keys(impact.initialState.edges).forEach(function(edgeID) {
+         var edge = impact.initialState.edges[edgeID];
+         if (currentEdges.hasOwnProperty(edgeID)) {
+            // If the edge is still here in the current state, nothing happened
+            // Remove it from the currentEdges data
+            delete currentEdges[edgeID];
+         } else {
+            // If the edge is missing in the current state, it has been deleted
+            var source = edge.source.split(NODE_ID_SEPERATOR);
+            var target = edge.target.split(NODE_ID_SEPERATOR);
+            edgesDelta[edgeID] = {
+               action           : DELTA_ACTION_DELETE,
+               itemtype_source  : source[0],
+               items_id_source  : source[1],
+               itemtype_impacted: target[0],
+               items_id_impacted: target[1]
+            };
+         }
+      });
+
+      // Now iterate on the edges we have in the current state
+      // Since we removed the edges that were not modified in the previous step,
+      // the remaining edges are new ones
+      Object.keys(currentEdges).forEach(function (edgeID) {
+         var edge = currentEdges[edgeID];
+         var source = edge.source.split(NODE_ID_SEPERATOR);
+         var target = edge.target.split(NODE_ID_SEPERATOR);
+         edgesDelta[edgeID] = {
+            action           : DELTA_ACTION_ADD,
+            itemtype_source  : source[0],
+            items_id_source  : source[1],
+            itemtype_impacted: target[0],
+            items_id_impacted: target[1]
+         };
+      });
+
+      return edgesDelta;
+   },
+
+   /**
+    * Delta computation for compounds
+    *
+    * @returns {Object}
+    */
+   computeCompoundsDelta: function(currentCompounds) {
+      var compoundsDelta = {};
+
+      // First iterate on the compounds we had in the initial state
+      Object.keys(impact.initialState.compounds).forEach(function(compoundID) {
+         var compound = impact.initialState.compounds[compoundID];
+         if (currentCompounds.hasOwnProperty(compoundID)) {
+            // If the compound is still here in the current state
+            var currentCompound = currentCompounds[compoundID];
+
+            // Check for updates ...
+            if (compound.name != currentCompound.name
+               || compound.color != currentCompound.color) {
+               compoundsDelta[compoundID] = {
+                  action: DELTA_ACTION_UPDATE,
+                  name  : currentCompound.name,
+                  color : currentCompound.color
+               }
+            }
+
+            // Remove it from the currentCompounds data
+            delete currentCompounds[compoundID];
+         } else {
+            // If the compound is missing in the current state, it's been deleted
+            compoundsDelta[compoundID] = {
+               action           : DELTA_ACTION_DELETE,
+            };
+         }
+      });
+
+      // Now iterate on the compounds we have in the current state
+      Object.keys(currentCompounds).forEach(function (compoundID) {
+         compoundsDelta[compoundID] = {
+            action: DELTA_ACTION_ADD,
+            name  : currentCompounds[compoundID].name,
+            color : currentCompounds[compoundID].color
+         }
+      });
+
+      return compoundsDelta;
+   },
+
+   /**
+    * Delta computation for parents
+    *
+    * @returns {Object}
+    */
+   computeParentsDelta: function(currentParents) {
+      var parentsDelta = {};
+
+      // First iterate on the parents we had in the initial state
+      Object.keys(impact.initialState.parents).forEach(function(nodeID) {
+         var parent = impact.initialState.parents[nodeID];
+         if (currentParents.hasOwnProperty(nodeID)) {
+            // If the node still have a parrent in the current state
+            var currentParent = currentParents[nodeID];
+
+            // Check for updates ...
+            if (parent != currentParent) {
+               var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
+               parentsDelta[nodeID] = {
+                  action   : DELTA_ACTION_UPDATE,
+                  parent_id: currentParent,
+                  itemtype : nodeDetails[0],
+                  items_id : nodeDetails[1]
+               }
+            }
+
+            // Remove it from the currentParents data
+            delete currentParents[nodeID];
+         } else {
+            // If the parent is missing in the current state, it's been deleted
+            var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
+            parentsDelta[nodeID] = {
+               action           : DELTA_ACTION_DELETE,
+               itemtype : nodeDetails[0],
+               items_id : nodeDetails[1]
+            };
+         }
+      });
+
+      // Now iterate on the parents we have in the current state
+      Object.keys(currentParents).forEach(function (nodeID) {
+         var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
+         parentsDelta[nodeID] = {
+            action   : DELTA_ACTION_ADD,
+            parent_id: currentParents[nodeID],
+            itemtype : nodeDetails[0],
+            items_id : nodeDetails[1]
+         };
+      });
+
+      return parentsDelta;
+   },
+
+   /**
+    * Compute the delta betwteen the initial state and the current state
+    *
+    * @returns {Object}
+    */
+   computeDelta: function () {
+      // Store the delta for edges, compounds and parent
+      var result = {};
+
+      // Get the current state of the graph
+      var currentState = this.getCurrentState();
+
+      // Compute each deltas
+      result.edges = this.computeEdgeDelta(currentState.edges);
+      result.compounds = this.computeCompoundsDelta(currentState.compounds);
+      result.parents = this.computeParentsDelta(currentState.parents);
+
+      return result;
    },
 
    /**
@@ -603,14 +816,17 @@ var impact = {
          layout   : this.getNetworkLayout(),
       });
 
+      // Store initial data
+      this.initialState = this.getCurrentState();
+
       // Enable context menu
-      window.ctxm = this.cy.contextMenus({
+      this.cy.contextMenus({
          menuItems: this.getContextMenuItems(),
          menuItemClasses: [],
          contextMenuClasses: []
       });
 
-      window.cdnd = this.cy.compoundDragAndDrop();
+      this.cy.compoundDragAndDrop();
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -634,7 +850,7 @@ var impact = {
    replaceGraph(newGraph) {
       // Remove current graph
       this.cy.remove("");
-      this.delta = {};
+      this.delta = {edges: {}, compounds: {}, parents: {}};
 
       // Set the new graph and apply layout to nodes
       var layout = this.cy.add(newGraph).layout(impact.getNetworkLayout());
@@ -732,7 +948,6 @@ var impact = {
       impact.cy.filter("node").data('hidden', 1);
 
       impact.cy.filter("edge").forEach(function(edge) {
-
          // Show/Hide edges according to the direction
          if (edge.data('flag') & direction) {
             edge.data('hidden', 0);
@@ -797,40 +1012,6 @@ var impact = {
             impact.exploreGraph(exploredNodes, direction, targetNode);
          }
       });
-   },
-
-   /**
-    * Update the delta to be sent to the backend
-    *
-    * @param {string} action
-    * @param {string} edgeID
-    */
-   updateDelta: function(action, edgeID) {
-      var nodesID = edgeID.split('->');
-
-      // Remove useless changes (add + delete the same edge)
-      if (this.delta.hasOwnProperty(edgeID)) {
-
-         if (this.delta[edgeID] == action) {
-            // Duplicate delta, should not be possible, ignore it
-            return;
-         } else {
-            // An edge was added then delete : remove the delta
-            delete this.delta[edgeID];
-            return;
-         }
-      }
-
-      var source = nodesID[0].split("::");
-      var impacted = nodesID[1].split("::");
-
-      this.delta[edgeID] = {
-         action           : action,
-         itemtype_source  : source[0],
-         items_id_source  : source[1],
-         itemtype_impacted: impacted[0],
-         items_id_impacted: impacted[1]
-      };
    },
 
    /**
@@ -1110,8 +1291,7 @@ var impact = {
             break;
 
          case EDITION_DELETE:
-            // Remove the edge from the graph and the delta
-            impact.updateDelta("delete", this.data('id'));
+            // Remove the edge from the graph
             event.cy.remove(impact.makeIDSelector(this.data('id')));
             break;
       }
@@ -1135,15 +1315,6 @@ var impact = {
 
          case EDITION_DELETE:
             // Remove all edges connected to this node from graph and delta
-            var sourceFilter = "edge[source='" + this.data('id') + "']";
-            var targetFilter = "edge[target='" + this.data('id') + "']";
-
-            event.cy.filter(sourceFilter + ", " + targetFilter)
-               .forEach(function(edge) {
-                  impact.updateDelta("delete", edge.data('id'));
-               }
-            );
-
             event.cy.remove(impact.makeIDSelector(this.data('id')));
             break;
       }
@@ -1225,7 +1396,6 @@ var impact = {
                   target: this.data('id')
                }
             });
-            impact.updateDelta("add", edgeID);
 
             // Update dependencies flags according to the new link
             impact.updateFlags();

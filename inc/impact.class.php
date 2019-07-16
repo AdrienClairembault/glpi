@@ -343,7 +343,9 @@ class Impact extends CommonDBRelation {
          $(function() {
             // Send data as JSON on submit
             $('form[name=form_impact_network]').on('submit', function(event) {
-               $('input[name=impacts]').val(JSON.stringify(impact.delta));
+               $('input[name=impacts]').val(
+                  JSON.stringify(impact.computeDelta())
+               );
             });
          });
       ");
@@ -859,7 +861,7 @@ class Impact extends CommonDBRelation {
     * @param array $options
     * @param bool  $history
     *
-    * @return bool false on failure
+    * @return int|bool id or false on failure
     */
    public function add(array $input, $options = [], $history = true) {
       global $DB;
