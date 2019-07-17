@@ -60,8 +60,8 @@ $item->getFromDB($itemID);
 $graph = Impact::makeDataForCytoscape(Impact::buildGraph($item));
 
 // Remove array keys
-$graph['nodes'] = array_values($graph['nodes']);
-$graph['edges'] = array_values($graph['edges']);
+// $graph['nodes'] = array_values($graph['nodes']);
+// $graph['edges'] = array_values($graph['edges']);
 
 // Export graph to json
 $json = json_encode($graph);

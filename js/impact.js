@@ -515,6 +515,13 @@ var impact = {
             tooltipText: this.getLocale("removeFromCompound+"),
             selector: 'node:child',
             onClickFunction: this.menuOnRemoveFromCompound
+         },
+         {
+            id: 'delete',
+            content: this.getLocale("delete"),
+            tooltipText: this.getLocale("delete+"),
+            selector: 'node, edge',
+            onClickFunction: this.menuOnDelete
          }
       ];
    },
@@ -1365,6 +1372,28 @@ var impact = {
    }, 100, false),
 
    /**
+    * Remove an element from the graph
+    *
+    * @param {object} ele
+    */
+   deleteFromGraph: function(ele) {
+      if (ele.isParent()) {
+         // Remove only the parent
+         ele.children().move({parent: null});
+         ele.remove();
+
+      } else {
+         // Remove parent if last child
+         if (!ele.isOrphan() && ele.parent().children().length == 1) {
+            this.deleteFromGraph(ele.parent());
+         }
+
+         // Remove all edges connected to this node from graph and delta
+         this.cy.remove(impact.makeIDSelector(ele.data('id')));
+      }
+   },
+
+   /**
     * Handle global click events
     *
     * @param {JQuery.Event} event
@@ -1431,16 +1460,8 @@ var impact = {
             break;
 
          case EDITION_DELETE:
-            if (event.target.isParent()) {
-               // Remove only the parent
-               event.target.children().move({parent: null});
-               event.target.remove();
-
-            } else {
-               // Remove all edges connected to this node from graph and delta
-               event.cy.remove(impact.makeIDSelector(this.data('id')));
-               break;
-            }
+            impact.deleteFromGraph(event.target);
+            break;
       }
    },
 
@@ -1787,7 +1808,7 @@ var impact = {
    },
 
    /**
-    * Handle 'goTo' menu event
+    * Handle "goTo" menu event
     *
     * @param {JQuery.Event} event
     */
@@ -1796,7 +1817,7 @@ var impact = {
    },
 
    /**
-    * Handle 'showOngoing' menu event
+    * Handle "showOngoing" menu event
     *
     * @param {JQuery.Event} event
     */
@@ -1808,7 +1829,7 @@ var impact = {
    },
 
    /**
-    * Handle 'EditCompound' menu event
+    * Handle "EditCompound" menu event
     *
     * @param {JQuery.Event} event
     */
@@ -1819,7 +1840,7 @@ var impact = {
    },
 
     /**
-    * Handler for removeFromCompound action
+    * Handler for "removeFromCompound" action
     *
     * @param {JQuery.Event} event
     */
@@ -1836,6 +1857,15 @@ var impact = {
          parent.children().move({parent: null});
          impact.cy.remove(parent);
       }
+   },
+
+   /**
+    * Handler for "delete" menu action
+    *
+    * @param {JQuery.Event} event
+    */
+   menuOnDelete: function(event){
+      impact.deleteFromGraph(event.target);
    },
 
    /**
