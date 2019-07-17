@@ -1515,7 +1515,9 @@ var impact = {
             break;
 
          case EDITION_ADD_EDGE:
-            eventData.addEdgeStart = this.data('id');
+            if (!event.target.isParent()) {
+               eventData.addEdgeStart = this.data('id');
+            }
             break;
 
          case EDITION_DELETE:
