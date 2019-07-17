@@ -693,8 +693,6 @@ var impact = {
     * @returns {Object}
     */
    getEditCompoundDialog: function(compound) {
-      console.log("help ?");
-      console.log(compound.data());
       // Reset inputs:
       $(impact.dialogs.editCompoundDialog.inputs.name).val(
          compound.data('label')
