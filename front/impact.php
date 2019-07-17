@@ -35,7 +35,7 @@ Html::header(__('Impact'), $_SERVER['PHP_SELF'], "tools", "impact");
 
 
 $itemType = $_POST["type"]   ?? $_GET["type"]  ?? null;
-$itemID =   $_POST["id"]     ?? $_GET["id"]    ?? null;
+$itemID   = $_POST["id"]     ?? $_GET["id"]    ?? null;
 
 // Handle submitted form
 if (!empty($itemType) && !empty($itemID) &&
@@ -43,7 +43,8 @@ if (!empty($itemType) && !empty($itemID) &&
 
    $item = new $itemType;
    $item->getFromDB($itemID);
-   Impact::prepareImpactNetwork();
+   Impact::loadLibs();
+   Impact::prepareImpactNetwork($item);
    Impact::buildNetwork($item);
 }
 printForm();
