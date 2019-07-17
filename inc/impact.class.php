@@ -1065,6 +1065,8 @@ class Impact extends CommonDBRelation {
          'goTo+'                 => __("Open this element in a new tab"),
          'showOngoing'           => __("Show ongoing tickets"),
          'showOngoing+'          => __("Show ongoing tickets for this item"),
+         'removeFromCompound'    => __("Remove from group"),
+         'removeFromCompound+'   => __("Remove this asset from the group"),
          'ongoingTickets'        => __("Ongoing tickets"),
          'addNodeTooltip'        => __("Add a new asset to the impact network"),
          'addEdgeTooltip'        => __("Add a new impact relation"),

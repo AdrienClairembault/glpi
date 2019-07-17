@@ -166,16 +166,25 @@ var impact = {
          {
             selector: 'node:parent',
             style: {
-               'border-width' : '0',
+               'padding'           : '30px',
+               'shape'             : 'roundrectangle',
+               'border-width'      : '0',
+               'background-opacity': '0.3',
+               'font-size'         : '30px',
+               'background-color'  : '#d2d2d2'
             }
          },
          {
             selector: 'node:parent[label]',
             style: {
-               'label'             : 'data(label)',
+               'label': 'data(label)',
+            }
+         },
+         {
+            selector: 'node:parent[color]',
+            style: {
                'border-color'      : 'data(color)',
                'background-color'  : 'data(color)',
-               'background-opacity': '0.2',
             }
          },
          {
@@ -502,6 +511,13 @@ var impact = {
             tooltipText: this.getLocale("compoundProperties+"),
             selector: 'node:parent',
             onClickFunction: this.menuOnEditCompound
+         },
+         {
+            id: 'removeFromCompound',
+            content: this.getLocale("removeFromCompound"),
+            tooltipText: this.getLocale("removeFromCompound+"),
+            selector: 'node:child',
+            onClickFunction: this.menuOnRemoveFromCompound
          }
       ];
    },
@@ -837,7 +853,11 @@ var impact = {
          contextMenuClasses: []
       });
 
-      this.cy.compoundDragAndDrop();
+      // this.cy.compoundDragAndDrop({
+      //    // grabbedNode: function(){return false;},
+      //    dropTarget: function(n){return true;},
+      //    dropSibling: function(n){return false;}
+      // });
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -849,7 +869,6 @@ var impact = {
       this.cy.on('click', 'edge', this.edgeOnClick);
       this.cy.on('click', 'node', this.nodeOnClick);
       this.cy.on('box', this.onBox);
-      this.cy.on('boxend', this.onBoxend);
 
       // Enter EDITION_DEFAULT mode
       this.setEditionMode(EDITION_DEFAULT);
@@ -1143,6 +1162,7 @@ var impact = {
    exitEditionMode: function(mode) {
       switch (this.editionMode) {
          case EDITION_DEFAULT:
+            impact.cy.nodes().ungrabify();
             break;
 
          case EDITION_ADD_NODE:
@@ -1151,7 +1171,6 @@ var impact = {
 
          case EDITION_ADD_EDGE:
             $(impact.toolbar.addEdge).removeClass("active");
-            impact.cy.nodes().grabify();
             break;
 
          case EDITION_DELETE:
@@ -1163,7 +1182,6 @@ var impact = {
          case EDITION_ADD_COMPOUND:
             impact.cy.panningEnabled(true);
             impact.cy.boxSelectionEnabled(false);
-            impact.cy.nodes().grabify();
             break;
       }
    },
@@ -1177,6 +1195,7 @@ var impact = {
       switch (mode) {
          case EDITION_DEFAULT:
             this.clearHelpText();
+            impact.cy.nodes().grabify();
             $(this.impactContainer).css('cursor', "move");
             break;
 
@@ -1186,7 +1205,6 @@ var impact = {
             break;
 
          case EDITION_ADD_EDGE:
-            impact.cy.nodes().ungrabify();
             this.showHelpText("addEdgeHelpText");
             $(this.impactContainer).css('cursor', "crosshair");
             break;
@@ -1199,7 +1217,6 @@ var impact = {
          case EDITION_ADD_COMPOUND:
             impact.cy.panningEnabled(false);
             impact.cy.boxSelectionEnabled(true);
-            impact.cy.nodes().ungrabify();
             this.showHelpText("addCompoundHelpText");
             $(this.impactContainer).css('cursor', "crosshair");
             break;
@@ -1267,12 +1284,85 @@ var impact = {
           && nodes[i].boundingBox().y1 < position.y
           && nodes[i].boundingBox().y2 > position.y) {
             // Check if the node is excluded
-            return filter(nodes[i].id()) ? nodes[i].id() : null;
+            if (filter(nodes[i])) {
+               return nodes[i];
+            }
          }
       }
 
       return null;
    },
+
+    /**
+    * Build the ongoing dialog content according to the list of ITILObjects
+    *
+    * @param {Object} ITILObjects requests, incidents, changes, problems
+    *
+    * @returns {string}
+    */
+   buildOngoingDialogContent: function(ITILObjects) {
+      return this.listElements("Requests", ITILObjects.requests, "ticket")
+         + this.listElements("Incidents", ITILObjects.incidents, "ticket")
+         + this.listElements("Changes", ITILObjects.changes , "change")
+         + this.listElements("Problems", ITILObjects.problems, "problem");
+   },
+
+   /**
+    * Build an html list
+    *
+    * @param {string} title requests, incidents, changes, problems
+    * @param {string} elements requests, incidents, changes, problems
+    * @param {string} url key used to generate the URL
+    *
+    * @returns {string}
+    */
+   listElements: function(title, elements, url) {
+      html = "";
+
+      if (elements.length > 0) {
+         html += "<h3>" + this.getLocale(title) + "</h3>";
+         html += "<ul>";
+
+         elements.forEach(function(element) {
+            var link = "./" + url + ".form.php?id=" + element.id;
+            html += '<li><a target="_blank" href="' + link + '">' + element.name
+               + '</a></li>';
+         });
+         html += "</ul>";
+      }
+
+      return html;
+   },
+
+   /**
+    * Add a new compound from the selected nodes
+    */
+   addCompoundFromSelection: _.debounce(function(){
+      // Check that there is enough selected nodes
+      if (eventData.boxSelected.length < 2) {
+         alert(impact.getLocale("notEnoughItems"));
+      } else {
+         // Create the compound
+         var newCompound = impact.cy.add({group: 'nodes'});
+
+         // Set parent for coumpound member
+         eventData.boxSelected.forEach(function(ele) {
+            ele.move({'parent': newCompound.data('id')});
+         });
+
+         // Show edit dialog
+         $(impact.dialogs.editCompoundDialog.id).dialog(
+            impact.getEditCompoundDialog(newCompound)
+         );
+
+         // Back to default mode
+         impact.setEditionMode(EDITION_DEFAULT);
+      }
+
+      // Clear the selection
+      eventData.boxSelected = [];
+      impact.cy.filter(":selected").unselect();
+   }, 100, false),
 
    /**
     * Handle global click events
@@ -1341,9 +1431,16 @@ var impact = {
             break;
 
          case EDITION_DELETE:
-            // Remove all edges connected to this node from graph and delta
-            event.cy.remove(impact.makeIDSelector(this.data('id')));
-            break;
+            if (event.target.isParent()) {
+               // Remove only the parent
+               event.target.children().move({parent: null});
+               event.target.remove();
+
+            } else {
+               // Remove all edges connected to this node from graph and delta
+               event.cy.remove(impact.makeIDSelector(this.data('id')));
+               break;
+            }
       }
    },
 
@@ -1367,59 +1464,15 @@ var impact = {
             break;
 
          case EDITION_ADD_COMPOUND:
-            console.log("BOX EVENT");
             var ele = event.target;
+            // Add node to selected list if he is not part of a compound already
             if (ele.isNode() && ele.isOrphan() && !ele.isParent()) {
                eventData.boxSelected.push(ele);
-               impact.boxed();
             }
+            impact.addCompoundFromSelection();
             break;
       }
    },
-
-   /**
-    * Handle end of box selection event
-    *
-    * @param {JQuery.Event} event
-    */
-   onBoxend: function (event) {
-      switch (impact.editionMode) {
-         case EDITION_DEFAULT:
-            break;
-
-         case EDITION_ADD_NODE:
-            break;
-
-         case EDITION_ADD_EDGE:
-            break;
-
-         case EDITION_DELETE:
-            break;
-
-         case EDITION_ADD_COMPOUND:
-            console.log("BOX END");
-            break;
-      }
-   },
-
-   boxed: debounce(function(){
-      console.log(eventData.boxSelected);
-      var newCompound = impact.cy.add({group: 'nodes'});
-      console.log("new id :" + newCompound.data('id'));
-
-      for(var i=0; i<eventData.boxSelected.length; i++){
-      // eventData.boxSelected.forEach(function(ele) {
-         ele = eventData.boxSelected[i];
-         console.log("setting parent to " + ele.data('id') +" -> " + newCompound.data('id'));
-         ele.move({
-            'parent': newCompound.data('id')
-         });
-      };
-
-      // Clear
-      eventData.boxSelected = [];
-      impact.cy.filter(":selected").unselect();
-   }, 100, false),
 
    /**
     * Handle mousedown events on nodes
@@ -1430,6 +1483,11 @@ var impact = {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             $(impact.impactContainer).css('cursor', "grabbing");
+
+            // If we are not on a compound node or a node already inside one
+            if (event.target.isOrphan() && !event.target.isParent()) {
+               eventData.grabNodeStart = event.target;
+            }
             break;
 
          case EDITION_ADD_NODE:
@@ -1440,6 +1498,9 @@ var impact = {
             break;
 
          case EDITION_DELETE:
+            break;
+
+         case EDITION_ADD_COMPOUND:
             break;
       }
    },
@@ -1453,6 +1514,14 @@ var impact = {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             $(impact.impactContainer).css('cursor', "grab");
+
+            // Check if we were grabbing a node
+            if (eventData.grabNodeStart != null) {
+               // Reset eventData for node grabbing
+               eventData.grabNodeStart = null;
+               eventData.boundingBox = null;
+            }
+
             break;
 
          case EDITION_ADD_NODE:
@@ -1512,9 +1581,48 @@ var impact = {
     *
     * @param {JQuery.Event} event
     */
-   onMousemove: function(event) {
+   onMousemove: _.throttle(function(event) {
+      console.log("move");
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
+            // No action if we are not grabbing a node
+            if (eventData.grabNodeStart == null) {
+               return;
+            }
+
+            // Look for a compound at the cursor position
+            var node = impact.getNodeAt(event.position, function(node) {
+               return node.isParent();
+            });
+
+            if (node) {
+               // If we have a bounding box defined, the grabbed node is already
+               // being placed into a compound, we need to check if it was moved
+               // outside this original bouding box to know if the user is trying
+               // to move if away from the compound
+               if (eventData.boundingBox != null) {
+                  // If the user tried to move out of the compound
+                  if (eventData.boundingBox.x1 > event.position.x
+                     || eventData.boundingBox.x2 < event.position.x
+                     || eventData.boundingBox.y1 > event.position.y
+                     || eventData.boundingBox.y2 < event.position.y) {
+                     // Remove it from the compound
+                     eventData.grabNodeStart.move({parent: null});
+                     eventData.boundingBox = null;
+                  }
+               } else {
+                  // If we found a compound, add the grabbed node inside
+                  eventData.grabNodeStart.move({parent: node.data('id')});
+
+                  // Store the original bouding box of the compound
+                  eventData.boundingBox = node.boundingBox();
+               }
+            } else {
+               // Else; reset it's parent so it can be removed from any temporary
+               // compound while the user is stil grabbing
+               eventData.grabNodeStart.move({parent: null});
+            }
+
             break;
 
          case EDITION_ADD_NODE:
@@ -1531,9 +1639,16 @@ var impact = {
                event.cy.remove(eventData.tmpEles);
             }
 
-            var node = impact.getNodeAt(event.position, function(nodeID) {
+            var node = impact.getNodeAt(event.position, function(node) {
+               var nodeID = node.data('id');
+
                // Can't link to itself
                if (nodeID == eventData.addEdgeStart) {
+                  return false;
+               }
+
+               // Can't link to parent
+               if (node.isParent()) {
                   return false;
                }
 
@@ -1552,6 +1667,8 @@ var impact = {
             });
 
             if (node != null) {
+               node = node.data('id');
+
                // Add temporary edge to node hovered by the user
                eventData.tmpEles = event.cy.add([
                   {
@@ -1595,7 +1712,7 @@ var impact = {
          case EDITION_DELETE:
             break;
       }
-   },
+   }, 25),
 
    /**
     * Handle global mouseover events
@@ -1680,47 +1797,6 @@ var impact = {
    },
 
    /**
-    * Build the ongoing dialog content according to the list of ITILObjects
-    *
-    * @param {Object} ITILObjects requests, incidents, changes, problems
-    *
-    * @returns {string}
-    */
-   buildOngoingDialogContent: function(ITILObjects) {
-      return this.listElements("Requests", ITILObjects.requests, "ticket")
-         + this.listElements("Incidents", ITILObjects.incidents, "ticket")
-         + this.listElements("Changes", ITILObjects.changes , "change")
-         + this.listElements("Problems", ITILObjects.problems, "problem");
-   },
-
-   /**
-    * Build an html list
-    *
-    * @param {string} title requests, incidents, changes, problems
-    * @param {string} elements requests, incidents, changes, problems
-    * @param {string} url key used to generate the URL
-    *
-    * @returns {string}
-    */
-   listElements: function(title, elements, url) {
-      html = "";
-
-      if (elements.length > 0) {
-         html += "<h3>" + this.getLocale(title) + "</h3>";
-         html += "<ul>";
-
-         elements.forEach(function(element) {
-            var link = "./" + url + ".form.php?id=" + element.id;
-            html += '<li><a target="_blank" href="' + link + '">' + element.name
-               + '</a></li>';
-         });
-         html += "</ul>";
-      }
-
-      return html;
-   },
-
-   /**
     * Handle 'showOngoing' menu event
     *
     * @param {JQuery.Event} event
@@ -1734,11 +1810,33 @@ var impact = {
 
    /**
     * Handle 'EditCompound' menu event
+    *
+    * @param {JQuery.Event} event
     */
    menuOnEditCompound: function (event) {
       $(impact.dialogs.editCompoundDialog.id).dialog(
          impact.getEditCompoundDialog(event.target)
       );
+   },
+
+    /**
+    * Handler for removeFromCompound action
+    *
+    * @param {JQuery.Event} event
+    */
+   menuOnRemoveFromCompound: function(event) {
+      var parent = impact.cy.getElementById(
+         event.target.data('parent')
+      );
+
+      // Remove node from compound
+      event.target.move({parent: null});
+
+      // Destroy compound if only one or zero member left
+      if (parent.children().length < 2) {
+         parent.children().move({parent: null});
+         impact.cy.remove(parent);
+      }
    },
 
    /**
