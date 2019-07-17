@@ -82,9 +82,6 @@ var impact = {
    // Cytoscape instance
    cy: null,
 
-   // Compounds drag and drop extension
-   cdnd: null,
-
    // The impact network container
    impactContainer: null,
 
@@ -696,6 +693,17 @@ var impact = {
     * @returns {Object}
     */
    getEditCompoundDialog: function(compound) {
+      console.log("help ?");
+      console.log(compound.data());
+      // Reset inputs:
+      $(impact.dialogs.editCompoundDialog.inputs.name).val(
+         compound.data('label')
+      );
+      $(impact.dialogs.editCompoundDialog.inputs.color).spectrum(
+         "set",
+         compound.data('color')
+      );
+
       // Save group details
       var buttonSave = {
          text: impact.getLocale("save"),
@@ -852,12 +860,6 @@ var impact = {
          menuItemClasses: [],
          contextMenuClasses: []
       });
-
-      // this.cy.compoundDragAndDrop({
-      //    // grabbedNode: function(){return false;},
-      //    dropTarget: function(n){return true;},
-      //    dropSibling: function(n){return false;}
-      // });
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -1582,7 +1584,6 @@ var impact = {
     * @param {JQuery.Event} event
     */
    onMousemove: _.throttle(function(event) {
-      console.log("move");
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             // No action if we are not grabbing a node
