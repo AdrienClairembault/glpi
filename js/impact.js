@@ -166,8 +166,8 @@ var impact = {
                'padding'           : '30px',
                'shape'             : 'roundrectangle',
                'border-width'      : '0',
-               'background-opacity': '0.3',
-               'font-size'         : '30px',
+               'background-opacity': '1',
+               'font-size'         : '1.3em',
                'background-color'  : '#d2d2d2'
             }
          },
@@ -206,6 +206,7 @@ var impact = {
                'background-image'  : 'data(image)',
                'background-fit'    : 'contain',
                'background-opacity': '0',
+               'font-size'         : '1em'
             }
          },
          {
@@ -267,16 +268,16 @@ var impact = {
     */
    getNetworkLayout: function () {
       return {
-         name: 'grid',
-         rows: 3,
+         name: 'dagre',
+         rankDir: 'LR'
          // transform: function(node, position) {
-         //    var sin = Math.sin(90);
-         //    var cos = Math.cos(90);
+            // var sin = 1 // Math.sin(90 * (Math.PI / 180));
+            // var cos = 0; // Math.cos(360 * (Math.PI / 180));
 
-         //    return {
-         //       x: position.x * cos - position.y * sin,
-         //       y: position.y * cos + position.x * sin
-         //    };
+            // return {
+               // x: position.x * cos - position.y * sin,
+               // y: position.x * sin + position.y * cos
+            // };
          // }
       };
    },
@@ -865,6 +866,46 @@ var impact = {
          menuItemClasses: [],
          contextMenuClasses: []
       });
+
+      var options = {
+         // On/Off Modules
+         /* From the following four snap options, at most one should be true at a given time */
+         snapToGridOnRelease: true, // Snap to grid on release
+         snapToGridDuringDrag: false, // Snap to grid during drag
+         snapToAlignmentLocationOnRelease: false, // Snap to alignment location on release
+         snapToAlignmentLocationDuringDrag: false, // Snap to alignment location during drag
+         distributionGuidelines: false, // Distribution guidelines
+         geometricGuideline: false, // Geometric guidelines
+         initPosAlignment: false, // Guideline to initial mouse position
+         centerToEdgeAlignment: false, // Center to edge alignment
+         resize: false, // Adjust node sizes to cell sizes
+         parentPadding: false, // Adjust parent sizes to cell sizes by padding
+         drawGrid: true, // Draw grid background
+     
+         // General
+         gridSpacing: 20, // Distance between the lines of the grid.
+     
+         // Draw Grid
+         zoomDash: true, // Determines whether the size of the dashes should change when the drawing is zoomed in and out if grid is drawn.
+         panGrid: false, // Determines whether the grid should move then the user moves the graph if grid is drawn.
+         gridStackOrder: 0, // Namely z-index
+         gridColor: '#dedede', // Color of grid lines
+         lineWidth: 1.0, // Width of grid lines
+         // Parent Padding
+         parentSpacing: -1 // -1 to set paddings of parents to gridSpacing
+     };
+
+     this.cy.gridGuide({
+         gridStackOrder: 0
+     });
+   //   this.cy.gridGuide({
+   //       guidelinesStyle: {
+   //        strokeStyle          : "black",
+   //        horizontalDistColor  : "#ff0000",
+   //        verticalDistColor    : "green",
+   //        initPosAlignmentColor: "#0000ff",
+   //       }
+   //    });
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);

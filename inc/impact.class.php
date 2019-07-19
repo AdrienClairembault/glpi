@@ -147,11 +147,23 @@ class Impact extends CommonDBRelation {
    public static function loadNetworkContainerStyle() {
       echo '
          <style type="text/css">
+            .networkParent {
+               border: 1px solid #f1f1f1;;
+            }
+
+            .networkTable {
+               max-width: none !important;
+            }
+
             #networkContainer {
               /* width: 100%;*/
                height: 65vh;
-               border: 1px solid lightgray;
             }
+
+            #networkContainer div {
+               z-index:1 !important;
+            }
+
             .impactDialog {
                display: none;
             }
@@ -166,20 +178,23 @@ class Impact extends CommonDBRelation {
             }
 
             div.vis-network div.vis-edit-mode div.vis-label {
-               margin: 0 !important;;
+               margin: 0 !important;
             }
 
             .impact_toolbar {
                width: 100%;
-               background-color: #3a5693;
                overflow: auto;
+            }
+
+            #impactTools {
+               float: right;
             }
 
             .impact_toolbar span {
                float: left;
-               color: white;
-               font-size: 20px;
-               padding: 8px 16px;
+               color: gray;
+               font-size: 1.3em;
+               padding: 4px 8px;
                transition: all 0.3s ease;
             }
 
@@ -188,11 +203,7 @@ class Impact extends CommonDBRelation {
             }
 
             #impactTools span:hover, .networkToolbarHightlight:hover {
-               background-color: #8cabdb;
-            }
-
-            .impact_toolbar .active {
-               background-color: #8cabdb;
+               background-color: lightgray;
             }
 
          </style>
@@ -270,7 +281,7 @@ class Impact extends CommonDBRelation {
       $formName = "form_impact_network";
 
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
-      echo "<table class='tab_cadre_fixe'>";
+      echo "<table class='tab_cadre_fixe networkTable'>";
 
       // First row : header
       echo "<tr class='tab_bg_2'>";
@@ -278,7 +289,7 @@ class Impact extends CommonDBRelation {
       echo "</tr>";
 
       // Second row : network graph
-      echo "<tr><td>";
+      echo "<tr><td class=\"networkParent\">";
       echo '<div class="impact_toolbar">';
       $hidden = 'style="display: none;"';
       echo '<div>';
