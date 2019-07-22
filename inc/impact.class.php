@@ -173,6 +173,32 @@ class Impact extends CommonDBRelation {
                font-size: 14px;
             }
 
+            .impact-dropdown {
+               /* position: relative; */
+               display: inline-block;
+            }
+
+            .impact-dropdown-content {
+               display: none;
+               position: absolute;
+               background-color: white;
+               min-width: 100px;
+               z-index: 15;
+               right: 0;
+            }
+
+            .impact-dropdown-content li {
+               color: black;
+               padding: 12px 16px;
+               text-decoration: none;
+               display: block;
+             }
+
+            .impact-dropdown:hover .impact-dropdown-content {
+               display: block;
+            }
+
+
             div.vis-network div.vis-edit-mode div.vis-button.vis-edit {
                background-image: url() !important;
             }
@@ -182,7 +208,8 @@ class Impact extends CommonDBRelation {
             }
 
             .impact_toolbar {
-               width: 100%;
+               /* position: relative;
+               z-index: 20; */
                overflow: auto;
             }
 
@@ -204,6 +231,138 @@ class Impact extends CommonDBRelation {
 
             #impactTools span:hover, .networkToolbarHightlight:hover {
                background-color: lightgray;
+            }
+
+
+            /* Page */
+
+            .more-menu {
+               /*width: 100px;*/
+            }
+
+            /* More Button / Dropdown Menu */
+
+            .more-btn,
+            .more-menu-btn {
+               background: none;
+               border: 0 none;
+               line-height: normal;
+               overflow: visible;
+               -webkit-user-select: none;
+               -moz-user-select: none;
+               -ms-user-select: none;
+               width: 100%;
+               text-align: left;
+               outline: none;
+               cursor: pointer;
+            }
+
+            .more-dot {
+               background-color: #aab8c2;
+               margin: 0 auto;
+               display: inline-block;
+               width: 7px;
+               height: 7px;
+               margin-right: 1px;
+               border-radius: 50%;
+               transition: background-color 0.3s;
+            }
+
+            .more-menu {
+               position: absolute;
+               top: 10%;
+               z-index: 900;
+               float: left;
+               padding: 10px 0;
+               margin-top: 9px;
+               background-color: #fff;
+               border: 1px solid #ccd8e0;
+               border-radius: 4px;
+               box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
+               opacity: 0;
+               transform: translate(0, 15px) scale(.95);
+               transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+               pointer-events: none;
+               right: 15px;
+            }
+
+            .more-menu-caret {
+               position: absolute;
+               top: -10px;
+               right: 5px;
+               width: 18px;
+               height: 10px;
+               float: left;
+               overflow: hidden;
+            }
+
+            .more-menu-caret-outer,
+            .more-menu-caret-inner {
+               position: absolute;
+               display: inline-block;
+               margin-left: -1px;
+               font-size: 0;
+               line-height: 1;
+            }
+
+            .more-menu-caret-outer {
+               border-bottom: 10px solid #c1d0da;
+               border-left: 10px solid transparent;
+               border-right: 10px solid transparent;
+               height: auto;
+               left: 0;
+               top: 0;
+               width: auto;
+            }
+
+            .more-menu-caret-inner {
+               top: 1px;
+               left: 1px;
+               border-left: 9px solid transparent;
+               border-right: 9px solid transparent;
+               border-bottom: 9px solid #fff;
+            }
+
+            .more-menu-items {
+               margin: 0;
+               list-style: none;
+               padding: 0;
+            }
+
+            .more-menu-item {
+               display: block;
+            }
+
+            .more-menu-btn {
+               min-width: 100%;
+               color: #66757f;
+               cursor: pointer;
+               display: block;
+               font-size: 13px;
+               line-height: 18px;
+               padding: 5px 10px;
+               position: relative;
+               white-space: nowrap;
+               font-size: 1.2em !important;
+            }
+
+            .more-menu-item:hover {
+               background-color: lightgray;
+            }
+
+            .more-menu-item:hover .more-menu-btn {
+               /*color: #fff;*/
+            }
+
+            .more-btn:hover .more-dot,
+            .show-more-menu .more-dot {
+               background-color: #516471;
+            }
+
+            .show-more-menu .more-menu {
+               opacity: 1;
+               transform: translate(0, 0) scale(1);
+               pointer-events: auto;
             }
 
          </style>
@@ -302,11 +461,20 @@ class Impact extends CommonDBRelation {
       echo '<span id="addCompound"><i class="far fa-square"></i></span>';
       echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
       echo '<span id="exportGraph"><i class="fas fa-download"></i></span>';
-      echo '<span id="expandToolbar"><i class="fas fa-caret-right"></i></span>';
-      echo '<span id="toggle_impact" ' . $hidden . '><i class="fas fa-eye"></i> Impact </span>';
-      echo '<span id="toggle_depends"' . $hidden . '><i class="fas fa-eye"></i> Depends </span>';
-      echo '<span id="color_picker"' . $hidden . '><i class="fas fa-palette"></i></span>';
-      echo '<span id="retractToolbar"' . $hidden . '><i class="fas fa-caret-left"></i></span>';
+      echo '<span id="expandToolbar"><i class="fas fa-ellipsis-v "></i></span>';
+      echo '<div class="more">';
+      echo '<div class="more-menu">';
+      echo '<div class="more-menu-caret">';
+      echo '<div class="more-menu-caret-outer"></div>';
+      echo '<div class="more-menu-caret-inner"></div>';
+      echo '</div>';
+      echo '<ul class="more-menu-items" tabindex="-1">';
+      echo '<li id="toggle_impact" class="more-menu-item"><button type="button" class="more-menu-btn"><i class="fas fa-eye"></i> Toggle impact</button></li>';
+      echo '<li id="toggle_depends" class="more-menu-item"><button type="button" class="more-menu-btn"><i class="fas fa-eye"></i> Toggle depends </button></li>';
+      echo '<li id="color_picker" class="more-menu-item"><button type="button" class="more-menu-btn"><i class="fas fa-palette"></i> Colors</button></li>';
+      echo '</ul>';
+      echo "</div>";
+      echo "</div>";
       echo '</div>';
 
       echo '</div>';
@@ -858,7 +1026,6 @@ class Impact extends CommonDBRelation {
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
-         ['key'    => 'retractToolbar','id' => "#retractToolbar"],
          ['key'    => 'cancel',        'id' => "#cancel"]
       ]);
 
@@ -1090,7 +1257,6 @@ class Impact extends CommonDBRelation {
          'showImpactTooltip'     => __("Toggle \"impacted\" visibility"),
          'showDependsTooltip'    => __("Toggle \"depends\" visibility"),
          'showColorsTooltip'     => __("Edit relation's color"),
-         'retractToolbarTooltip' => __("Show less options ..."),
          'addNodeHelpText'       => __("Click anywhere to add a new asset"),
          'addEdgeHelpText'       => __("Draw a line between two assets to add an impact relation ..."),
          'addCompoundHelpText'   => __("Draw a square containing the assets you wish to group ..."),

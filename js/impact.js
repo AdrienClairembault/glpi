@@ -141,7 +141,6 @@ var impact = {
       toggleImpact  : null,
       toggleDepends : null,
       colorPicker   : null,
-      retractToolbar: null,
       cancel        : null,
    },
 
@@ -867,45 +866,15 @@ var impact = {
          contextMenuClasses: []
       });
 
-      var options = {
-         // On/Off Modules
-         /* From the following four snap options, at most one should be true at a given time */
-         snapToGridOnRelease: true, // Snap to grid on release
-         snapToGridDuringDrag: false, // Snap to grid during drag
-         snapToAlignmentLocationOnRelease: false, // Snap to alignment location on release
-         snapToAlignmentLocationDuringDrag: false, // Snap to alignment location during drag
-         distributionGuidelines: false, // Distribution guidelines
-         geometricGuideline: false, // Geometric guidelines
-         initPosAlignment: false, // Guideline to initial mouse position
-         centerToEdgeAlignment: false, // Center to edge alignment
-         resize: false, // Adjust node sizes to cell sizes
-         parentPadding: false, // Adjust parent sizes to cell sizes by padding
-         drawGrid: true, // Draw grid background
-     
-         // General
-         gridSpacing: 20, // Distance between the lines of the grid.
-     
-         // Draw Grid
-         zoomDash: true, // Determines whether the size of the dashes should change when the drawing is zoomed in and out if grid is drawn.
-         panGrid: false, // Determines whether the grid should move then the user moves the graph if grid is drawn.
-         gridStackOrder: 0, // Namely z-index
-         gridColor: '#dedede', // Color of grid lines
-         lineWidth: 1.0, // Width of grid lines
-         // Parent Padding
-         parentSpacing: -1 // -1 to set paddings of parents to gridSpacing
-     };
-
-     this.cy.gridGuide({
-         gridStackOrder: 0
-     });
-   //   this.cy.gridGuide({
-   //       guidelinesStyle: {
-   //        strokeStyle          : "black",
-   //        horizontalDistColor  : "#ff0000",
-   //        verticalDistColor    : "green",
-   //        initPosAlignmentColor: "#0000ff",
-   //       }
-   //    });
+      // Enable grid
+      this.cy.gridGuide({
+         gridStackOrder: 0,
+         snapToGridOnRelease: true,
+         snapToGridDuringDrag: true,
+         gridSpacing: 8,
+         drawGrid: true,
+         panGrid: true,
+      });
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -1949,15 +1918,8 @@ var impact = {
       });
       $(impact.toolbar.export).qtip(this.getTooltip("downloadTooltip"));
 
-      // Expand toolbar
-      $(impact.toolbar.expandToolbar).click(function() {
-         $(impact.toolbar.expandToolbar).hide();
-         $(impact.toolbar.toggleImpact).show();
-         $(impact.toolbar.toggleDepends).show();
-         $(impact.toolbar.colorPicker).show();
-         $(impact.toolbar.retractToolbar).show();
-      });
-      $(impact.toolbar.expandToolbar).qtip(this.getTooltip("expandToolbarTooltip"));
+      // "More" dropdown menu
+      $(impact.toolbar.expandToolbar).click(showMenu);
 
       // Toggle impact visibility
       $(impact.toolbar.toggleImpact).click(function() {
@@ -1965,7 +1927,6 @@ var impact = {
          $(impact.toolbar.toggleImpact).find('i')
             .toggleClass("fa-eye fa-eye-slash");
       });
-      $(impact.toolbar.toggleImpact).qtip(this.getTooltip("showImpactTooltip"));
 
       // Toggle depends visibility
       $(impact.toolbar.toggleDepends).click(function() {
@@ -1973,27 +1934,16 @@ var impact = {
          $(impact.toolbar.toggleDepends).find('i')
             .toggleClass("fa-eye fa-eye-slash");
       });
-      $(impact.toolbar.toggleDepends).qtip(this.getTooltip("showDependsTooltip"));
 
       // Color picker
       $(impact.toolbar.colorPicker).click(function() {
+         console.log("clicked");
          $(impact.dialogs.configColor.id).dialog(impact.getColorPickerDialog(
             $(impact.dialogs.configColor.inputs.dependsColor),
             $(impact.dialogs.configColor.inputs.impactColor),
             $(impact.dialogs.configColor.inputs.impactAndDependsColor)
          ));
       });
-      $(impact.toolbar.colorPicker).qtip(this.getTooltip("showColorsTooltip"));
-
-      // Retract toolbar
-      $(impact.toolbar.retractToolbar).click(function() {
-         $(impact.toolbar.expandToolbar).show();
-         $(impact.toolbar.toggleImpact).hide();
-         $(impact.toolbar.toggleDepends).hide();
-         $(impact.toolbar.colorPicker).hide();
-         $(impact.toolbar.retractToolbar).hide();
-      });
-      $(impact.toolbar.retractToolbar).qtip(this.getTooltip("retractToolbarTooltip"));
 
       // Go back to default mode
       $(impact.toolbar.cancel).click(function() {
@@ -2001,3 +1951,31 @@ var impact = {
       });
    }
 };
+
+var el = document.querySelector('.more');
+var btn = $('.more')[0];
+var menu = el.querySelector('.more-menu');
+var visible = false;
+
+function showMenu(e) {
+   e.preventDefault();
+   if (!visible) {
+      visible = true;
+      el.classList.add('show-more-menu');
+      $(menu).show();
+      document.addEventListener('mousedown', hideMenu, false);
+   }
+}
+
+function hideMenu(e) {
+   if (btn.contains(e.target)) {
+      return;
+   }
+   if (visible) {
+      visible = false;
+      el.classList.remove('show-more-menu');
+      $(menu).hide();
+      document.removeEventListener('mousedown', hideMenu);
+   }
+}
+
