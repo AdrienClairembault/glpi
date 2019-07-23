@@ -1481,6 +1481,7 @@ var impact = {
          case EDITION_DELETE:
             // Remove the edge from the graph
             impact.deleteFromGraph(event.target);
+            impact.setEditionMode(EDITION_DEFAULT);
             break;
       }
    },
