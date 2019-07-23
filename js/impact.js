@@ -91,6 +91,9 @@ var impact = {
    // Start node of the graph
    startNode: null,
 
+   // Form
+   form: null,
+
    // Store registered dialogs and their inputs
    dialogs: {
       addNode: {
@@ -132,6 +135,7 @@ var impact = {
    toolbar: {
       helpText      : null,
       tools         : null,
+      save          : null,
       addNode       : null,
       addEdge       : null,
       addCompound   : null,
@@ -154,9 +158,9 @@ var impact = {
          {
             selector: 'core',
             style: {
-               'selection-box-opacity': '0.2',
+               'selection-box-opacity'     : '0.2',
                'selection-box-border-width': '0',
-               'selection-box-color': '#24acdf'
+               'selection-box-color'       : '#24acdf'
             }
          },
          {
@@ -166,8 +170,10 @@ var impact = {
                'shape'             : 'roundrectangle',
                'border-width'      : '0',
                'background-opacity': '1',
-               'font-size'         : '1.3em',
-               'background-color'  : '#d2d2d2'
+               'font-size'         : '1.1em',
+               'background-color'  : '#d2d2d2',
+               'text-margin-y'     : '20px',
+               'text-opacity'      : 0.7,
             }
          },
          {
@@ -205,7 +211,8 @@ var impact = {
                'background-image'  : 'data(image)',
                'background-fit'    : 'contain',
                'background-opacity': '0',
-               'font-size'         : '1em'
+               'font-size'         : '1em',
+               'text-opacity'      : 0.7
             }
          },
          {
@@ -229,11 +236,12 @@ var impact = {
          {
             selector: 'edge',
             style: {
-               'width'             : 3,
+               'width'             : 1,
                'line-color'        : this.edgeColors[0],
                'target-arrow-color': this.edgeColors[0],
                'target-arrow-shape': 'triangle',
-               'curve-style'       : 'bezier'
+               'arrow-scale'       : 0.7,
+               'curve-style'       : 'taxi'
             }
          },
          {
@@ -644,13 +652,11 @@ var impact = {
       var exportButton = {
          text: this.getLocale("export"),
          click: function() {
-            var exportData = impact.exportGraph(
+            impact.download(
                format.find("option:selected").val(),
-               transparentBackground.is(':checked')
+               transparentBackground.is(':checked'),
+               link
             );
-            link.prop('download', exportData.filename);
-            link.prop("href", exportData.filecontent);
-            link[0].click();
          }
       };
 
@@ -811,8 +817,10 @@ var impact = {
       locales,
       colors,
       startNode,
+      form,
       dialogs,
-      toolbar) {
+      toolbar
+   ) {
 
       // Set container
       this.impactContainer = impactContainer;
@@ -829,6 +837,9 @@ var impact = {
 
       // Set start node
       this.startNode = startNode;
+
+      // Register form
+      this.form = form;
 
       // Register dialogs
       JSON.parse(dialogs).forEach(function(dialog) {
@@ -886,6 +897,7 @@ var impact = {
       this.cy.on('click', 'edge', this.edgeOnClick);
       this.cy.on('click', 'node', this.nodeOnClick);
       this.cy.on('box', this.onBox);
+      this.cy.on('drag add remove', this.onChange);
 
       // Enter EDITION_DEFAULT mode
       this.setEditionMode(EDITION_DEFAULT);
@@ -996,8 +1008,8 @@ var impact = {
       // Hide all nodes
       impact.cy.filter("node").data('hidden', 1);
 
+      // Show/Hide edges according to the direction
       impact.cy.filter("edge").forEach(function(edge) {
-         // Show/Hide edges according to the direction
          if (edge.data('flag') & direction) {
             edge.data('hidden', 0);
 
@@ -1005,6 +1017,11 @@ var impact = {
             var sourceFilter = "node[id='" + edge.data('source') + "']";
             var targetFilter = "node[id='" + edge.data('target') + "']";
             impact.cy.filter(sourceFilter + ", " + targetFilter)
+               .data("hidden", 0);
+
+            // Make the parents of theses node visibles too
+            impact.cy.filter(sourceFilter + ", " + targetFilter)
+               .parent()
                .data("hidden", 0);
          } else {
             edge.data('hidden', 1);
@@ -1265,25 +1282,31 @@ var impact = {
     *
     * @param {string} format
     * @param {boolean} transparentBackground (png only)
+    * @param {JQuery} link
     *
     * @returns {Object} filename, filecontent
     */
-   exportGraph: function(format, transparentBackground) {
+   download: function(format, transparentBackground, link) {
+      var filename;
+      var filecontent;
+
       switch (format) {
          case 'png':
-            return {
-               filename: "impact.png",
-               filecontent: this.cy.png({
-                  bg: transparentBackground ? "transparent" : "white"
-               })
-            };
+            filename = "impact.png";
+            filecontent = this.cy.png({
+               bg: transparentBackground ? "transparent" : "white"
+            });
+            break;
 
          case 'jpeg':
-            return {
-               filename: "impact.jpeg",
-               filecontent: this.cy.jpg()
-            };
+            filename = "impact.jpeg";
+            filecontent = this.cy.jpg();
+            break;
       }
+
+      link.prop('download', filename);
+      link.prop("href", filecontent);
+      link[0].click();
    },
 
    /**
@@ -1387,20 +1410,29 @@ var impact = {
     * @param {object} ele
     */
    deleteFromGraph: function(ele) {
-      if (ele.isParent()) {
+      if (ele.isEdge()) {
+         // Case 1: removing an edge
+         ele.remove();
+         // this.cy.remove(impact.makeIDSelector(ele.data('id')));
+      } else if (ele.isParent()) {
+         // Case 2: removing a compound
          // Remove only the parent
          ele.children().move({parent: null});
          ele.remove();
 
       } else {
-         // Remove parent if last child
-         if (!ele.isOrphan() && ele.parent().children().length == 1) {
+         // Case 3: removing a node
+         // Remove parent if last child of a compound
+         if (!ele.isOrphan() && ele.parent().children().length <= 2) {
             this.deleteFromGraph(ele.parent());
          }
 
          // Remove all edges connected to this node from graph and delta
-         this.cy.remove(impact.makeIDSelector(ele.data('id')));
+         ele.remove();
       }
+
+      // Update flags
+      impact.updateFlags();
    },
 
    /**
@@ -1448,7 +1480,7 @@ var impact = {
 
          case EDITION_DELETE:
             // Remove the edge from the graph
-            event.cy.remove(impact.makeIDSelector(this.data('id')));
+            impact.deleteFromGraph(event.target);
             break;
       }
    },
@@ -1471,6 +1503,7 @@ var impact = {
 
          case EDITION_DELETE:
             impact.deleteFromGraph(event.target);
+            impact.setEditionMode(EDITION_DEFAULT);
             break;
       }
    },
@@ -1503,6 +1536,15 @@ var impact = {
             impact.addCompoundFromSelection();
             break;
       }
+   },
+
+   /**
+    * Handle any graph modification
+    *
+    * @param {*} event
+    */
+   onChange: function(event) {
+      $(impact.toolbar.save).show()
    },
 
    /**
@@ -1602,6 +1644,7 @@ var impact = {
 
             // Update dependencies flags according to the new link
             impact.updateFlags();
+            impact.setEditionMode(EDITION_DEFAULT);
             break;
 
          case EDITION_DELETE:
@@ -1884,6 +1927,15 @@ var impact = {
     * Set event handler for toolbar events
     */
    initToolbar: function() {
+      // Save the graph
+      $(impact.toolbar.save).click(function() {
+         // Send data as JSON on submit
+         $(impact.form).find('input[name=impacts]').val(
+            JSON.stringify(impact.computeDelta())
+         );
+         $(impact.form).submit();
+      });
+
       // Add a new node on the graph
       $(impact.toolbar.addNode).click(function() {
          impact.setEditionMode(EDITION_ADD_NODE);
@@ -1910,11 +1962,19 @@ var impact = {
 
       // Export graph
       $(impact.toolbar.export).click(function() {
-         $(impact.dialogs.exportDialog.id).dialog(impact.getExportDialog(
-            $(impact.dialogs.exportDialog.inputs.format),
-            $(impact.dialogs.exportDialog.inputs.background),
+         // Old behavior (advanced export, maybe add it to dropdown menu ?)
+         // $(impact.dialogs.exportDialog.id).dialog(impact.getExportDialog(
+         //    $(impact.dialogs.exportDialog.inputs.format),
+         //    $(impact.dialogs.exportDialog.inputs.background),
+         //    $(impact.dialogs.exportDialog.inputs.link)
+         // ));
+
+         // One shot download
+         impact.download(
+            'png',
+            false,
             $(impact.dialogs.exportDialog.inputs.link)
-         ));
+         );
       });
       $(impact.toolbar.export).qtip(this.getTooltip("downloadTooltip"));
 
@@ -1952,30 +2012,5 @@ var impact = {
    }
 };
 
-var el = document.querySelector('.more');
-var btn = $('.more')[0];
-var menu = el.querySelector('.more-menu');
-var visible = false;
 
-function showMenu(e) {
-   e.preventDefault();
-   if (!visible) {
-      visible = true;
-      el.classList.add('show-more-menu');
-      $(menu).show();
-      document.addEventListener('mousedown', hideMenu, false);
-   }
-}
-
-function hideMenu(e) {
-   if (btn.contains(e.target)) {
-      return;
-   }
-   if (visible) {
-      visible = false;
-      el.classList.remove('show-more-menu');
-      $(menu).hide();
-      document.removeEventListener('mousedown', hideMenu);
-   }
-}
 

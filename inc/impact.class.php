@@ -157,11 +157,12 @@ class Impact extends CommonDBRelation {
 
             #networkContainer {
               /* width: 100%;*/
-               height: 65vh;
+               height: 70vh;
             }
 
             #networkContainer div {
-               z-index:1 !important;
+               z-index: 1 !important;
+               position: absolute !important;
             }
 
             .impactDialog {
@@ -208,9 +209,9 @@ class Impact extends CommonDBRelation {
             }
 
             .impact_toolbar {
-               /* position: relative;
-               z-index: 20; */
-               overflow: auto;
+               position: relative;
+               z-index: 20;
+               /*overflow: auto;*/
             }
 
             #impactTools {
@@ -223,6 +224,7 @@ class Impact extends CommonDBRelation {
                font-size: 1.3em;
                padding: 4px 8px;
                transition: all 0.3s ease;
+               cursor: pointer;
             }
 
             .impact_toolbar_right {
@@ -233,6 +235,22 @@ class Impact extends CommonDBRelation {
                background-color: lightgray;
             }
 
+            #helpText {
+               font-weight: bold;
+            }
+
+            #saveImpact {
+               font-weight   : bold;
+               text-transform: uppercase;
+               letter-spacing: 0.04em;
+               color         : #eea818;
+               margin-right  : 20px;
+            }
+
+            #saveImpact:hover {
+               background-color: #fec95c !important;
+               color: #8f5a0a;
+            }
 
             /* Page */
 
@@ -269,12 +287,12 @@ class Impact extends CommonDBRelation {
             }
 
             .more-menu {
-               position: absolute;
-               top: 10%;
+               /*position: absolute;*/
+               /*top: 10%;*/
                z-index: 900;
-               float: left;
+               /*float: left;*/
                padding: 10px 0;
-               margin-top: 9px;
+               margin-top: 35px;
                background-color: #fff;
                border: 1px solid #ccd8e0;
                border-radius: 4px;
@@ -283,7 +301,7 @@ class Impact extends CommonDBRelation {
                transform: translate(0, 15px) scale(.95);
                transition: transform 0.1s ease-out, opacity 0.1s ease-out;
                pointer-events: none;
-               right: 15px;
+               /*right: 15px;*/
             }
 
             .more-menu-caret {
@@ -456,41 +474,21 @@ class Impact extends CommonDBRelation {
       echo '<span id="cancel" ' . $hidden . ' class="impact_toolbar_right networkToolbarHightlight"><i class="fas fa-times"></i></span>';
       echo '</div>';
       echo '<div id="impactTools">';
+      echo '<span id="saveImpact" ' . $hidden . '>' . __("Save") . '</span>';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
       echo '<span id="addCompound"><i class="far fa-square"></i></span>';
       echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
       echo '<span id="exportGraph"><i class="fas fa-download"></i></span>';
       echo '<span id="expandToolbar"><i class="fas fa-ellipsis-v "></i></span>';
-      echo '<div class="more">';
-      echo '<div class="more-menu">';
-      echo '<div class="more-menu-caret">';
-      echo '<div class="more-menu-caret-outer"></div>';
-      echo '<div class="more-menu-caret-inner"></div>';
+      self::printDropdownMenu();
       echo '</div>';
-      echo '<ul class="more-menu-items" tabindex="-1">';
-      echo '<li id="toggle_impact" class="more-menu-item"><button type="button" class="more-menu-btn"><i class="fas fa-eye"></i> Toggle impact</button></li>';
-      echo '<li id="toggle_depends" class="more-menu-item"><button type="button" class="more-menu-btn"><i class="fas fa-eye"></i> Toggle depends </button></li>';
-      echo '<li id="color_picker" class="more-menu-item"><button type="button" class="more-menu-btn"><i class="fas fa-palette"></i> Colors</button></li>';
-      echo '</ul>';
-      echo "</div>";
-      echo "</div>";
-      echo '</div>';
-
       echo '</div>';
       echo '<div id="networkContainer"></div>';
       echo "</td></tr>";
 
       // Third row : network graph options
       echo "<tr><td>";
-      self::printOptionForm();
-      echo "</td></tr>";
-
-      // Fourth row : save button
-      echo "<tr><td style=\"text-align:center\">";
-      echo Html::submit(_sx('button', 'Save'), [
-         'name' => 'save'
-      ]);
       echo "</td></tr>";
 
       echo "</table>";
@@ -502,32 +500,61 @@ class Impact extends CommonDBRelation {
       Html::closeForm();
    }
 
-   /**
-    * Print the option form for the impact analysis
-    *
-    * @since 9.5
-    */
-   public static function printOptionForm() {
-      // JS to handle the options
-      self::printOptionFormInteractions();
-   }
+   public static function printDropdownMenu() {
+      echo
+         '<div class="more">' .
+            '<div class="more-menu">' .
+               '<div class="more-menu-caret">' .
+                  '<div class="more-menu-caret-outer"></div>' .
+                  '<div class="more-menu-caret-inner"></div>' .
+               '</div>' .
+               '<ul class="more-menu-items" tabindex="-1">' .
+                  '<li id="toggle_impact" class="more-menu-item">' .
+                     '<button type="button" class="more-menu-btn">' .
+                        '<i class="fas fa-eye"></i> Toggle impact' .
+                     '</button>' .
+                  '</li>' .
+                  '<li id="toggle_depends" class="more-menu-item">' .
+                     '<button type="button" class="more-menu-btn">' .
+                        '<i class="fas fa-eye"></i> Toggle depends' .
+                     '</button>' .
+                  '</li>' .
+                  '<li id="color_picker" class="more-menu-item">' .
+                     '<button type="button" class="more-menu-btn">' .
+                        '<i class="fas fa-palette"></i> Colors' .
+                     '</button>' .
+                  '</li>' .
+               '</ul>' .
+            '</div>' .
+         "</div>";
 
-   /**
-    * Print the js used to interact with the impact analysis through the option
-    * form
-    *
-    * @since 9.5
-    */
-   public static function printOptionFormInteractions() {
       echo Html::scriptBlock("
-         $(function() {
-            // Send data as JSON on submit
-            $('form[name=form_impact_network]').on('submit', function(event) {
-               $('input[name=impacts]').val(
-                  JSON.stringify(impact.computeDelta())
-               );
-            });
-         });
+         var el = document.querySelector('.more');
+         var btn = $('.more')[0];
+         var menu = el.querySelector('.more-menu');
+         var visible = false;
+
+         function showMenu(e) {
+            e.preventDefault();
+            if (!visible) {
+               visible = true;
+               el.classList.add('show-more-menu');
+               $(menu).show();
+               document.addEventListener('mousedown', hideMenu, false);
+            }
+         }
+
+         function hideMenu(e) {
+            if (btn.contains(e.target)) {
+               return;
+            }
+            if (visible) {
+               visible = false;
+               el.classList.remove('show-more-menu');
+               $(menu).hide();
+               document.removeEventListener('mousedown', hideMenu);
+            }
+         }
       ");
    }
 
@@ -974,7 +1001,8 @@ class Impact extends CommonDBRelation {
       $backward  = self::DEPENDS_COLOR;
       $both      = self::IMPACT_AND_DEPENDS_COLOR;
       $startNode = self::getNodeID($item);
-      $dialogs = json_encode([
+      $form      = "form[name=form_impact_network]";
+      $dialogs   = json_encode([
          [
             'key'    => 'addNode',
             'id'     => "#addNodeDialog",
@@ -1017,6 +1045,7 @@ class Impact extends CommonDBRelation {
       $toolbar = json_encode([
          ['key'    => 'helpText',      'id' => "#helpText"],
          ['key'    => 'tools',         'id' => "#impactTools"],
+         ['key'    => 'save',          'id' => "#saveImpact"],
          ['key'    => 'addNode',       'id' => "#add_node"],
          ['key'    => 'addEdge',       'id' => "#add_edge"],
          ['key'    => 'addCompound',   'id' => "#addCompound"],
@@ -1041,6 +1070,7 @@ class Impact extends CommonDBRelation {
                both    : '$both',
             },
             '$startNode',
+            '$form',
             '$dialogs',
             '$toolbar'
          )
@@ -1258,8 +1288,8 @@ class Impact extends CommonDBRelation {
          'showDependsTooltip'    => __("Toggle \"depends\" visibility"),
          'showColorsTooltip'     => __("Edit relation's color"),
          'addNodeHelpText'       => __("Click anywhere to add a new asset"),
-         'addEdgeHelpText'       => __("Draw a line between two assets to add an impact relation ..."),
-         'addCompoundHelpText'   => __("Draw a square containing the assets you wish to group ..."),
+         'addEdgeHelpText'       => __("Draw a line between two assets to add an impact relation"),
+         'addCompoundHelpText'   => __("Draw a square containing the assets you wish to group"),
          'deleteHelpText'        => __("Click on an element to remove it from the network"),
          'editGroup'             => __("Edit group"),
          'save'                  => __("Save"),

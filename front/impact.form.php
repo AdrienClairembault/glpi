@@ -9,7 +9,7 @@ const DELTA_ACTION_ADD   = 1;
 const DELTA_ACTION_UPDATE  = 2;
 const DELTA_ACTION_DELETE= 3;
 
-if (isset($_POST['save']) && isset($_POST['impacts'])) {
+if (isset($_POST['impacts'])) {
    // Decode data (should be json)
    $data = Toolbox::jsonDecode($_POST['impacts'], true);
 
