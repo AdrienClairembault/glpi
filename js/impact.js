@@ -733,6 +733,7 @@ var impact = {
 
             // Close dialog
             $(this).dialog("close");
+            impact.showSave();
          }
       }
 
@@ -1333,6 +1334,13 @@ var impact = {
       return null;
    },
 
+   /**
+    * Enable the save button
+    */
+   showSave: function() {
+      $(impact.toolbar.save).show();
+   },
+
     /**
     * Build the ongoing dialog content according to the list of ITILObjects
     *
@@ -1545,7 +1553,7 @@ var impact = {
     * @param {*} event
     */
    onChange: function(event) {
-      $(impact.toolbar.save).show()
+      impact.showSave();
    },
 
    /**
