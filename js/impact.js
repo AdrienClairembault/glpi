@@ -276,7 +276,9 @@ var impact = {
    getNetworkLayout: function () {
       return {
          name: 'dagre',
-         rankDir: 'LR'
+         rankDir: 'LR',
+         fit: false
+
          // transform: function(node, position) {
             // var sin = 1 // Math.sin(90 * (Math.PI / 180));
             // var cos = 0; // Math.cos(360 * (Math.PI / 180));
@@ -883,10 +885,13 @@ var impact = {
          gridStackOrder: 0,
          snapToGridOnRelease: true,
          snapToGridDuringDrag: true,
-         gridSpacing: 8,
+         gridSpacing: 12,
          drawGrid: true,
          panGrid: true,
       });
+
+      // Set viewport
+      this.cy.fit("", 150);
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -1116,6 +1121,11 @@ var impact = {
       return dfd.promise();
    },
 
+
+   getDistance: function(a, b) {
+      return Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+   },
+
    /**
     * Insert another new graph into the current one
     *
@@ -1125,31 +1135,109 @@ var impact = {
    insertGraph: function(graph, startNode) {
       var toAdd = [];
 
+      // Find closest available space near the graph
+      var boundingBox = this.cy.filter().boundingBox();
+      var distances   = {
+         right: this.getDistance(
+            {
+               x: boundingBox.x2,
+               y: (boundingBox.y1 + boundingBox.y2) / 2
+            },
+            startNode
+         ),
+         left: this.getDistance(
+            {
+               x: boundingBox.x1,
+               y: (boundingBox.y1 + boundingBox.y2) / 2
+            },
+            startNode
+         ),
+         top: this.getDistance(
+            {
+               x: (boundingBox.x1 + boundingBox.x2) / 2,
+               y: boundingBox.y2
+            },
+            startNode
+         ),
+         bottom: this.getDistance(
+            {
+               x: (boundingBox.x1 + boundingBox.x2) / 2,
+               y: boundingBox.y1
+            },
+            startNode
+         ),
+      };
+      var lowest = Math.min.apply(null, Object.values(distances));
+      var direction = Object.keys(distances).filter(function (x) {
+         return distances[x] === lowest;
+      })[0];
+
+      // Try to add the new graph nodes
       for (var i=0; i<graph.length; i++) {
          var id = graph[i].data.id;
          // Check that the element is not already on the graph,
          if (this.cy.filter('[id="' + id + '"]').length > 0) {
             continue
          }
-
-         if (id == startNode.id) {
-            // Immediatly add starting node at given position
-            graph[i].position = {
-               x: startNode.x,
-               y: startNode.y,
-            };
-            this.cy.add(graph[i])
-         } else {
-            // Store others node to add them at once with a layout
-            toAdd.push(graph[i]);
-         }
+         // Store node to add them at once with a layout
+         toAdd.push(graph[i]);
       }
 
       // Add nodes and apply layout
       var eles = this.cy.add(toAdd);
-      var layout = eles.layout(impact.getNetworkLayout());
-
+      var options = impact.getNetworkLayout();
+      
+      // Place the layout anywhere to compute it's bounding box
+      var layout = eles.layout(options);
       layout.run();
+
+      var newGraphBoundingBox = eles.boundingBox();
+
+      // Now compute the real location where we want it
+      switch (direction) {
+         case 'right':
+            var startingPoint = {
+               x: newGraphBoundingBox.x1,
+               y: (newGraphBoundingBox.y1 + newGraphBoundingBox.y2) / 2,
+            };
+            break;
+         case 'left':
+            var startingPoint = {
+               x: newGraphBoundingBox.x2,
+               y: (newGraphBoundingBox.y1 + newGraphBoundingBox.y2) / 2,
+            };
+            break;
+         case 'top':
+            var startingPoint = {
+               x: (newGraphBoundingBox.x1 + newGraphBoundingBox.x2) / 2,
+               y: newGraphBoundingBox.y1,
+            };
+            break;
+         case 'bottom':
+            var startingPoint = {
+               x: (newGraphBoundingBox.x1 + newGraphBoundingBox.x2) / 2,
+               y: newGraphBoundingBox.y2,
+            };
+            break;
+      }
+
+      newGraphBoundingBox.x1 += startNode.x - startingPoint.x;
+      newGraphBoundingBox.x2 += startNode.x - startingPoint.x;
+      newGraphBoundingBox.y1 += startNode.y - startingPoint.y;
+      newGraphBoundingBox.y2 += startNode.y - startingPoint.y;
+
+      options.boundingBox = newGraphBoundingBox;
+
+      // Apply layout again with correct bounding box
+      var layout = eles.layout(options);
+      layout.run();
+
+      this.cy.animate({
+         fit: {
+            eles : "",
+            padding: 150
+         },
+      });
    },
 
    /**
@@ -1667,6 +1755,7 @@ var impact = {
     * @param {JQuery.Event} event
     */
    onMousemove: _.throttle(function(event) {
+      // console.log(event.position.x +";" + event.position.y);
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             // No action if we are not grabbing a node
