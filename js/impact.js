@@ -868,6 +868,7 @@ var impact = {
          elements : data,
          style    : this.getNetworkStyle(),
          layout   : this.getNetworkLayout(),
+         wheelSensitivity: 0.1,
       });
 
       // Store initial data
@@ -891,7 +892,13 @@ var impact = {
       });
 
       // Set viewport
-      this.cy.fit("", 150);
+      this.cy.fit();
+      // this.cy.fit("", 150);
+
+      if (this.cy.zoom() > 3.2) {
+         this.cy.zoom(3.2);
+         this.cy.center();
+      }
 
       // Register events handlers for cytoscape object
       this.cy.on('mousedown', 'node', this.nodeOnMousedown);
@@ -1183,10 +1190,21 @@ var impact = {
          toAdd.push(graph[i]);
       }
 
+      // Just place the node if only one result is found
+      if (toAdd.length == 1) {
+         toAdd[0].position = {
+            x: startNode.x,
+            y: startNode.y,
+         }
+
+         this.cy.add(toAdd);
+         return;
+      }
+
       // Add nodes and apply layout
       var eles = this.cy.add(toAdd);
       var options = impact.getNetworkLayout();
-      
+
       // Place the layout anywhere to compute it's bounding box
       var layout = eles.layout(options);
       layout.run();
@@ -1233,9 +1251,8 @@ var impact = {
       layout.run();
 
       this.cy.animate({
-         fit: {
-            eles : "",
-            padding: 150
+         center: {
+            eles : impact.cy.filter(""),
          },
       });
    },
