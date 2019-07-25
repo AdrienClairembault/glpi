@@ -33,7 +33,8 @@
 var eventData = {
    addEdgeStart: null, // Store starting node of a new edge
    tmpEles     : null, // Temporary collection used when adding an edge
-   boxSelected : []
+   boxSelected : [],
+   lastClick : null // Store last click timestamp
 };
 
 // Constants to represent nodes and edges
@@ -911,37 +912,13 @@ var impact = {
       this.cy.on('click', 'node', this.nodeOnClick);
       this.cy.on('box', this.onBox);
       this.cy.on('drag add remove', this.onChange);
+      this.cy.on('doubleClick', this.onDoubleClick);
 
       // Global events
       $(document).keydown(this.onKeyDown);
 
       // Enter EDITION_DEFAULT mode
       this.setEditionMode(EDITION_DEFAULT);
-   },
-
-   /**
-    * Handler for key down events
-    *
-    * @param {JQuery.Event} event
-    */
-   onKeyDown: function(event) {
-      switch (event.which) {
-         // ESC
-         case 27:
-            // Exit specific edition mode
-            if (impact.editionMode != EDITION_DEFAULT) {
-               impact.setEditionMode(EDITION_DEFAULT);
-            }
-            break;
-
-         // Delete
-         case 46:
-            // Delete selected elements
-            impact.cy.filter(":selected").forEach(function(ele) {
-               impact.deleteFromGraph(ele);
-            });
-            break;
-      }
    },
 
    /**
@@ -1638,6 +1615,14 @@ var impact = {
    nodeOnClick: function (event) {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
+            if (eventData.lastClick != null) {
+               // Trigger homemade double click event
+               if (event.timeStamp - eventData.lastClick < 500) {
+                  event.target.trigger('doubleClick', event);
+               }
+            }
+
+            eventData.lastClick = event.timeStamp;
             break;
 
          case EDITION_ADD_NODE:
@@ -1690,6 +1675,49 @@ var impact = {
     */
    onChange: function(event) {
       impact.showSave();
+   },
+
+   /**
+    * Double click handler
+    * @param {JQuery.Event} event
+    */
+   onDoubleClick: function(event) {
+      // If element has a parent, use it as the target instead
+      if (!event.target.isOrphan()) {
+         event.target = event.target.parent();
+      }
+
+      // Open edit dialog on coumpound nodes
+      if (event.target.isParent()) {
+         $(impact.dialogs.editCompoundDialog.id).dialog(
+            impact.getEditCompoundDialog(event.target)
+         );
+      }
+   },
+
+   /**
+    * Handler for key down events
+    *
+    * @param {JQuery.Event} event
+    */
+   onKeyDown: function(event) {
+      switch (event.which) {
+         // ESC
+         case 27:
+            // Exit specific edition mode
+            if (impact.editionMode != EDITION_DEFAULT) {
+               impact.setEditionMode(EDITION_DEFAULT);
+            }
+            break;
+
+         // Delete
+         case 46:
+            // Delete selected elements
+            impact.cy.filter(":selected").forEach(function(ele) {
+               impact.deleteFromGraph(ele);
+            });
+            break;
+      }
    },
 
    /**
@@ -2143,7 +2171,6 @@ var impact = {
 
       // Color picker
       $(impact.toolbar.colorPicker).click(function() {
-         console.log("clicked");
          $(impact.dialogs.configColor.id).dialog(impact.getColorPickerDialog(
             $(impact.dialogs.configColor.inputs.dependsColor),
             $(impact.dialogs.configColor.inputs.impactColor),
