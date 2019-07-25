@@ -216,6 +216,10 @@ class Impact extends CommonDBRelation {
 
             #impactTools {
                float: right;
+               background-color: white;
+               padding: 5px;
+               border: 1px solid lightgray;
+               border-radius: 2px;
             }
 
             .impact_toolbar span {
@@ -225,6 +229,11 @@ class Impact extends CommonDBRelation {
                padding: 4px 8px;
                transition: all 0.3s ease;
                cursor: pointer;
+               border: 2px inset transparent;
+            }
+
+            .impact_toolbar .active {
+               border: 2px inset #f4f4f4;
             }
 
             .impact_toolbar_right {
@@ -233,6 +242,7 @@ class Impact extends CommonDBRelation {
 
             #impactTools span:hover, .networkToolbarHightlight:hover {
                background-color: lightgray;
+               border-radius: 2px;
             }
 
             #helpText {
@@ -243,13 +253,17 @@ class Impact extends CommonDBRelation {
                font-weight   : bold;
                text-transform: uppercase;
                letter-spacing: 0.04em;
-               color         : #eea818;
+               color         : gray;
                margin-right  : 20px;
             }
 
-            #saveImpact:hover {
+            .dirty {
+               color         : #eea818 !important;
+            }
+
+            .dirty:hover {
                background-color: #fec95c !important;
-               color: #8f5a0a;
+               color: #8f5a0a !important;
             }
 
             /* Page */
@@ -287,12 +301,12 @@ class Impact extends CommonDBRelation {
             }
 
             .more-menu {
-               /*position: absolute;*/
-               /*top: 10%;*/
+               position: absolute;
+               top: 42px;
                z-index: 900;
                /*float: left;*/
                padding: 10px 0;
-               margin-top: 35px;
+               /*margin-top: 35px;*/
                background-color: #fff;
                border: 1px solid #ccd8e0;
                border-radius: 4px;
@@ -301,7 +315,7 @@ class Impact extends CommonDBRelation {
                transform: translate(0, 15px) scale(.95);
                transition: transform 0.1s ease-out, opacity 0.1s ease-out;
                pointer-events: none;
-               /*right: 15px;*/
+               right: 1px;
             }
 
             .more-menu-caret {
@@ -471,18 +485,18 @@ class Impact extends CommonDBRelation {
       $hidden = 'style="display: none;"';
       echo '<div>';
       echo '<span id="helpText" ' . $hidden . '></span>';
-      echo '<span id="cancel" ' . $hidden . ' class="impact_toolbar_right networkToolbarHightlight"><i class="fas fa-times"></i></span>';
+      // echo '<span id="cancel" ' . $hidden . ' class="impact_toolbar_right networkToolbarHightlight"><i class="fas fa-times"></i></span>';
       echo '</div>';
       echo '<div id="impactTools">';
-      echo '<span id="saveImpact" ' . $hidden . '>' . __("Save") . '</span>';
+      echo '<span id="saveImpact">' . __("Save") . '</span>';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
       echo '<span id="addCompound"><i class="far fa-square"></i></span>';
       echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
       echo '<span id="exportGraph"><i class="fas fa-download"></i></span>';
       echo '<span id="expandToolbar"><i class="fas fa-ellipsis-v "></i></span>';
-      self::printDropdownMenu();
       echo '</div>';
+      self::printDropdownMenu();
       echo '</div>';
       echo '<div id="networkContainer"></div>';
       echo "</td></tr>";
@@ -503,7 +517,7 @@ class Impact extends CommonDBRelation {
    public static function printDropdownMenu() {
       echo
          '<div class="more">' .
-            '<div class="more-menu">' .
+            '<div class="more-menu" style="display: none;">' .
                '<div class="more-menu-caret">' .
                   '<div class="more-menu-caret-outer"></div>' .
                   '<div class="more-menu-caret-inner"></div>' .
@@ -541,10 +555,20 @@ class Impact extends CommonDBRelation {
                el.classList.add('show-more-menu');
                $(menu).show();
                document.addEventListener('mousedown', hideMenu, false);
+            } else {
+               visible = false;
+               el.classList.remove('show-more-menu');
+               $(menu).hide();
+               document.removeEventListener('mousedown', hideMenu);
             }
          }
 
          function hideMenu(e) {
+            if (e.target.id == 'expandToolbar') {
+               console.log('nfees');
+               return;
+            }
+
             if (btn.contains(e.target)) {
                return;
             }

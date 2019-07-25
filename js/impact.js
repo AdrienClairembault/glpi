@@ -242,7 +242,7 @@ var impact = {
                'target-arrow-color': this.edgeColors[0],
                'target-arrow-shape': 'triangle',
                'arrow-scale'       : 0.7,
-               'curve-style'       : 'taxi'
+               'curve-style'       : 'bezier'
             }
          },
          {
@@ -1323,7 +1323,7 @@ var impact = {
 
          case EDITION_ADD_EDGE:
             $(impact.toolbar.addEdge).removeClass("active");
-            // Empty event data and remove tmp to be safe
+            // Empty event data and remove tmp node
             eventData.addEdgeStart = null;
             impact.cy.filter("#tmp_node").remove();
             break;
@@ -1337,6 +1337,7 @@ var impact = {
          case EDITION_ADD_COMPOUND:
             impact.cy.panningEnabled(true);
             impact.cy.boxSelectionEnabled(false);
+            $(impact.toolbar.addCompound).removeClass("active");
             break;
       }
    },
@@ -1356,23 +1357,27 @@ var impact = {
 
          case EDITION_ADD_NODE:
             this.showHelpText("addNodeHelpText");
+            $(this.toolbar.addNode).addClass("active");
             $(this.impactContainer).css('cursor', "copy");
             break;
 
          case EDITION_ADD_EDGE:
             this.showHelpText("addEdgeHelpText");
+            $(this.toolbar.addEdge).addClass("active");
             $(this.impactContainer).css('cursor', "crosshair");
             break;
 
          case EDITION_DELETE:
             this.cy.filter().unselect();
             this.showHelpText("deleteHelpText");
+            $(this.toolbar.deleteElement).addClass("active");
             break;
 
          case EDITION_ADD_COMPOUND:
             impact.cy.panningEnabled(false);
             impact.cy.boxSelectionEnabled(true);
             this.showHelpText("addCompoundHelpText");
+            $(this.toolbar.addCompound).addClass("active");
             $(this.impactContainer).css('cursor', "crosshair");
             break;
       }
@@ -1384,7 +1389,6 @@ var impact = {
     * @param {string} text
     */
    showHelpText: function(text) {
-      $(impact.toolbar.tools).hide();
       $(impact.toolbar.helpText).html(this.getLocale(text)).show();
       $(impact.toolbar.cancel).show();
    },
@@ -1394,7 +1398,6 @@ var impact = {
     */
    clearHelpText: function() {
       $(impact.toolbar.helpText).hide();
-      $(impact.toolbar.tools).show();
       $(impact.toolbar.cancel).hide();
    },
 
@@ -1458,7 +1461,7 @@ var impact = {
     * Enable the save button
     */
    showSave: function() {
-      $(impact.toolbar.save).show();
+      $(impact.toolbar.save).addClass('dirty');
    },
 
     /**
@@ -1609,7 +1612,6 @@ var impact = {
          case EDITION_DELETE:
             // Remove the edge from the graph
             impact.deleteFromGraph(event.target);
-            impact.setEditionMode(EDITION_DEFAULT);
             break;
       }
    },
@@ -1640,7 +1642,6 @@ var impact = {
 
          case EDITION_DELETE:
             impact.deleteFromGraph(event.target);
-            impact.setEditionMode(EDITION_DEFAULT);
             break;
       }
    },
@@ -1824,7 +1825,6 @@ var impact = {
 
             // Update dependencies flags according to the new link
             impact.updateFlags();
-            impact.setEditionMode(EDITION_DEFAULT);
             break;
 
          case EDITION_DELETE:
