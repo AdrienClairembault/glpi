@@ -500,39 +500,46 @@ var impact = {
    getContextMenuItems: function(){
       return [
          {
-            id: 'goTo',
-            content: this.getLocale("goTo"),
-            tooltipText: this.getLocale("goTo+"),
-            selector: 'node',
+            id             : 'goTo',
+            content        : this.getLocale("goTo"),
+            tooltipText    : this.getLocale("goTo+"),
+            selector       : 'node',
             onClickFunction: this.menuOnGoTo
          },
          {
-            id: 'showOngoing',
-            content: this.getLocale("showOngoing"),
-            tooltipText: this.getLocale("showOngoing+"),
-            selector: 'node[hasITILObjects=1]',
+            id             : 'showOngoing',
+            content        : this.getLocale("showOngoing"),
+            tooltipText    : this.getLocale("showOngoing+"),
+            selector       : 'node[hasITILObjects=1]',
             onClickFunction: this.menuOnShowOngoing
          },
          {
-            id: 'editCompound',
-            content: this.getLocale("compoundProperties"),
-            tooltipText: this.getLocale("compoundProperties+"),
-            selector: 'node:parent',
+            id             : 'editCompound',
+            content        : this.getLocale("compoundProperties"),
+            tooltipText    : this.getLocale("compoundProperties+"),
+            selector       : 'node:parent',
             onClickFunction: this.menuOnEditCompound
          },
          {
-            id: 'removeFromCompound',
-            content: this.getLocale("removeFromCompound"),
-            tooltipText: this.getLocale("removeFromCompound+"),
-            selector: 'node:child',
+            id             : 'removeFromCompound',
+            content        : this.getLocale("removeFromCompound"),
+            tooltipText    : this.getLocale("removeFromCompound+"),
+            selector       : 'node:child',
             onClickFunction: this.menuOnRemoveFromCompound
          },
          {
-            id: 'delete',
-            content: this.getLocale("delete"),
-            tooltipText: this.getLocale("delete+"),
-            selector: 'node, edge',
+            id             : 'delete',
+            content        : this.getLocale("delete"),
+            tooltipText    : this.getLocale("delete+"),
+            selector       : 'node, edge',
             onClickFunction: this.menuOnDelete
+         },
+         {
+            id             : 'new',
+            content        : this.getLocale("new"),
+            tooltipText    : this.getLocale("new+"),
+            coreAsWell     : true,
+            onClickFunction: this.menuOnNew
          }
       ];
    },
@@ -1687,7 +1694,7 @@ var impact = {
          event.target = event.target.parent();
       }
 
-      // Open edit dialog on coumpound nodes
+      // Open edit dialog on compound nodes
       if (event.target.isParent()) {
          $(impact.dialogs.editCompoundDialog.id).dialog(
             impact.getEditCompoundDialog(event.target)
@@ -2095,6 +2102,19 @@ var impact = {
     */
    menuOnDelete: function(event){
       impact.deleteFromGraph(event.target);
+   },
+
+   /**
+    * Handler for "new" menu action
+    *
+    * @param {JQuery.Event} event
+    */
+   menuOnNew: function(event) {
+      $(impact.dialogs.addNode.id).dialog(impact.getAddNodeDialog(
+         impact.dialogs.addNode.inputs.itemType,
+         impact.dialogs.addNode.inputs.itemID,
+         event.position,
+      ));
    },
 
    /**
