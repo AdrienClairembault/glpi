@@ -876,7 +876,7 @@ var impact = {
          elements : data,
          style    : this.getNetworkStyle(),
          layout   : this.getNetworkLayout(),
-         wheelSensitivity: 0.1,
+         wheelSensitivity: 0.25,
       });
 
       // Store initial data
@@ -903,8 +903,8 @@ var impact = {
       this.cy.fit();
       // this.cy.fit("", 150);
 
-      if (this.cy.zoom() > 3.2) {
-         this.cy.zoom(3.2);
+      if (this.cy.zoom() > 2.3) {
+         this.cy.zoom(2.3);
          this.cy.center();
       }
 
@@ -1690,11 +1690,6 @@ var impact = {
     * @param {JQuery.Event} event
     */
    onDoubleClick: function(event) {
-      // If element has a parent, use it as the target instead
-      if (!event.target.isOrphan()) {
-         event.target = event.target.parent();
-      }
-
       // Open edit dialog on compound nodes
       if (event.target.isParent()) {
          $(impact.dialogs.editCompoundDialog.id).dialog(
