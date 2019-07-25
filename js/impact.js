@@ -912,8 +912,36 @@ var impact = {
       this.cy.on('box', this.onBox);
       this.cy.on('drag add remove', this.onChange);
 
+      // Global events
+      $(document).keydown(this.onKeyDown);
+
       // Enter EDITION_DEFAULT mode
       this.setEditionMode(EDITION_DEFAULT);
+   },
+
+   /**
+    * Handler for key down events
+    *
+    * @param {JQuery.Event} event
+    */
+   onKeyDown: function(event) {
+      switch (event.which) {
+         // ESC
+         case 27:
+            // Exit specific edition mode
+            if (impact.editionMode != EDITION_DEFAULT) {
+               impact.setEditionMode(EDITION_DEFAULT);
+            }
+            break;
+
+         // Delete
+         case 46:
+            // Delete selected elements
+            impact.cy.filter(":selected").forEach(function(ele) {
+               impact.deleteFromGraph(ele);
+            });
+            break;
+      }
    },
 
    /**
@@ -1311,6 +1339,9 @@ var impact = {
 
          case EDITION_ADD_EDGE:
             $(impact.toolbar.addEdge).removeClass("active");
+            // Empty event data and remove tmp to be safe
+            eventData.addEdgeStart = null;
+            impact.cy.filter("#tmp_node").remove();
             break;
 
          case EDITION_DELETE:
