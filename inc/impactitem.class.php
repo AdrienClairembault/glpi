@@ -9,70 +9,69 @@ if (!defined('GLPI_ROOT')) {
  */
 class ImpactItem extends CommonDBTM {
 
-   public function update(array $input, $options = [], $history = true) {
-      global $DB;
+   // public function update(array $input, $options = [], $history = true) {
+   //    global $DB;
 
-      // Find id from itemtype and items_id
-      $it = $DB->request([
-         'FROM'   => 'glpi_impactitems',
-         'WHERE'  => [
-            'itemtype'   => $input['itemtype'],
-            'items_id'   => $input['items_id'],
-         ]
-      ]);
+   //    // Find id from itemtype and items_id
+   //    $it = $DB->request([
+   //       'FROM'   => 'glpi_impactitems',
+   //       'WHERE'  => [
+   //          'itemtype'   => $input['itemtype'],
+   //          'items_id'   => $input['items_id'],
+   //       ]
+   //    ]);
 
-      if (count($it) !== 1) {
-         return false;
-      }
+   //    if (count($it) !== 1) {
+   //       return false;
+   //    }
 
-      $input['id'] = $it->next()['id'];
-      return parent::update($input, $options, $history);
-   }
+   //    $input['id'] = $it->next()['id'];
+   //    return parent::update($input, $options, $history);
+   // }
 
-   public function delete(array $input, $options = [], $history = true) {
-      global $DB;
+   // public function delete(array $input, $options = [], $history = true) {
+   //    global $DB;
 
-      // Find id from itemtype and items_id
-      $it = $DB->request([
-         'FROM'   => 'glpi_impactitems',
-         'WHERE'  => [
-            'itemtype'   => $input['itemtype'],
-            'items_id'   => $input['items_id'],
-         ]
-      ]);
+   //    // Find id from itemtype and items_id
+   //    $it = $DB->request([
+   //       'FROM'   => 'glpi_impactitems',
+   //       'WHERE'  => [
+   //          'itemtype'   => $input['itemtype'],
+   //          'items_id'   => $input['items_id'],
+   //       ]
+   //    ]);
 
-      if (count($it) !== 1) {
-         return false;
-      }
+   //    if (count($it) !== 1) {
+   //       return false;
+   //    }
 
-      $input['id'] = $it->next()['id'];
-      return parent::delete($input, $options, $history);
-   }
+   //    $input['id'] = $it->next()['id'];
+   //    return parent::delete($input, $options, $history);
+   // }
 
    public static function findForItem(CommonDBTM $item) {
       global $DB;
 
       $it = $DB->request([
          'SELECT' => [
-            'glpi_impactitems.parent_id',
-            'glpi_impactcompounds.name',
-            'glpi_impactcompounds.color',
+            'glpi_impactitems.id',
          ],
          'FROM' => 'glpi_impactitems',
-         'JOIN' => [
-            'glpi_impactcompounds' => [
-               'ON' => [
-                  'glpi_impactitems'   => 'parent_id',
-                  'glpi_impactcompounds' => 'id',
-               ]
-            ]
-         ],
          'WHERE'  => [
             'glpi_impactitems.itemtype' => get_class($item),
             'glpi_impactitems.items_id' => $item->getID(),
          ]
       ]);
 
-      return $it->next();
+      $res = $it->next();
+
+      if (!$res) {
+         return false;
+      }
+
+      $impactItem = new self();
+      $impactItem->getFromDB($res['id']);
+
+      return $impactItem;
    }
 }

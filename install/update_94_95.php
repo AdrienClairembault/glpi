@@ -296,6 +296,7 @@ function update94to95() {
          `items_id_source` INT(11) NOT NULL DEFAULT '0',
          `itemtype_impacted` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
          `items_id_impacted` INT(11) NOT NULL DEFAULT '0',
+         `zoom` FLOAT NOT NULL DEFAULT '0',
          PRIMARY KEY (`id`),
          UNIQUE KEY `unicity` (
             `itemtype_source`,

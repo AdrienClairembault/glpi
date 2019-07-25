@@ -77,23 +77,15 @@ if (isset($_POST['impacts'])) {
 
    // Save parent delta
    $em = new ImpactItem();
-   foreach ($data['parents'] as $parent) {
+   foreach ($data['parents'] as $id => $parent) {
       // Extract action
       $action = $parent['action'];
       unset($parent['action']);
 
       switch ($action) {
-         case DELTA_ACTION_ADD:
-            $em->add($parent);
-            break;
-
          case DELTA_ACTION_UPDATE:
+            $parent['id'] = $id;
             $em->update($parent);
-            break;
-
-         case DELTA_ACTION_DELETE:
-            // $parent should contains the itemtype and items_id
-            $em->delete($parent);
             break;
       }
    }

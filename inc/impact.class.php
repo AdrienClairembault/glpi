@@ -234,6 +234,7 @@ class Impact extends CommonDBRelation {
 
             .impact_toolbar .active {
                border: 2px inset #f4f4f4;
+               background-color: #fafafa;
             }
 
             .impact_toolbar_right {
@@ -485,10 +486,9 @@ class Impact extends CommonDBRelation {
       $hidden = 'style="display: none;"';
       echo '<div>';
       echo '<span id="helpText" ' . $hidden . '></span>';
-      // echo '<span id="cancel" ' . $hidden . ' class="impact_toolbar_right networkToolbarHightlight"><i class="fas fa-times"></i></span>';
       echo '</div>';
       echo '<div id="impactTools">';
-      echo '<span id="saveImpact">' . __("Save") . '</span>';
+      echo '<span id="saveImpact">' . __("Save") . '&nbsp;<i class="fas fa-exclamation-triangle" ' . $hidden . '></i></span>';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
       echo '<span id="addCompound"><i class="far fa-square"></i></span>';
@@ -618,6 +618,10 @@ class Impact extends CommonDBRelation {
          self::addNode($nodes, $item);
       }
 
+      // Add saved context for current node
+      $impactItem = ImpactItem::findForItem($item);
+      $nodes[self::getNodeID($item)]['zoom'] = $impactItem->fields['zoom'];
+
       return [
          'nodes' => $nodes,
          'edges' => $edges
@@ -732,17 +736,33 @@ class Impact extends CommonDBRelation {
          $newNode['hasITILObjects'] = 1;
       }
 
-      // Add parent if exist
+      // Search for ImpactItem object
       $impactItem = ImpactItem::findForItem($item);
-      if ($impactItem) {
-         $newNode['parent'] = $impactItem['parent_id'];
+
+      if (!$impactItem) {
+         $impactItem = new ImpactItem();
+         $newID = $impactItem->add([
+            'itemtype' => get_class($item),
+            'items_id' => $item->getID()
+         ]);
+         $impactItem->getFromDB($newID);
+      }
+
+      // Load impactitem settings
+      $newNode['impactitem_id'] = $impactItem->fields['id'];
+      $newNode['parent'] = $impactItem->fields['parent_id'];
+
+      // Add parent relation if not null
+      if (!empty($newNode['parent'])) {
+         $compound = new ImpactCompound();
+         $compound->getFromDB($newNode['parent']);
 
          // Add parent node if missing
          if (!isset($nodes[$newNode['parent']])) {
             $nodes[$newNode['parent']] = [
-               'id'    => $impactItem['parent_id'],
-               'label' => $impactItem['name'],
-               'color' => $impactItem['color'],
+               'id'    => $compound->fields['id'],
+               'label' => $compound->fields['name'],
+               'color' => $compound->fields['color'],
             ];
          }
       }
@@ -1079,7 +1099,6 @@ class Impact extends CommonDBRelation {
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
-         ['key'    => 'cancel',        'id' => "#cancel"]
       ]);
 
       // Get var from server side
@@ -1299,8 +1318,8 @@ class Impact extends CommonDBRelation {
          'showOngoing+'         => __("Show ongoing tickets for this item"),
          'delete'               => __("Delete"),
          'delete+'              => __("Delete element"),
-         'new'                  => __("New"),
-         'new+'                 => __("Add a new asset"),
+         'new'                  => __("Add asset"),
+         'new+'                 => __("Add a new asset to the graph"),
          'removeFromCompound'   => __("Remove from group"),
          'removeFromCompound+'  => __("Remove this asset from the group"),
          'ongoingTickets'       => __("Ongoing tickets"),
@@ -1322,6 +1341,7 @@ class Impact extends CommonDBRelation {
          'notEnoughItems'       => __("You need to select at least 2 assets to make a group"),
          'compoundProperties'   => __("Group properties..."),
          'compoundProperties+'  => __("Set name and/or color for this group"),
+         'unsavedChanges'       => __("You have unsaved changes"),
       ];
 
       return addslashes(json_encode($locales));
