@@ -148,7 +148,8 @@ class Impact extends CommonDBRelation {
       echo '
          <style type="text/css">
             .networkParent {
-               border: 1px solid #f1f1f1;;
+               border: 1px solid #f1f1f1;
+               position:relative
             }
 
             .networkTable {
@@ -209,13 +210,20 @@ class Impact extends CommonDBRelation {
             }
 
             .impact_toolbar {
-               position: relative;
+               position: absolute;
+               display: inline-flex;
+               justify-content: flex-start;
+               left: 0;
+               right: 0;
                z-index: 20;
+               flex-wrap: wrap;
                /*overflow: auto;*/
             }
 
             #impactTools {
-               float: right;
+               margin-left: auto;
+               margin-right: 5px;
+               /*float: right;*/
                background-color: white;
                padding: 5px;
                border: 1px solid lightgray;
@@ -326,7 +334,7 @@ class Impact extends CommonDBRelation {
             .more-menu-caret {
                position: absolute;
                top: -10px;
-               right: 5px;
+               right: 10px;
                width: 18px;
                height: 10px;
                float: left;
