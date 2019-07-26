@@ -252,10 +252,14 @@ class Impact extends CommonDBRelation {
 
             #saveImpact {
                font-weight   : bold;
-               text-transform: uppercase;
-               letter-spacing: 0.04em;
+               /*text-transform: uppercase;
+               letter-spacing: 0.04em;*/
                color         : gray;
                margin-right  : 20px;
+            }
+
+            .clean {
+               color         : #1ca448 !important;
             }
 
             .dirty {
@@ -398,6 +402,26 @@ class Impact extends CommonDBRelation {
                pointer-events: auto;
             }
 
+            .cy-context-menus-cxt-menuitem {
+               padding-left: 5px !important;
+               font-size: 1.15em;
+               background-color:white;
+            }
+
+            .cy-context-menus-cxt-menuitem i {
+               padding-right: 10px !important;
+               color: gray;
+               max-width: 10px;
+            }
+
+            .cy-context-menus-cxt-menu {
+               border-radius: 2px;
+               border:1px solid lightgray;
+               -webkit-box-shadow: 4px 4px 6px 3px rgba(0,0,0,0.17);
+               -moz-box-shadow: 4px 4px 6px 3px rgba(0,0,0,0.17);
+               box-shadow: 4px 4px 6px 3px rgba(0,0,0,0.17);
+            }
+
          </style>
       ';
    }
@@ -488,7 +512,7 @@ class Impact extends CommonDBRelation {
       echo '<span id="helpText" ' . $hidden . '></span>';
       echo '</div>';
       echo '<div id="impactTools">';
-      echo '<span id="saveImpact">' . __("Save") . '&nbsp;<i class="fas fa-exclamation-triangle" ' . $hidden . '></i></span>';
+      echo '<span id="saveImpact">' . __("Save") . '&nbsp;<i></i></span>';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
       echo '<span id="addCompound"><i class="far fa-square"></i></span>';
@@ -1343,6 +1367,7 @@ class Impact extends CommonDBRelation {
          'compoundProperties'   => __("Group properties..."),
          'compoundProperties+'  => __("Set name and/or color for this group"),
          'unsavedChanges'       => __("You have unsaved changes"),
+         'workspaceSaved'       => __("No unsaved changes"),
       ];
 
       return addslashes(json_encode($locales));

@@ -273,7 +273,24 @@ var impact = {
     *
     * @returns {Object}
     */
-   getNetworkLayout: function () {
+   getPresetLayout: function () {
+      return {
+         name: 'preset',
+         positions: function(node) {
+            return {
+               x: parseFloat(node.data('position_x')),
+               y: parseFloat(node.data('position_y')),
+            }
+         }
+      };
+   },
+
+   /**
+    * Get network layout
+    *
+    * @returns {Object}
+    */
+   getDagreLayout: function () {
       return {
          name: 'dagre',
          rankDir: 'LR',
@@ -539,42 +556,42 @@ var impact = {
       return [
          {
             id             : 'goTo',
-            content        : this.getLocale("goTo"),
+            content        : '<i class="fas fa-external-link-alt"></i>' + this.getLocale("goTo"),
             tooltipText    : this.getLocale("goTo+"),
             selector       : 'node',
             onClickFunction: this.menuOnGoTo
          },
          {
             id             : 'showOngoing',
-            content        : this.getLocale("showOngoing"),
+            content        : '<i class="fas fa-clipboard-list"></i>' + this.getLocale("showOngoing"),
             tooltipText    : this.getLocale("showOngoing+"),
             selector       : 'node[hasITILObjects=1]',
             onClickFunction: this.menuOnShowOngoing
          },
          {
             id             : 'editCompound',
-            content        : this.getLocale("compoundProperties"),
+            content        : '<i class="fas fa-edit"></i>' + this.getLocale("compoundProperties"),
             tooltipText    : this.getLocale("compoundProperties+"),
             selector       : 'node:parent',
             onClickFunction: this.menuOnEditCompound
          },
          {
             id             : 'removeFromCompound',
-            content        : this.getLocale("removeFromCompound"),
+            content        : '<i class="fas fa-minus"></i>' + this.getLocale("removeFromCompound"),
             tooltipText    : this.getLocale("removeFromCompound+"),
             selector       : 'node:child',
             onClickFunction: this.menuOnRemoveFromCompound
          },
          {
             id             : 'delete',
-            content        : this.getLocale("delete"),
+            content        : '<i class="fas fa-trash"></i>' + this.getLocale("delete"),
             tooltipText    : this.getLocale("delete+"),
             selector       : 'node, edge',
             onClickFunction: this.menuOnDelete
          },
          {
             id             : 'new',
-            content        : this.getLocale("new"),
+            content        : '<i class="fas fa-plus"></i>' + this.getLocale("new"),
             tooltipText    : this.getLocale("new+"),
             coreAsWell     : true,
             onClickFunction: this.menuOnNew
@@ -934,15 +951,7 @@ var impact = {
       }
 
       // Preset layout
-      var layout = {
-         name: 'preset',
-         positions: function(node) {
-            return {
-               x: parseFloat(node.data('position_x')),
-               y: parseFloat(node.data('position_y')),
-            }
-         }
-      };
+      var layout = this.getPresetLayout();
 
       // Init cytoscape
       this.cy = cytoscape({
@@ -1048,7 +1057,7 @@ var impact = {
       this.delta = {edges: {}, compounds: {}, parents: {}};
 
       // Set the new graph and apply layout to nodes
-      var layout = this.cy.add(newGraph).layout(impact.getNetworkLayout());
+      var layout = this.cy.add(newGraph).layout(impact.getDagreLayout());
       layout.run();
    },
 
@@ -1324,7 +1333,7 @@ var impact = {
 
       // Add nodes and apply layout
       var eles = this.cy.add(toAdd);
-      var options = impact.getNetworkLayout();
+      var options = impact.getDagreLayout();
 
       // Place the layout anywhere to compute it's bounding box
       var layout = eles.layout(options);
@@ -1568,8 +1577,10 @@ var impact = {
     * Enable the save button
     */
    showSave: function() {
+      $(impact.toolbar.save).removeClass('clean');
       $(impact.toolbar.save).addClass('dirty');
-      $(impact.toolbar.save).find('i').show();
+      $(impact.toolbar.save).find('i').removeClass("fas fa-check");
+      $(impact.toolbar.save).find('i').addClass("fas fa-exclamation-triangle");
       $(impact.toolbar.save).find('i').qtip(this.getTooltip("unsavedChanges"));
    },
 
@@ -1650,6 +1661,12 @@ var impact = {
     * @param {object} ele
     */
    deleteFromGraph: function(ele) {
+
+      if (ele.data('id') == impact.startNode) {
+         alert("no");
+         return;
+      }
+
       if (ele.isEdge()) {
          // Case 1: removing an edge
          ele.remove();
@@ -2228,10 +2245,29 @@ var impact = {
       // Save the graph
       $(impact.toolbar.save).click(function() {
          // Send data as JSON on submit
-         $(impact.form).find('input[name=impacts]').val(
-            JSON.stringify(impact.computeDelta())
-         );
-         $(impact.form).submit();
+         $.ajax({
+            type: "POST",
+            url: $(impact.form).prop('action'),
+            data: {
+               'impacts': JSON.stringify(impact.computeDelta()),
+               '_glpi_csrf_token': $(impact.form).find('input[name="_glpi_csrf_token"]').val()
+            },
+            success: function(){
+               $(impact.toolbar.save).removeClass('dirty');
+               $(impact.toolbar.save).addClass('clean');
+               $(impact.toolbar.save).find('i').removeClass("fas fa-exclamation-triangle");
+               $(impact.toolbar.save).find('i').addClass("fas fa-check");
+               $(impact.toolbar.save).find('i').qtip(impact.getTooltip("workspaceSaved"));
+            },
+            error: function(){
+               alert("error");
+            },
+         });
+
+         // $(impact.form).find('input[name=impacts]').val(
+         //    JSON.stringify(impact.computeDelta())
+         // );
+         // $(impact.form).submit();
       });
 
       // Add a new node on the graph

@@ -14,8 +14,7 @@ if (isset($_POST['impacts'])) {
    $data = Toolbox::jsonDecode($_POST['impacts'], true);
 
    if (!is_array($data)) {
-      print_r($data);
-      Html::back();
+      http_response_code(400);
       die;
    }
 
@@ -51,7 +50,7 @@ if (isset($_POST['impacts'])) {
          case DELTA_ACTION_ADD:
             $newCompoundID = $em->add($compound);
 
-            // Update id reference in parent delta
+            // Update id reference in impactitem
             // This is needed because some nodes might have this compound
             // temporary id as their parent id
             foreach ($data['parents'] as $nodeID => $node) {
@@ -91,4 +90,4 @@ if (isset($_POST['impacts'])) {
    }
 }
 
-Html::back();
+http_response_code(200);
