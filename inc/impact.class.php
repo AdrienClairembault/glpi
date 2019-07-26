@@ -618,10 +618,6 @@ class Impact extends CommonDBRelation {
          self::addNode($nodes, $item);
       }
 
-      // Add saved context for current node
-      $impactItem = ImpactItem::findForItem($item);
-      $nodes[self::getNodeID($item)]['zoom'] = $impactItem->fields['zoom'];
-
       return [
          'nodes' => $nodes,
          'edges' => $edges
@@ -751,13 +747,15 @@ class Impact extends CommonDBRelation {
       // Load impactitem settings
       $newNode['impactitem_id'] = $impactItem->fields['id'];
       $newNode['parent'] = $impactItem->fields['parent_id'];
+      $newNode['position_x'] = $impactItem->fields['position_x'];
+      $newNode['position_y'] = $impactItem->fields['position_y'];
 
-      // Add parent relation if not null
+      // Load parent compound
       if (!empty($newNode['parent'])) {
          $compound = new ImpactCompound();
          $compound->getFromDB($newNode['parent']);
 
-         // Add parent node if missing
+         // Add parent compound if not loaded yet
          if (!isset($nodes[$newNode['parent']])) {
             $nodes[$newNode['parent']] = [
                'id'    => $compound->fields['id'],
@@ -830,12 +828,27 @@ class Impact extends CommonDBRelation {
    public static function buildNetwork(CommonDBTM $item) {
       // Build the graph
       $graph = self::makeDataForCytoscape(Impact::buildGraph($item));
+      $params = self::prepareParams($item);
 
       echo Html::scriptBlock("
          $(function() {
-            impact.buildNetwork($graph);
+            impact.buildNetwork($graph, $params);
          });
       ");
+   }
+
+   public static function prepareParams(CommonDBTM $item) {
+      // Add saved context for current node
+      $impactItem = ImpactItem::findForItem($item);
+
+      return json_encode([
+         'zoom'                     => $impactItem->fields['zoom'],
+         'pan_x'                    => $impactItem->fields['pan_x'],
+         'pan_y'                    => $impactItem->fields['pan_y'],
+         'impact_color'             => $impactItem->fields['impact_color'],
+         'depends_color'            => $impactItem->fields['depends_color'],
+         'impact_and_depends_color' => $impactItem->fields['impact_and_depends_color'],
+      ]);
    }
 
    /**
@@ -851,14 +864,8 @@ class Impact extends CommonDBRelation {
 
       foreach ($graph['nodes'] as $id => $node) {
          $data[] = [
-            'group' => 'nodes',
-            'data'  => $node,
-         //    'data'  => [
-         //       'id'    => $id,
-         //       'label' => $node['label'],
-         //       'image' => $node['image'],
-         //       'link'  => $node['link'],
-         //    ]
+            'group'    => 'nodes',
+            'data'     => $node,
          ];
       }
 
@@ -866,12 +873,6 @@ class Impact extends CommonDBRelation {
          $data[] = [
             'group' => 'edges',
             'data'  => $edge,
-            // 'data'  => [
-               // 'id' => $id,
-               // 'source' => $edge['from'],
-               // 'target' => $edge['to'],
-               // 'flag'   => $edge['flag']
-            // ]
          ];
       }
 

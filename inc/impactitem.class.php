@@ -9,6 +9,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class ImpactItem extends CommonDBTM {
 
+   function prepareInputForUpdate($input) {
+      return $input;
+   }
+
    // public function update(array $input, $options = [], $history = true) {
    //    global $DB;
 

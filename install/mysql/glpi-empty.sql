@@ -1424,6 +1424,13 @@ CREATE TABLE `glpi_impactitems` (
 	`items_id` INT(11) NOT NULL DEFAULT '0',
 	`parent_id` INT(11) NOT NULL DEFAULT '0',
 	`zoom` FLOAT NOT NULL DEFAULT '0',
+	`pan_x` FLOAT NOT NULL DEFAULT '0',
+	`pan_y` FLOAT NOT NULL DEFAULT '0',
+	`impact_color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`depends_color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`impact_and_depends_color` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
+	`position_x` FLOAT NOT NULL DEFAULT '0',
+	`position_y` FLOAT NOT NULL DEFAULT '0',
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `unicity` (
     `itemtype`,

@@ -146,7 +146,6 @@ var impact = {
       toggleImpact  : null,
       toggleDepends : null,
       colorPicker   : null,
-      cancel        : null,
    },
 
    /**
@@ -169,8 +168,8 @@ var impact = {
             style: {
                'padding'           : '30px',
                'shape'             : 'roundrectangle',
-               'border-width'      : '0',
-               'background-opacity': '1',
+               'border-width'      : '1px',
+               'background-opacity': '0.5',
                'font-size'         : '1.1em',
                'background-color'  : '#d2d2d2',
                'text-margin-y'     : '20px',
@@ -317,8 +316,12 @@ var impact = {
       });
 
       // Load parents
-      impact.cy.filter("node:child").forEach(function(node) {
-         data.parents[node.data('id')] = node.data('parent');
+      impact.cy.filter("node:childless").forEach(function(node) {
+         data.parents[node.data('id')] = {
+            impactitem_id: node.data('impactitem_id'),
+            parent       : node.data('parent'),
+            position     : node.position()
+         };
       });
 
       return data;
@@ -427,46 +430,81 @@ var impact = {
    computeParentsDelta: function(currentParents) {
       var parentsDelta = {};
 
-      // First iterate on the parents we had in the initial state
-      Object.keys(impact.initialState.parents).forEach(function(nodeID) {
-         var parent = impact.initialState.parents[nodeID];
-         if (currentParents.hasOwnProperty(nodeID)) {
-            // If the node still have a parrent in the current state
-            var currentParent = currentParents[nodeID];
+      // // First iterate on the parents we had in the initial state
+      // Object.keys(impact.initialState.parents).forEach(function(nodeID) {
+         // var parent = impact.initialState.parents[nodeID];
+      //    if (currentParents.hasOwnProperty(nodeID)) {
+      //       // If the node still have a parrent in the current state
+      //       var currentParent = currentParents[nodeID];
 
-            // Check for updates ...
-            if (parent != currentParent) {
-               var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
-               parentsDelta[nodeID] = {
-                  action   : DELTA_ACTION_UPDATE,
-                  parent_id: currentParent,
-                  itemtype : nodeDetails[0],
-                  items_id : nodeDetails[1]
-               }
-            }
+      //       // Check for updates ...
+      //       if (parent != currentParent) {
+      //          var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
+      //          parentsDelta[nodeID] = {
+      //             action   : DELTA_ACTION_UPDATE,
+      //             parent_id: currentParent,
+      //             itemtype : nodeDetails[0],
+      //             items_id : nodeDetails[1]
+      //          }
+      //       }
 
-            // Remove it from the currentParents data
-            delete currentParents[nodeID];
-         } else {
-            // If the parent is missing in the current state, it's been deleted
-            var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
-            parentsDelta[nodeID] = {
-               action           : DELTA_ACTION_DELETE,
-               itemtype : nodeDetails[0],
-               items_id : nodeDetails[1]
-            };
-         }
+      //       // Remove it from the currentParents data
+      //       delete currentParents[nodeID];
+      //    } else {
+      //       // If the parent is missing in the current state, it's been deleted
+      //       var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
+      //       parentsDelta[nodeID] = {
+      //          action           : DELTA_ACTION_DELETE,
+      //          itemtype : nodeDetails[0],
+      //          items_id : nodeDetails[1]
+      //       };
+      //    }
+      // });
+
+      // Prepare position map
+      var nodes_positions = {};
+      impact.cy.filter("node:childless").forEach(function(node) {
+         nodes_positions[node.data('id')] = node.position();
       });
 
       // Now iterate on the parents we have in the current state
       Object.keys(currentParents).forEach(function (nodeID) {
-         var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
-         parentsDelta[nodeID] = {
-            action   : DELTA_ACTION_ADD,
-            parent_id: currentParents[nodeID],
-            itemtype : nodeDetails[0],
-            items_id : nodeDetails[1]
+         var node = currentParents[nodeID];
+         parentsDelta[node.impactitem_id] = {
+            action   : DELTA_ACTION_UPDATE,
+            parent_id: node.parent,
          };
+
+         // Set parent to 0 if null
+         if (node.parent == undefined) {
+            node.parent = 0;
+         }
+
+         if (nodeID == impact.startNode) {
+            // Starting node of the graph, save viewport and edge colors
+            parentsDelta[node.impactitem_id] = {
+               action                  : DELTA_ACTION_UPDATE,
+               parent_id               : node.parent,
+               position_x              : node.position.x,
+               position_y              : node.position.y,
+               zoom                    : impact.cy.zoom(),
+               pan_x                   : impact.cy.pan().x,
+               pan_y                   : impact.cy.pan().y,
+               impact_color            : impact.edgeColors[FORWARD],
+               depends_color           : impact.edgeColors[BACKWARD],
+               impact_and_depends_color: impact.edgeColors[BOTH],
+               nodes_positions         : nodes_positions,
+            };
+         } else {
+            // Others nodes of the graph, store only their parents and position
+            parentsDelta[node.impactitem_id] = {
+               action   : DELTA_ACTION_UPDATE,
+               parent_id: node.parent,
+               position_x              : node.position.x,
+               position_y              : node.position.y,
+            };
+         }
+
       });
 
       return parentsDelta;
@@ -622,6 +660,20 @@ var impact = {
     * @returns {Object}
     */
    getColorPickerDialog: function(backward, forward, both) {
+      // Update color fields to match saved values
+      $(impact.dialogs.configColor.inputs.dependsColor).spectrum(
+         "set",
+         impact.edgeColors[BACKWARD]
+      );
+      $(impact.dialogs.configColor.inputs.impactColor).spectrum(
+         "set",
+         impact.edgeColors[FORWARD]
+      );
+      $(impact.dialogs.configColor.inputs.impactAndDependsColor).spectrum(
+         "set",
+         impact.edgeColors[BOTH]
+      );
+
       var buttonUpdate = {
          text: "Update",
          click: function() {
@@ -869,16 +921,40 @@ var impact = {
     *
     * @param {string} data (json)
     */
-   buildNetwork: function(data) {
+   buildNetwork: function(data, params) {
       console.log(data);
+
+      // Apply custom colors if defined
+      if (params.impact_color != '') {
+         this.setEdgeColors({
+            forward : params.impact_color,
+            backward: params.depends_color,
+            both    : params.impact_and_depends_color,
+         });
+      }
+
+      // Preset layout
+      var layout = {
+         name: 'preset',
+         positions: function(node) {
+            return {
+               x: parseFloat(node.data('position_x')),
+               y: parseFloat(node.data('position_y')),
+            }
+         }
+      };
+
+      // Init cytoscape
       this.cy = cytoscape({
          container: this.impactContainer,
          elements : data,
          style    : this.getNetworkStyle(),
-         layout   : this.getNetworkLayout(),
+         layout   : layout,
          wheelSensitivity: 0.25,
       });
 
+      // // If we used a preset layout, we may need to apply a second layout to some
+      // positionnedNodes
       // Store initial data
       this.initialState = this.getCurrentState();
 
@@ -900,12 +976,45 @@ var impact = {
       });
 
       // Set viewport
-      this.cy.fit();
-      // this.cy.fit("", 150);
+      if (params.zoom != '0') {
+         // If viewport params are set, apply them
+         this.cy.viewport({
+            zoom: parseFloat(params.zoom),
+            pan: {
+               x: parseFloat(params.pan_x),
+               y: parseFloat(params.pan_y),
+            }
+         });
 
-      if (this.cy.zoom() > 2.3) {
-         this.cy.zoom(2.3);
-         this.cy.center();
+         // Check viewport is not empty or contains only one item
+         var viewport = impact.cy.extent();
+         var empty = true;
+         impact.cy.nodes().forEach(function(node) {
+            if (node.position().x > viewport.x1
+               && node.position().x < viewport.x2
+               && node.position().y > viewport.x1
+               && node.position().y < viewport.x2
+            ){
+               empty = false;
+            }
+         });
+
+         if (empty || impact.cy.filter("node:childless").length == 1) {
+            this.cy.fit();
+
+            if (this.cy.zoom() > 2.3) {
+               this.cy.zoom(2.3);
+               this.cy.center();
+            }
+         }
+      } else {
+         // Else fit the graph and reduce zoom if needed
+         this.cy.fit();
+
+         if (this.cy.zoom() > 2.3) {
+            this.cy.zoom(2.3);
+            this.cy.center();
+         }
       }
 
       // Register events handlers for cytoscape object
@@ -1390,7 +1499,6 @@ var impact = {
     */
    showHelpText: function(text) {
       $(impact.toolbar.helpText).html(this.getLocale(text)).show();
-      $(impact.toolbar.cancel).show();
    },
 
    /**
@@ -1398,7 +1506,6 @@ var impact = {
     */
    clearHelpText: function() {
       $(impact.toolbar.helpText).hide();
-      $(impact.toolbar.cancel).hide();
    },
 
    /**
@@ -1462,6 +1569,8 @@ var impact = {
     */
    showSave: function() {
       $(impact.toolbar.save).addClass('dirty');
+      $(impact.toolbar.save).find('i').show();
+      $(impact.toolbar.save).find('i').qtip(this.getTooltip("unsavedChanges"));
    },
 
     /**
@@ -2191,11 +2300,6 @@ var impact = {
             $(impact.dialogs.configColor.inputs.impactColor),
             $(impact.dialogs.configColor.inputs.impactAndDependsColor)
          ));
-      });
-
-      // Go back to default mode
-      $(impact.toolbar.cancel).click(function() {
-         impact.setEditionMode(EDITION_DEFAULT);
       });
    }
 };

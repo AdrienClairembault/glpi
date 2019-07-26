@@ -55,7 +55,7 @@ if (isset($_POST['impacts'])) {
             // This is needed because some nodes might have this compound
             // temporary id as their parent id
             foreach ($data['parents'] as $nodeID => $node) {
-               if ($node['parent_id'] == $id) {
+               if ($node['parent_id'] === $id) {
                   $data['parents'][$nodeID]['parent_id'] = $newCompoundID;
                }
             }
