@@ -95,6 +95,9 @@ var impact = {
    // Form
    form: null,
 
+   // Maximum depth of the graph
+   maxDepth: 5,
+
    // Store registered dialogs and their inputs
    dialogs: {
       addNode: {
@@ -134,18 +137,20 @@ var impact = {
 
    // Store registered toolbar items
    toolbar: {
-      helpText      : null,
-      tools         : null,
-      save          : null,
-      addNode       : null,
-      addEdge       : null,
-      addCompound   : null,
-      deleteElement : null,
-      export        : null,
-      expandToolbar : null,
-      toggleImpact  : null,
-      toggleDepends : null,
-      colorPicker   : null,
+      helpText     : null,
+      tools        : null,
+      save         : null,
+      addNode      : null,
+      addEdge      : null,
+      addCompound  : null,
+      deleteElement: null,
+      export       : null,
+      expandToolbar: null,
+      toggleImpact : null,
+      toggleDepends: null,
+      colorPicker  : null,
+      maxDepth     : null,
+      maxDepthView : null,
    },
 
    /**
@@ -216,15 +221,9 @@ var impact = {
             }
          },
          {
-            selector: '[hidden=1]',
+            selector: '[hidden=1], [depth > ' + impact.maxDepth + ']',
             style: {
                'opacity': '0',
-            }
-         },
-         {
-            selector: '[hidden=0]',
-            style: {
-               'opacity': '1',
             }
          },
          {
@@ -511,6 +510,9 @@ var impact = {
                depends_color           : impact.edgeColors[BACKWARD],
                impact_and_depends_color: impact.edgeColors[BOTH],
                nodes_positions         : nodes_positions,
+               show_depends            : impact.directionVisibility[BACKWARD],
+               show_impact             : impact.directionVisibility[FORWARD],
+               max_depth               : impact.maxDepth,
             };
          } else {
             // Others nodes of the graph, store only their parents and position
@@ -984,6 +986,19 @@ var impact = {
          panGrid: true,
       });
 
+      // Apply saved visibility
+      if (!parseInt(params.show_depends)) {
+         impact.toggleVisibility(BACKWARD);
+      }
+      if (!parseInt(params.show_impact)) {
+         impact.toggleVisibility(FORWARD);
+      }
+
+      // Apply max depth
+      this.maxDepth = params.max_depth;
+
+      this.updateFlags();
+
       // Set viewport
       if (params.zoom != '0') {
          // If viewport params are set, apply them
@@ -1044,6 +1059,14 @@ var impact = {
 
       // Enter EDITION_DEFAULT mode
       this.setEditionMode(EDITION_DEFAULT);
+
+      // Init depth value
+      var text = impact.maxDepth;
+      if (impact.maxDepth >= 10) {
+         text = "infinity";
+      }
+      $(impact.toolbar.maxDepthView).html("Max depth: " + text);
+      $(impact.toolbar.maxDepth).val(impact.maxDepth);
    },
 
    /**
@@ -1099,6 +1122,14 @@ var impact = {
     */
    updateStyle: function() {
       this.cy.style(this.getNetworkStyle());
+      // Hide orphan edges
+      this.cy.nodes().forEach(function(node) {
+         if (!node.visible()) {
+            node.connectedEdges().data('depth', Number.MAX_VALUE);
+         } else {
+            node.connectedEdges().data('depth', 0);
+         }
+      });
    },
 
    /**
@@ -1113,16 +1144,19 @@ var impact = {
       this.cy.edges().forEach(function(edge) {
          edge.data("flag", 0);
       });
+      this.cy.nodes().data("depth", 0);
 
       // Run through the graph forward
       exploredNodes = {};
       exploredNodes[this.startNode] = true;
-      this.exploreGraph(exploredNodes, FORWARD, this.startNode);
+      this.exploreGraph(exploredNodes, FORWARD, this.startNode, 0);
 
       // Run through the graph backward
       exploredNodes = {};
       exploredNodes[this.startNode] = true;
-      this.exploreGraph(exploredNodes, BACKWARD, this.startNode);
+      this.exploreGraph(exploredNodes, BACKWARD, this.startNode, 0);
+
+      this.updateStyle();
    },
 
    /**
@@ -1131,6 +1165,13 @@ var impact = {
     * @param {*} toToggle
     */
    toggleVisibility: function(toToggle) {
+      // Update toolbar icons
+      if (toToggle == FORWARD) {
+         $(impact.toolbar.toggleImpact).find('i').toggleClass("fa-eye fa-eye-slash");
+      } else {
+         $(impact.toolbar.toggleDepends).find('i').toggleClass("fa-eye fa-eye-slash");
+      }
+
       // Update visibility setting
       impact.directionVisibility[toToggle] = !impact.directionVisibility[toToggle];
 
@@ -1174,16 +1215,34 @@ var impact = {
       // Start node should always be visible
       impact.cy.filter(impact.makeIDSelector(impact.startNode))
          .data("hidden", 0);
+
+      impact.updateStyle();
    },
 
    /**
     * Explore a graph in a given direction using recursion
     *
-    * @param {Array} exploredNodes
+    * @param {Array}  exploredNodes
     * @param {number} direction
     * @param {string} currentNodeID
+    * @param {number} depth
     */
-   exploreGraph: function(exploredNodes, direction, currentNodeID) {
+   exploreGraph: function(exploredNodes, direction, currentNodeID, depth) {
+      // Set node depth
+      var node = this.cy.filter(this.makeIDSelector(currentNodeID));
+      if (node.data('depth') == 0 || node.data('depth') > depth) {
+         node.data('depth', depth);
+      }
+
+      // If node has a parent, set it's depth too
+      if (node.isChild() && (
+         node.parent().data('depth') == 0 ||
+         node.parent().data('depth') > depth
+      )) {
+         node.parent().data('depth', depth);
+      }
+
+      depth++;
 
       // Depending on the direction, we are looking for edge that either begin
       // from the current node (source) or end on the current node (target)
@@ -1218,7 +1277,7 @@ var impact = {
          if(exploredNodes[targetNode] == undefined) {
             exploredNodes[targetNode] = true;
             // Go to next node
-            impact.exploreGraph(exploredNodes, direction, targetNode);
+            impact.exploreGraph(exploredNodes, direction, targetNode, depth);
          }
       });
    },
@@ -2318,15 +2377,12 @@ var impact = {
       // Toggle impact visibility
       $(impact.toolbar.toggleImpact).click(function() {
          impact.toggleVisibility(FORWARD);
-         $(impact.toolbar.toggleImpact).find('i')
-            .toggleClass("fa-eye fa-eye-slash");
+         ;
       });
 
       // Toggle depends visibility
       $(impact.toolbar.toggleDepends).click(function() {
          impact.toggleVisibility(BACKWARD);
-         $(impact.toolbar.toggleDepends).find('i')
-            .toggleClass("fa-eye fa-eye-slash");
       });
 
       // Color picker
@@ -2337,8 +2393,21 @@ var impact = {
             $(impact.dialogs.configColor.inputs.impactAndDependsColor)
          ));
       });
+
+      // Depth selector
+      $(impact.toolbar.maxDepth).on('input', function() {
+         var max = $(impact.toolbar.maxDepth).val();
+         impact.maxDepth = max;
+
+         if (max == 10) {
+            max = "infinity";
+            impact.maxDepth = Number.MAX_VALUE;
+         }
+
+         $(impact.toolbar.maxDepthView).html("Max depth: " + max);
+         impact.updateStyle();
+      });
    }
 };
-
 
 

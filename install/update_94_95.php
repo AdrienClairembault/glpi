@@ -305,6 +305,9 @@ function update94to95() {
          `nodes_positions` LONGTEXT NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
          `position_x` FLOAT NOT NULL DEFAULT '0',
 	      `position_y` FLOAT NOT NULL DEFAULT '0',
+         `show_depends` TINYINT NOT NULL DEFAULT '1',
+	      `show_impact` TINYINT NOT NULL DEFAULT '1',
+	      `max_depth` INT(11) NOT NULL DEFAULT '5',
          PRIMARY KEY (`id`),
          UNIQUE KEY `unicity` (
             `itemtype_source`,

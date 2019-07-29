@@ -279,6 +279,98 @@ class Impact extends CommonDBRelation {
                color: #8f5a0a !important;
             }
 
+             input[type=range] {
+               height: 18px;
+               -webkit-appearance: none;
+               margin: 10px 0;
+               border-width: 0 !important;
+               margin-top: 0 !important;
+               margin-bottom: 0 !important;
+             }
+             input[type=range]:focus {
+               outline: none;
+             }
+             input[type=range]::-webkit-slider-runnable-track {
+               width: 100%;
+               height: 4px;
+               cursor: pointer;
+               animate: 0.2s;
+               box-shadow: 0px 0px 0px #000000;
+               background: #AEC8D8;
+               border-radius: 25px;
+               border: 1px solid #8A8A8A;
+             }
+             input[type=range]::-webkit-slider-thumb {
+               box-shadow: 1px 1px 1px #828282;
+               border: 1px solid #8A8A8A;
+               height: 10px;
+               width: 14px;
+               border-radius: 2px;
+               background: #66757F;
+               cursor: pointer;
+               -webkit-appearance: none;
+               margin-top: -4px;
+             }
+             input[type=range]:focus::-webkit-slider-runnable-track {
+               background: #AEC8D8;
+             }
+             input[type=range]::-moz-range-track {
+               width: 100%;
+               height: 4px;
+               cursor: pointer;
+               animate: 0.2s;
+               box-shadow: 0px 0px 0px #000000;
+               background: #AEC8D8;
+               border-radius: 25px;
+               border: 1px solid #8A8A8A;
+             }
+             input[type=range]::-moz-range-thumb {
+               box-shadow: 1px 1px 1px #828282;
+               border: 1px solid #8A8A8A;
+               height: 10px;
+               width: 14px;
+               border-radius: 2px;
+               background: #66757F;
+               cursor: pointer;
+             }
+             input[type=range]::-ms-track {
+               width: 100%;
+               height: 4px;
+               cursor: pointer;
+               animate: 0.2s;
+               background: transparent;
+               border-color: transparent;
+               color: transparent;
+             }
+             input[type=range]::-ms-fill-lower {
+               background: #AEC8D8;
+               border: 1px solid #8A8A8A;
+               border-radius: 50px;
+               box-shadow: 0px 0px 0px #000000;
+             }
+             input[type=range]::-ms-fill-upper {
+               background: #AEC8D8;
+               border: 1px solid #8A8A8A;
+               border-radius: 50px;
+               box-shadow: 0px 0px 0px #000000;
+             }
+             input[type=range]::-ms-thumb {
+               margin-top: 1px;
+               box-shadow: 1px 1px 1px #828282;
+               border: 1px solid #8A8A8A;
+               height: 10px;
+               width: 14px;
+               border-radius: 2px;
+               background: #66757F;
+               cursor: pointer;
+             }
+             input[type=range]:focus::-ms-fill-lower {
+               background: #AEC8D8;
+             }
+             input[type=range]:focus::-ms-fill-upper {
+               background: #AEC8D8;
+             }
+
             /* Page */
 
             .more-menu {
@@ -300,6 +392,14 @@ class Impact extends CommonDBRelation {
                text-align: left;
                outline: none;
                cursor: pointer;
+            }
+
+            .more-disabled {
+               cursor: default !important;
+            }
+
+            .more-disabled:hover {
+               background-color: white !important;
             }
 
             .more-dot {
@@ -570,6 +670,17 @@ class Impact extends CommonDBRelation {
                         '<i class="fas fa-palette"></i> Colors' .
                      '</button>' .
                   '</li>' .
+                  '<hr>' .
+                  '<li id="color_picker" class="more-menu-item">' .
+                     '<button type="button" class="more-menu-btn more-disabled" id="max_depth_view">' .
+                        'Max depth : 5' .
+                     '</button>' .
+                  '</li>' .
+                  '<li id="color_picker" class="more-menu-item">' .
+                     '<span class="more-menu-btn">' .
+                        '<input name="max_depth" type="range" min="1" max ="10" step="1" value="5">' .
+                     '</span>' .
+                  '</li>' .
                '</ul>' .
             '</div>' .
          "</div>";
@@ -597,7 +708,6 @@ class Impact extends CommonDBRelation {
 
          function hideMenu(e) {
             if (e.target.id == 'expandToolbar') {
-               console.log('nfees');
                return;
             }
 
@@ -880,6 +990,9 @@ class Impact extends CommonDBRelation {
          'impact_color'             => $impactItem->fields['impact_color'],
          'depends_color'            => $impactItem->fields['depends_color'],
          'impact_and_depends_color' => $impactItem->fields['impact_and_depends_color'],
+         'show_depends'             => $impactItem->fields['show_depends'],
+         'show_impact'              => $impactItem->fields['show_impact'],
+         'max_depth'                => $impactItem->fields['max_depth'],
       ]);
    }
 
@@ -1132,6 +1245,8 @@ class Impact extends CommonDBRelation {
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
+         ['key'    => 'maxDepth',      'id' => "input[name=max_depth]"],
+         ['key'    => 'maxDepthView',  'id' => "#max_depth_view"],
       ]);
 
       // Get var from server side
