@@ -703,6 +703,7 @@ var impact = {
             });
             impact.updateStyle();
             $(this).dialog( "close" );
+            impact.cy.trigger("change");
          }
       };
 
@@ -814,7 +815,7 @@ var impact = {
 
             // Close dialog
             $(this).dialog("close");
-            impact.showSave();
+            impact.cy.trigger("change");
          }
       }
 
@@ -1051,7 +1052,7 @@ var impact = {
       this.cy.on('click', 'edge', this.edgeOnClick);
       this.cy.on('click', 'node', this.nodeOnClick);
       this.cy.on('box', this.onBox);
-      this.cy.on('drag add remove', this.onChange);
+      this.cy.on('drag add remove pan zoom change', this.onChange);
       this.cy.on('doubleClick', this.onDoubleClick);
 
       // Global events
@@ -1720,9 +1721,8 @@ var impact = {
     * @param {object} ele
     */
    deleteFromGraph: function(ele) {
-
       if (ele.data('id') == impact.startNode) {
-         alert("no");
+         alert("Can't remove starting node");
          return;
       }
 
@@ -2377,12 +2377,13 @@ var impact = {
       // Toggle impact visibility
       $(impact.toolbar.toggleImpact).click(function() {
          impact.toggleVisibility(FORWARD);
-         ;
+         impact.cy.trigger("change");
       });
 
       // Toggle depends visibility
       $(impact.toolbar.toggleDepends).click(function() {
          impact.toggleVisibility(BACKWARD);
+         impact.cy.trigger("change");
       });
 
       // Color picker
@@ -2406,6 +2407,7 @@ var impact = {
 
          $(impact.toolbar.maxDepthView).html("Max depth: " + max);
          impact.updateStyle();
+         impact.cy.trigger("change");
       });
    }
 };

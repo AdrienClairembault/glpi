@@ -616,9 +616,9 @@ class Impact extends CommonDBRelation {
       echo "<tr><td class=\"networkParent\">";
       echo '<div class="impact_toolbar">';
       $hidden = 'style="display: none;"';
-      echo '<div>';
+      // echo '<div>';
       echo '<span id="helpText" ' . $hidden . '></span>';
-      echo '</div>';
+      // echo '</div>';
       echo '<div id="impactTools">';
       echo '<span id="saveImpact">' . __("Save") . '&nbsp;<i></i></span>';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
