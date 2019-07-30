@@ -74,6 +74,7 @@ class Computer extends CommonDBTM {
 
       $ong = [];
       $this->addDefaultFormTab($ong)
+         ->addImpactTab($ong, $options)
          ->addStandardTab('Item_OperatingSystem', $ong, $options)
          ->addStandardTab('Item_Devices', $ong, $options)
          ->addStandardTab('Item_Disk', $ong, $options)
@@ -94,8 +95,7 @@ class Computer extends CommonDBTM {
          ->addStandardTab('Lock', $ong, $options)
          ->addStandardTab('Notepad', $ong, $options)
          ->addStandardTab('Reservation', $ong, $options)
-         ->addStandardTab('Log', $ong, $options)
-         ->addImpactTab($ong, $options);
+         ->addStandardTab('Log', $ong, $options);
 
       return $ong;
    }

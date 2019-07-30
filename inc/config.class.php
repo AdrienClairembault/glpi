@@ -232,10 +232,6 @@ class Config extends CommonDBTM {
                                                       ? $input['lock_item_list'] : []));
       }
 
-      $input['impact_assets_list'] = exportArrayToDB(
-         isset($input['impact_assets_list']) ? $input['impact_assets_list'] : []
-      );
-
       // Beware : with new management system, we must update each value
       unset($input['id']);
       unset($input['_glpi_csrf_token']);
@@ -554,8 +550,6 @@ class Config extends CommonDBTM {
          echo "</table>";
       }
 
-      $this->showImpactFieldSet();
-
       echo "<br><table class='tab_cadre_fixe'>";
       echo "<tr>";
       echo "<th colspan='4'>".__('Automatically update of the elements related to the computers');
@@ -617,60 +611,6 @@ class Config extends CommonDBTM {
 
       echo "</table></div>";
       Html::closeForm();
-   }
-
-   /**
-    * Print the impact analysis fieldset
-    *
-    * @since 9.5
-   **/
-   public function showImpactFieldSet() {
-
-      global $CFG_GLPI;
-
-      echo "<br>";
-      echo "<table class='tab_cadre_fixe'>";
-
-      // Table header
-      echo "<tr>";
-      echo "<th colspan='4'>".__('Impact analysis') . "</th>";
-      echo "</tr>";
-
-      // Asset list
-      echo "<tr class='tab_bg_2'>";
-      echo "<td width='30%'>";
-      echo "<label>" . __('Asset list') . "</label>";
-      echo "</td>";
-      echo "<td colspan='3'>";
-      Dropdown::showFromArray(
-         'impact_assets_list',
-         $this->getAllAssetList(),
-         [
-            'values'   => $CFG_GLPI['impact_assets_list'],
-            'width'    => '100%',
-            'multiple' => true
-         ]
-      );
-      echo "</td>";
-      echo "</tr>";
-
-      echo "</table>";
-   }
-
-   /**
-    * Get a sorted array containing all assets
-    *
-    * @since 9.5
-    *
-    * @return array
-   **/
-   public function getAllAssetList() {
-      $ret = [];
-      foreach ($_SESSION["glpiactiveprofile"]["helpdesk_item_type"] as $asset) {
-         $ret[$asset] = $asset::getTypeName(Session::getPluralNumber());
-      }
-      asort($ret, SORT_STRING);
-      return $ret;
    }
 
    /**
@@ -2919,10 +2859,6 @@ class Config extends CommonDBTM {
       if (isset($CFG_GLPI['lock_item_list'])) {
           $CFG_GLPI['lock_item_list'] = importArrayFromDB($CFG_GLPI['lock_item_list']);
       }
-
-      $CFG_GLPI['impact_assets_list'] = isset($CFG_GLPI['impact_assets_list'])
-         ? importArrayFromDB($CFG_GLPI['impact_assets_list'])
-         : [];
 
       if (isset($CFG_GLPI['lock_lockprofile_id'])
           && $CFG_GLPI['lock_use_lock_item']

@@ -67,15 +67,14 @@ class Rack extends CommonDBTM {
       $this
          ->addStandardTab('Item_Rack', $ong, $options)
          ->addDefaultFormTab($ong)
+         ->addImpactTab($ong, $options)
          ->addStandardTab('Infocom', $ong, $options)
          ->addStandardTab('Contract_Item', $ong, $options)
          ->addStandardTab('Document_Item', $ong, $options)
          ->addStandardTab('Ticket', $ong, $options)
          ->addStandardTab('Item_Problem', $ong, $options)
          ->addStandardTab('Change_Item', $ong, $options)
-         ->addStandardTab('Log', $ong, $options)
-         ->addImpactTab($ong, $options);
-      ;
+         ->addStandardTab('Log', $ong, $options);
       return $ong;
    }
 

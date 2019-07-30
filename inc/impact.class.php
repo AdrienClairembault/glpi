@@ -35,7 +35,7 @@ class Impact extends CommonDBRelation {
       // Class of the current item
       $class = get_class($item);
 
-      if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
+      if (isset($CFG_GLPI['impact_asset_types'][$class])) {
          // Asset : get number of directs dependencies
          $it = $DB->request([
             'FROM'   => 'glpi_impacts',
@@ -96,7 +96,7 @@ class Impact extends CommonDBRelation {
          $found = false;
          foreach ($linkedItems as $linkedItem) {
             $class = $linkedItem['itemtype'];
-            if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
+            if (isset($CFG_GLPI['impact_asset_types'][$class])) {
                self::printAssetSelectionForm($linkedItems);
                $found = true;
                $item = new $class;
@@ -111,7 +111,7 @@ class Impact extends CommonDBRelation {
          }
       }
 
-      if (in_array($class, $CFG_GLPI['impact_assets_list'])) {
+      if (isset($CFG_GLPI['impact_asset_types'][$class])) {
          // Asset : show the impact network
          self::loadLibs();
          self::prepareImpactNetwork($item);
@@ -547,7 +547,7 @@ class Impact extends CommonDBRelation {
       $values = [];
 
       foreach ($items as $item) {
-         if (in_array($item['itemtype'], $CFG_GLPI['impact_assets_list'])) {
+         if (isset($CFG_GLPI['impact_asset_types'][$item['itemtype']])) {
             // Add itemtype if not found yet
             $itemTypeLabel = __($item['itemtype']);
             if (!isset($values[$itemTypeLabel])) {
@@ -858,12 +858,18 @@ class Impact extends CommonDBRelation {
       if (isset($nodes[$key])) {
          return false;
       }
-      $imageName = strtolower(get_class($item));
+      $imageName = $CFG_GLPI["impact_asset_types"][get_class($item)];
+      $imagePath = __DIR__ . "/../$imageName";
+
+      // Add default image if needed
+      if (!file_exists($imagePath)) {
+         $imageName = "pics/impact/default.png";
+      }
 
       $newNode = [
          'id'          => $key,
          'label'       => $item->fields['name'],
-         'image'       => $CFG_GLPI["root_doc"]."/pics/impact/$imageName.png",
+         'image'       => $CFG_GLPI['root_doc'] . "/$imageName",
          'ITILObjects' => $item->getITILTickets(true),
          'link'        => $item->getLinkURL()
       ];
@@ -1042,7 +1048,7 @@ class Impact extends CommonDBRelation {
       echo "<td>";
       Dropdown::showItemTypes(
          'item_type',
-         $CFG_GLPI['impact_assets_list'],
+         array_keys($CFG_GLPI['impact_asset_types']),
          [
             'value'        => null,
             'width'        => '100%',
@@ -1368,7 +1374,7 @@ class Impact extends CommonDBRelation {
 
       try {
          // Check this asset type is enabled
-         if (!in_array($itemType, $CFG_GLPI['impact_assets_list'])) {
+         if (!isset($CFG_GLPI['impact_asset_types'][$itemType])) {
             return false;
          }
 

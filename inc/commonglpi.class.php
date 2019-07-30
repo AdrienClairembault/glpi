@@ -318,7 +318,7 @@ class CommonGLPI {
       global $CFG_GLPI;
 
       // Check if impact analysis is enabled for this item type
-      if (in_array(static::class, $CFG_GLPI['impact_assets_list'])) {
+      if (isset($CFG_GLPI['impact_asset_types'][static::class])) {
          $this->addStandardTab('Impact', $ong, $options);
       }
 

@@ -69,9 +69,10 @@ function printForm() {
    echo "<tr>";
    echo "<td width=\"40%\"> <label>" . __('Item type') . "</label> </td>";
    echo "<td>";
+
    Dropdown::showItemTypes(
       'type',
-      $CFG_GLPI['impact_assets_list'],
+      array_keys($CFG_GLPI['impact_asset_types']),
       [
          'value'        => null,
          'width'        => '100%',

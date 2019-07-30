@@ -51,6 +51,7 @@ class Enclosure extends CommonDBTM {
    function defineTabs($options = []) {
       $ong = [];
       $this->addDefaultFormTab($ong)
+         ->addImpactTab($ong, $options)
          ->addStandardTab('Item_Enclosure', $ong, $options)
          ->addStandardTab('Item_Devices', $ong, $options)
          ->addStandardTab('NetworkPort', $ong, $options)
@@ -60,9 +61,7 @@ class Enclosure extends CommonDBTM {
          ->addStandardTab('Ticket', $ong, $options)
          ->addStandardTab('Item_Problem', $ong, $options)
          ->addStandardTab('Change_Item', $ong, $options)
-         ->addStandardTab('Log', $ong, $options)
-         ->addImpactTab($ong, $options);
-      ;
+         ->addStandardTab('Log', $ong, $options);
       return $ong;
    }
 

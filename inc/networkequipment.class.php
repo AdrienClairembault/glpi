@@ -123,6 +123,7 @@ class NetworkEquipment extends CommonDBTM {
 
       $ong = [];
       $this->addDefaultFormTab($ong)
+         ->addImpactTab($ong, $options)
          ->addStandardTab('Item_OperatingSystem', $ong, $options)
          ->addStandardTab('Item_Devices', $ong, $options)
          ->addStandardTab('Item_Disk', $ong, $options)
@@ -139,8 +140,7 @@ class NetworkEquipment extends CommonDBTM {
          ->addStandardTab('Notepad', $ong, $options)
          ->addStandardTab('Reservation', $ong, $options)
          ->addStandardTab('Certificate_Item', $ong, $options)
-         ->addStandardTab('Log', $ong, $options)
-         ->addImpactTab($ong, $options);
+         ->addStandardTab('Log', $ong, $options);
 
       return $ong;
    }
