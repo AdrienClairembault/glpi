@@ -558,14 +558,14 @@ var impact = {
       return [
          {
             id             : 'goTo',
-            content        : '<i class="fas fa-external-link-alt"></i>' + this.getLocale("goTo"),
+            content        : '<i class="fas fa-link"></i>' + this.getLocale("goTo"),
             tooltipText    : this.getLocale("goTo+"),
             selector       : 'node',
             onClickFunction: this.menuOnGoTo
          },
          {
             id             : 'showOngoing',
-            content        : '<i class="fas fa-clipboard-list"></i>' + this.getLocale("showOngoing"),
+            content        : '<i class="fas fa-list"></i>' + this.getLocale("showOngoing"),
             tooltipText    : this.getLocale("showOngoing+"),
             selector       : 'node[hasITILObjects=1]',
             onClickFunction: this.menuOnShowOngoing
@@ -579,7 +579,7 @@ var impact = {
          },
          {
             id             : 'removeFromCompound',
-            content        : '<i class="fas fa-minus"></i>' + this.getLocale("removeFromCompound"),
+            content        : '<i class="fas fa-external-link-alt"></i>' + this.getLocale("removeFromCompound"),
             tooltipText    : this.getLocale("removeFromCompound+"),
             selector       : 'node:child',
             onClickFunction: this.menuOnRemoveFromCompound
@@ -942,7 +942,8 @@ var impact = {
     * @param {string} data (json)
     */
    buildNetwork: function(data, params) {
-      console.log(data);
+      // Init workspace status
+      impact.showDefaultWorkspaceStatus();
 
       // Apply custom colors if defined
       if (params.impact_color != '') {
@@ -965,8 +966,6 @@ var impact = {
          wheelSensitivity: 0.25,
       });
 
-      // // If we used a preset layout, we may need to apply a second layout to some
-      // positionnedNodes
       // Store initial data
       this.initialState = this.getCurrentState();
 
@@ -997,7 +996,6 @@ var impact = {
 
       // Apply max depth
       this.maxDepth = params.max_depth;
-
       this.updateFlags();
 
       // Set viewport
@@ -1076,13 +1074,14 @@ var impact = {
     * @param {Array} newGraph
     */
    replaceGraph(newGraph) {
+      // this.buildNetwork(newGraph, {});
       // Remove current graph
-      this.cy.remove("");
-      this.delta = {edges: {}, compounds: {}, parents: {}};
+      // this.cy.remove("");
+      // this.delta = {edges: {}, compounds: {}, parents: {}};
 
-      // Set the new graph and apply layout to nodes
-      var layout = this.cy.add(newGraph).layout(impact.getDagreLayout());
-      layout.run();
+      // // Set the new graph and apply layout to nodes
+      // var layout = this.cy.add(newGraph).layout(impact.getDagreLayout());
+      // layout.run();
    },
 
    /**
@@ -1644,6 +1643,16 @@ var impact = {
       $(impact.toolbar.save).find('i').qtip(this.getTooltip("unsavedChanges"));
    },
 
+   /**
+    * Enable the save button
+    */
+   showDefaultWorkspaceStatus: function() {
+      $(impact.toolbar.save).removeClass('clean');
+      $(impact.toolbar.save).removeClass('dirty');
+      $(impact.toolbar.save).find('i').removeClass("fas fa-check");
+      $(impact.toolbar.save).find('i').removeClass("fas fa-exclamation-triangle");
+   },
+
     /**
     * Build the ongoing dialog content according to the list of ITILObjects
     *
@@ -2182,6 +2191,12 @@ var impact = {
             event.cy.filter().data('todelete', 0);
             event.cy.filter().unselect();
 
+            // Store here if one default node
+            if (event.target.data('id') == impact.startNode) {
+               $(impact.impactContainer).css('cursor', "not-allowed");
+               break;
+            }
+
             // Add red overlay
             event.target.data('todelete', 1);
             event.target.select();
@@ -2317,6 +2332,7 @@ var impact = {
                $(impact.toolbar.save).find('i').removeClass("fas fa-exclamation-triangle");
                $(impact.toolbar.save).find('i').addClass("fas fa-check");
                $(impact.toolbar.save).find('i').qtip(impact.getTooltip("workspaceSaved"));
+               impact.initialState = impact.getCurrentState();
             },
             error: function(){
                alert("error");

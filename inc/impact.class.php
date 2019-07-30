@@ -585,10 +585,14 @@ class Impact extends CommonDBRelation {
                      itemID:     values[1],
                   },
                   success: function(data, textStatus, jqXHR) {
-                     console.log(data);
-                     impact.replaceGraph(JSON.parse(data));
-                  },
-                  dataType: "json"
+                     console.log(data.graph);
+                     console.log(data.params);
+                     // data = ;
+                     impact.buildNetwork(
+                        JSON.parse(data.graph),
+                        JSON.parse(data.params)
+                     );
+                  }
                });
             });
          });
