@@ -1307,7 +1307,7 @@ var impact = {
          dataType: "json",
          data: node,
          success: function(data, textStatus, jqXHR) {
-            dfd.resolve(JSON.parse(data));
+            dfd.resolve(JSON.parse(data.graph));
          },
          error: function (data, textStatus, jqXHR) {
             dfd.reject();
