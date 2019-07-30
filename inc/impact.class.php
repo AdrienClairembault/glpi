@@ -8,22 +8,23 @@ if (!defined('GLPI_ROOT')) {
  * @since 9.5.0
  */
 class Impact extends CommonDBRelation {
-
+   // Required by CommonDBRelation
    static public $itemtype_1          = 'itemtype_source';
    static public $items_id_1          = 'items_id_source';
-
    static public $itemtype_2          = 'itemtype_impacted';
    static public $items_id_2          = 'items_id_impacted';
 
-   // Constants used to express the direction of a graph
+   /* Constants used to express the direction or "flow" of a graph
+      Theses constants can also be used to express if and edge is accessible
+      when exploring the graph forward, backward or both (0b11) */
    const DIRECTION_FORWARD    = 0b01;
    const DIRECTION_BACKWARD   = 0b10;
-   const DIRECTION_BOTH       = 0b11;
 
-   // TODO : export to conf ?
-   const IMPACT_COLOR               = '#DC143C';
-   const DEPENDS_COLOR              = '#000080';
-   const IMPACT_AND_DEPENDS_COLOR   = '#4B0082';
+   // Default colors used for the edges of the graph according to their flow
+   const DEFAULT_COLOR            = 'black';  // No flow, this mean the edge is not accessible from the starting point of the graph
+   const IMPACT_COLOR             = '#DC143C'; // Forward (crimson red)
+   const DEPENDS_COLOR            = '#000080'; // Backward (navy blue)
+   const IMPACT_AND_DEPENDS_COLOR = '#4B0082'; // Forward and backward (indigo)
 
    public static function getTypeName($nb = 0) {
       return _n('Asset impact', 'Asset impacts', $nb);
@@ -36,8 +37,8 @@ class Impact extends CommonDBRelation {
       $class = get_class($item);
 
       if (isset($CFG_GLPI['impact_asset_types'][$class])) {
-         // Asset : get number of directs dependencies
-         $it = $DB->request([
+         // Tab name for an asset : get number of directs dependencies
+         $total = count($DB->request([
             'FROM'   => 'glpi_impacts',
             'WHERE'  => [
                'OR' => [
@@ -51,16 +52,13 @@ class Impact extends CommonDBRelation {
                   ]
                ]
             ]
-         ]);
-         $total = count($it);
-
-      } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
-         // ITIL object : no count
+         ]));
+      } else if (is_a($item, CommonITILObject)) {
+         // Tab name for an ITIL object : always 0
          $total = 0;
       }
 
       return self::createTabEntry(
-         // TODO remove trailing space (cannot do it now due to pot plural form incompatibility)
          _n('Impact ', 'Impacts ', Session::getPluralNumber()),
          $total
       );
@@ -69,59 +67,52 @@ class Impact extends CommonDBRelation {
    public static function displayTabContentForItem(
       CommonGLPI $item,
       $tabnum = 1,
-      $withtemplate = 0) {
-
+      $withtemplate = 0
+   ) {
       global $CFG_GLPI;
 
       $ID = $item->getID();
+      $class = get_class($item);
 
       // Don't show the impact analysis on new object
       if ($item->isNewID($ID)) {
          return false;
       }
 
-      // Check rights
+      // Check READ rights
       $itemtype = $item->getType();
       if (!$itemtype::canView()) {
          return false;
       }
 
-      $class = get_class($item);
-
       // For an ITIL object, load the first linked element by default
-      if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
-         $linkedItems = $item->getLinkedItems();
+      if (is_a($item, CommonITILObject)) {
+         $linked_items = $item->getLinkedItems();
 
-         // Search for a valid linked item
+         // Search for a valid linked item of this ITILObject
          $found = false;
-         foreach ($linkedItems as $linkedItem) {
-            $class = $linkedItem['itemtype'];
+         foreach ($linked_items as $linked_item) {
+            $class = $linked_item['itemtype'];
             if (isset($CFG_GLPI['impact_asset_types'][$class])) {
-               self::printAssetSelectionForm($linkedItems);
+               self::printAssetSelectionForm($linked_items);
                $found = true;
                $item = new $class;
-               $item->getFromDB($linkedItem['items_id']);
+               $item->getFromDB($linked_item['items_id']);
                break;
             }
          }
 
-         // No impact to display, tab shouldn't be visible
+         // No valid linked item were found, tab shouldn't be visible
          if (!$found) {
             return true;
          }
       }
 
+      // Show graph if the impact analysis is enable for $class
       if (isset($CFG_GLPI['impact_asset_types'][$class])) {
-         // Asset : show the impact network
          self::loadLibs();
          self::prepareImpactNetwork($item);
          self::buildNetwork($item);
-         // TODO: fix after cytoscape
-         // } else if (in_array($class, [Ticket::class, Problem::class, Change::class])) {
-         //    // ITIL object : show asset selection form
-         //    self::loadLibs();
-         //    self::printAssetSelectionForm($item->getLinkedItems());
-         //    self::prepareImpactNetwork();
       }
 
       return true;
@@ -140,442 +131,42 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Load the #networkContainer div style
-    *
-    * @since 9.5
-    */
-   public static function loadNetworkContainerStyle() {
-      echo '
-         <style type="text/css">
-            .networkParent {
-               border: 1px solid #f1f1f1;
-               position:relative
-            }
-
-            .networkTable {
-               max-width: none !important;
-            }
-
-            #networkContainer {
-              /* width: 100%;*/
-               height: 70vh;
-            }
-
-            #networkContainer div {
-               z-index: 1 !important;
-               position: absolute !important;
-            }
-
-            .impactDialog {
-               display: none;
-            }
-
-            i.fa-impact-manipulation {
-               display: inline;
-               font-size: 14px;
-            }
-
-            .impact-dropdown {
-               /* position: relative; */
-               display: inline-block;
-            }
-
-            .impact-dropdown-content {
-               display: none;
-               position: absolute;
-               background-color: white;
-               min-width: 100px;
-               z-index: 15;
-               right: 0;
-            }
-
-            .impact-dropdown-content li {
-               color: black;
-               padding: 12px 16px;
-               text-decoration: none;
-               display: block;
-             }
-
-            .impact-dropdown:hover .impact-dropdown-content {
-               display: block;
-            }
-
-
-            div.vis-network div.vis-edit-mode div.vis-button.vis-edit {
-               background-image: url() !important;
-            }
-
-            div.vis-network div.vis-edit-mode div.vis-label {
-               margin: 0 !important;
-            }
-
-            .impact_toolbar {
-               position: absolute;
-               display: inline-flex;
-               justify-content: flex-start;
-               left: 0;
-               right: 0;
-               z-index: 20;
-               flex-wrap: wrap;
-               /*overflow: auto;*/
-            }
-
-            #impactTools {
-               margin-left: auto;
-               margin-right: 5px;
-               /*float: right;*/
-               background-color: white;
-               padding: 5px;
-               border: 1px solid lightgray;
-               border-radius: 2px;
-            }
-
-            .impact_toolbar span {
-               float: left;
-               color: gray;
-               font-size: 1.3em;
-               padding: 4px 8px;
-               transition: all 0.3s ease;
-               cursor: pointer;
-               border: 2px inset transparent;
-            }
-
-            .impact_toolbar .active {
-               border: 2px inset #f4f4f4;
-               background-color: #fafafa;
-            }
-
-            .impact_toolbar_right {
-               float: right !important;
-            }
-
-            #impactTools span:hover, .networkToolbarHightlight:hover {
-               background-color: lightgray;
-               border-radius: 2px;
-            }
-
-            #helpText {
-               font-weight: bold;
-            }
-
-            #saveImpact {
-               font-weight   : bold;
-               /*text-transform: uppercase;
-               letter-spacing: 0.04em;*/
-               color         : gray;
-               margin-right  : 20px;
-            }
-
-            .clean {
-               color         : #1ca448 !important;
-            }
-
-            .dirty {
-               color         : #eea818 !important;
-            }
-
-            .dirty:hover {
-               background-color: #fec95c !important;
-               color: #8f5a0a !important;
-            }
-
-             input[type=range] {
-               height: 18px;
-               -webkit-appearance: none;
-               margin: 10px 0;
-               border-width: 0 !important;
-               margin-top: 0 !important;
-               margin-bottom: 0 !important;
-             }
-             input[type=range]:focus {
-               outline: none;
-             }
-             input[type=range]::-webkit-slider-runnable-track {
-               width: 100%;
-               height: 4px;
-               cursor: pointer;
-               animate: 0.2s;
-               box-shadow: 0px 0px 0px #000000;
-               background: #AEC8D8;
-               border-radius: 25px;
-               border: 1px solid #8A8A8A;
-             }
-             input[type=range]::-webkit-slider-thumb {
-               box-shadow: 1px 1px 1px #828282;
-               border: 1px solid #8A8A8A;
-               height: 10px;
-               width: 14px;
-               border-radius: 2px;
-               background: #66757F;
-               cursor: pointer;
-               -webkit-appearance: none;
-               margin-top: -4px;
-             }
-             input[type=range]:focus::-webkit-slider-runnable-track {
-               background: #AEC8D8;
-             }
-             input[type=range]::-moz-range-track {
-               width: 100%;
-               height: 4px;
-               cursor: pointer;
-               animate: 0.2s;
-               box-shadow: 0px 0px 0px #000000;
-               background: #AEC8D8;
-               border-radius: 25px;
-               border: 1px solid #8A8A8A;
-             }
-             input[type=range]::-moz-range-thumb {
-               box-shadow: 1px 1px 1px #828282;
-               border: 1px solid #8A8A8A;
-               height: 10px;
-               width: 14px;
-               border-radius: 2px;
-               background: #66757F;
-               cursor: pointer;
-             }
-             input[type=range]::-ms-track {
-               width: 100%;
-               height: 4px;
-               cursor: pointer;
-               animate: 0.2s;
-               background: transparent;
-               border-color: transparent;
-               color: transparent;
-             }
-             input[type=range]::-ms-fill-lower {
-               background: #AEC8D8;
-               border: 1px solid #8A8A8A;
-               border-radius: 50px;
-               box-shadow: 0px 0px 0px #000000;
-             }
-             input[type=range]::-ms-fill-upper {
-               background: #AEC8D8;
-               border: 1px solid #8A8A8A;
-               border-radius: 50px;
-               box-shadow: 0px 0px 0px #000000;
-             }
-             input[type=range]::-ms-thumb {
-               margin-top: 1px;
-               box-shadow: 1px 1px 1px #828282;
-               border: 1px solid #8A8A8A;
-               height: 10px;
-               width: 14px;
-               border-radius: 2px;
-               background: #66757F;
-               cursor: pointer;
-             }
-             input[type=range]:focus::-ms-fill-lower {
-               background: #AEC8D8;
-             }
-             input[type=range]:focus::-ms-fill-upper {
-               background: #AEC8D8;
-             }
-
-            /* Page */
-
-            .more-menu {
-               /*width: 100px;*/
-            }
-
-            /* More Button / Dropdown Menu */
-
-            .more-btn,
-            .more-menu-btn {
-               background: none;
-               border: 0 none;
-               line-height: normal;
-               overflow: visible;
-               -webkit-user-select: none;
-               -moz-user-select: none;
-               -ms-user-select: none;
-               width: 100%;
-               text-align: left;
-               outline: none;
-               cursor: pointer;
-            }
-
-            .more-disabled {
-               cursor: default !important;
-            }
-
-            .more-disabled:hover {
-               background-color: white !important;
-            }
-
-            .more-dot {
-               background-color: #aab8c2;
-               margin: 0 auto;
-               display: inline-block;
-               width: 7px;
-               height: 7px;
-               margin-right: 1px;
-               border-radius: 50%;
-               transition: background-color 0.3s;
-            }
-
-            .more-menu {
-               position: absolute;
-               top: 42px;
-               z-index: 900;
-               /*float: left;*/
-               padding: 10px 0;
-               /*margin-top: 35px;*/
-               background-color: #fff;
-               border: 1px solid #ccd8e0;
-               border-radius: 4px;
-               box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
-               opacity: 0;
-               transform: translate(0, 15px) scale(.95);
-               transition: transform 0.1s ease-out, opacity 0.1s ease-out;
-               pointer-events: none;
-               right: 1px;
-            }
-
-            .more-menu-caret {
-               position: absolute;
-               top: -10px;
-               right: 10px;
-               width: 18px;
-               height: 10px;
-               float: left;
-               overflow: hidden;
-            }
-
-            .more-menu-caret-outer,
-            .more-menu-caret-inner {
-               position: absolute;
-               display: inline-block;
-               margin-left: -1px;
-               font-size: 0;
-               line-height: 1;
-            }
-
-            .more-menu-caret-outer {
-               border-bottom: 10px solid #c1d0da;
-               border-left: 10px solid transparent;
-               border-right: 10px solid transparent;
-               height: auto;
-               left: 0;
-               top: 0;
-               width: auto;
-            }
-
-            .more-menu-caret-inner {
-               top: 1px;
-               left: 1px;
-               border-left: 9px solid transparent;
-               border-right: 9px solid transparent;
-               border-bottom: 9px solid #fff;
-            }
-
-            .more-menu-items {
-               margin: 0;
-               list-style: none;
-               padding: 0;
-            }
-
-            .more-menu-item {
-               display: block;
-            }
-
-            .more-menu-btn {
-               min-width: 100%;
-               color: #66757f;
-               cursor: pointer;
-               display: block;
-               font-size: 13px;
-               line-height: 18px;
-               padding: 5px 10px;
-               position: relative;
-               white-space: nowrap;
-               font-size: 1.2em !important;
-            }
-
-            .more-menu-item:hover {
-               background-color: lightgray;
-            }
-
-            .more-menu-item:hover .more-menu-btn {
-               /*color: #fff;*/
-            }
-
-            .more-btn:hover .more-dot,
-            .show-more-menu .more-dot {
-               background-color: #516471;
-            }
-
-            .show-more-menu .more-menu {
-               opacity: 1;
-               transform: translate(0, 0) scale(1);
-               pointer-events: auto;
-            }
-
-            .cy-context-menus-cxt-menuitem {
-               padding-left: 5px !important;
-               font-size: 1.15em;
-               background-color:white;
-            }
-
-            .cy-context-menus-cxt-menuitem i {
-               padding-right: 10px !important;
-               color: gray;
-               max-width: 10px;
-            }
-
-            .cy-context-menus-cxt-menu {
-               border-radius: 2px;
-               border:1px solid lightgray;
-               -webkit-box-shadow: 4px 4px 6px 3px rgba(0,0,0,0.17);
-               -moz-box-shadow: 4px 4px 6px 3px rgba(0,0,0,0.17);
-               box-shadow: 4px 4px 6px 3px rgba(0,0,0,0.17);
-            }
-
-         </style>
-      ';
-   }
-
-   /**
     * Print the asset selection form used in the impact tab of ITIL objects
     *
+    * @param array $items
+    *
     * @since 9.5
     */
-   public static function printAssetSelectionForm($items) {
-
+   public static function printAssetSelectionForm(array $items) {
       global $CFG_GLPI;
 
-      // prepare values
+      // Dropdown values
       $values = [];
 
+      // Add a value in the dropdown for each items, grouped by type
       foreach ($items as $item) {
          if (isset($CFG_GLPI['impact_asset_types'][$item['itemtype']])) {
-            // Add itemtype if not found yet
-            $itemTypeLabel = __($item['itemtype']);
-            if (!isset($values[$itemTypeLabel])) {
-               $values[$itemTypeLabel] = [];
+            // Add itemtype group if it doesn't exist in the dropdown yet
+            $itemtype_label = __($item['itemtype']);
+            if (!isset($values[$itemtype_label])) {
+               $values[$itemtype_label] = [];
             }
 
             $key = $item['itemtype'] . "::" . $item['items_id'];
-            $values[$itemTypeLabel][$key] = $item['name'];
+            $values[$itemtype_label][$key] = $item['name'];
          }
       }
 
       Dropdown::showFromArray("impact_assets_selection_dropdown", $values);
       echo "<br><br>";
 
-      // Form interaction
+      // Form interaction: load a new graph on value change
       echo Html::scriptBlock('
          $(function() {
             var selector = "select[name=impact_assets_selection_dropdown]";
 
             $(selector).change(function(){
-               var value = $(selector + " option:selected").val();
-
-               // Ignore default value (Dropdown::EMPTY_VALUE)
-               if (value == "default") {
-                  return;
-               }
-
-               values = value.split("::");
+               var values = $(selector + " option:selected").val().split("::");
 
                $.ajax({
                   type: "POST",
@@ -585,9 +176,6 @@ class Impact extends CommonDBRelation {
                      itemID:     values[1],
                   },
                   success: function(data, textStatus, jqXHR) {
-                     console.log(data.graph);
-                     console.log(data.params);
-                     // data = ;
                      impact.buildNetwork(
                         JSON.parse(data.graph),
                         JSON.parse(data.params)
@@ -600,7 +188,7 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Load the impact network html content
+    * Load the impact network container
     *
     * @since 9.5
     */
@@ -609,47 +197,38 @@ class Impact extends CommonDBRelation {
       $formName = "form_impact_network";
 
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
-      echo "<table class='tab_cadre_fixe networkTable'>";
+      echo "<table class='tab_cadre_fixe network-table'>";
 
-      // First row : header
+      // First row: header
       echo "<tr class='tab_bg_2'>";
       echo "<th>" . __('Impact graph') . "</th>";
       echo "</tr>";
 
-      // Second row : network graph
-      echo "<tr><td class=\"networkParent\">";
+      // Second row: network graph
+      echo '<tr><td class="network-parent">';
       echo '<div class="impact_toolbar">';
-      $hidden = 'style="display: none;"';
-      // echo '<div>';
-      echo '<span id="helpText" ' . $hidden . '></span>';
-      // echo '</div>';
-      echo '<div id="impactTools">';
-      echo '<span id="saveImpact">' . __("Save") . '&nbsp;<i></i></span>';
+      echo '<span id="help_text"></span>';
+      echo '<div id="impact_tools">';
+      echo '<span id="save_impact">' . __("Save") . '&nbsp;<i></i></span>';
       echo '<span id="add_node"><i class="fas fa-plus"></i></span>';
       echo '<span id="add_edge"><i class="fas fa-marker"></i></span>';
-      echo '<span id="addCompound"><i class="far fa-square"></i></span>';
+      echo '<span id="add_compound"><i class="far fa-square"></i></span>';
       echo '<span id="delete_element"><i class="fas fa-trash"></i></span>';
-      echo '<span id="exportGraph"><i class="fas fa-download"></i></span>';
-      echo '<span id="expandToolbar"><i class="fas fa-ellipsis-v "></i></span>';
+      echo '<span id="export_graph"><i class="fas fa-download"></i></span>';
+      echo '<span id="expand_toolbar"><i class="fas fa-ellipsis-v "></i></span>';
       echo '</div>';
       self::printDropdownMenu();
       echo '</div>';
-      echo '<div id="networkContainer"></div>';
-      echo "</td></tr>";
-
-      // Third row : network graph options
-      echo "<tr><td>";
+      echo '<div id="network_container"></div>';
       echo "</td></tr>";
 
       echo "</table>";
-
-      // Hidden input to update the network graph
-      echo Html::input("impacts", [
-         'type' => 'hidden'
-      ]);
       Html::closeForm();
    }
 
+   /**
+    * Print the dropdown menu at the end of the toolbar
+    */
    public static function printDropdownMenu() {
       echo
          '<div class="more">' .
@@ -689,6 +268,7 @@ class Impact extends CommonDBRelation {
             '</div>' .
          "</div>";
 
+      // JS to show/hide the dropdown
       echo Html::scriptBlock("
          var el = document.querySelector('.more');
          var btn = $('.more')[0];
@@ -711,10 +291,9 @@ class Impact extends CommonDBRelation {
          }
 
          function hideMenu(e) {
-            if (e.target.id == 'expandToolbar') {
+            if (e.target.id == 'expand_toolbar') {
                return;
             }
-
             if (btn.contains(e.target)) {
                return;
             }
@@ -733,21 +312,9 @@ class Impact extends CommonDBRelation {
     *
     * @since 9.5
     *
-    * @param CommonDBTM $item    Current item
+    * @param CommonDBTM $item Current item
     *
     * @return array Array containing edges and nodes
-    *    See addNode and addEdge to learn the expected node and edge data
-    *   Example of a node :
-    *      'Computer::1' => [
-    *         'id'     => "Computer::1"
-    *         'label'  => "PC 1"
-    *      ]
-    *   Example of an edge :
-    *      'Computer::1->Computer::2' => [
-    *         'from'   => "Computer::1"
-    *         'to'     => "Computer::2"
-    *         'arrows' => "to"
-    *      ]
     */
    public static function buildGraph(CommonDBTM $item) {
       $nodes = [];
@@ -775,21 +342,22 @@ class Impact extends CommonDBRelation {
     *
     * @since 9.5
     *
-    * @param array      $edges         Edges of the graph
-    * @param array      $nodes         Nodes of the graph
-    * @param CommonDBTM $node          Current node
-    * @param int        $direction     The direction in which the graph
-    *    is being explored : DIRECTION_FORWARD or DIRECTION_BACKWARD
-    * @param array      $exploredNodes List of nodes that have already been
-    *    explored
+    * @param array      $edges          Edges of the graph
+    * @param array      $nodes          Nodes of the graph
+    * @param CommonDBTM $node           Current node
+    * @param int        $direction      The direction in which the graph
+    *                                   is being explored : DIRECTION_FORWARD
+    *                                   or DIRECTION_BACKWARD
+    * @param array      $explored_nodes List of nodes that have already been
+    *                                   explored
     */
    public static function buildGraphFromNode(
       array &$nodes,
       array &$edges,
       CommonDBTM $node,
       int $direction,
-      array $exploredNodes = []) {
-
+      array $explored_nodes = []
+   ) {
       global $DB;
 
       // Source and target are determined by the direction in which we are
@@ -819,26 +387,27 @@ class Impact extends CommonDBRelation {
          self::addNode($nodes, $node);
       }
 
-      foreach ($relations as $relatedItem) {
+      // Iterate on each relations found
+      foreach ($relations as $related_item) {
          // Add the related node
-         $relatedNode = new $relatedItem['itemtype_' . $source];
-         $relatedNode->getFromDB($relatedItem['items_id_' . $source]);
-         self::addNode($nodes, $relatedNode);
+         $related_node = new $related_item['itemtype_' . $source];
+         $related_node->getFromDB($related_item['items_id_' . $source]);
+         self::addNode($nodes, $related_node);
 
          // Add or update the relation on the graph
-         $edgeID = self::getEdgeID($node, $relatedNode, $direction);
-         self::addEdge($edges, $edgeID, $node, $relatedNode, $direction);
+         $edgeID = self::getEdgeID($node, $related_node, $direction);
+         self::addEdge($edges, $edgeID, $node, $related_node, $direction);
 
          // Keep exploring from this node unless we already went through it
-         $relatedNodeID = self::getNodeID($relatedNode);
-         if (!isset($exploredNodes[$relatedNodeID])) {
-            $exploredNodes[$relatedNodeID] = true;
+         $related_node_id = self::getNodeID($related_node);
+         if (!isset($explored_nodes[$related_node_id])) {
+            $explored_nodes[$related_node_id] = true;
             self::buildGraphFromNode(
                $nodes,
                $edges,
-               $relatedNode,
+               $related_node,
                $direction,
-               $exploredNodes
+               $explored_nodes
             );
          }
       }
@@ -862,54 +431,55 @@ class Impact extends CommonDBRelation {
       if (isset($nodes[$key])) {
          return false;
       }
-      $imageName = $CFG_GLPI["impact_asset_types"][get_class($item)];
-      $imagePath = __DIR__ . "/../$imageName";
 
-      // Add default image if needed
-      if (!file_exists($imagePath)) {
-         $imageName = "pics/impact/default.png";
+      // Get web path to the image matching the itemtype from config
+      $image_name = $CFG_GLPI["impact_asset_types"][get_class($item)];
+
+      // Add default image if the real path doesn't lead to an existing file
+      if (!file_exists(__DIR__ . "/../$image_name")) {
+         $image_name = "pics/impact/default.png";
       }
 
-      $newNode = [
+      // Define basic data of the new node
+      $new_node = [
          'id'          => $key,
          'label'       => $item->fields['name'],
-         'image'       => $CFG_GLPI['root_doc'] . "/$imageName",
+         'image'       => $CFG_GLPI['root_doc'] . "/$image_name",
          'ITILObjects' => $item->getITILTickets(true),
          'link'        => $item->getLinkURL()
       ];
 
-      $itilTicketsCount = $newNode['ITILObjects']['count'];
-      if ($itilTicketsCount > 0) {
-         $newNode['label'] .= " ($itilTicketsCount)";
-         $newNode['hasITILObjects'] = 1;
+      // Alter the label if we found some linked ITILObjects
+      $itil_tickets_count = $new_node['ITILObjects']['count'];
+      if ($itil_tickets_count > 0) {
+         $new_node['label'] .= " ($itil_tickets_count)";
+         $new_node['hasITILObjects'] = 1;
       }
 
-      // Search for ImpactItem object
-      $impactItem = ImpactItem::findForItem($item);
-
-      if (!$impactItem) {
-         $impactItem = new ImpactItem();
-         $newID = $impactItem->add([
+      // Load or create a new ImpactItem object
+      $impact_item = ImpactItem::findForItem($item);
+      if (!$impact_item) {
+         $impact_item = new ImpactItem();
+         $newID = $impact_item->add([
             'itemtype' => get_class($item),
             'items_id' => $item->getID()
          ]);
-         $impactItem->getFromDB($newID);
+         $impact_item->getFromDB($newID);
       }
 
-      // Load impactitem settings
-      $newNode['impactitem_id'] = $impactItem->fields['id'];
-      $newNode['parent'] = $impactItem->fields['parent_id'];
-      $newNode['position_x'] = $impactItem->fields['position_x'];
-      $newNode['position_y'] = $impactItem->fields['position_y'];
+      // Load node position and parent
+      $new_node['impactitem_id'] = $impact_item->fields['id'];
+      $new_node['parent']        = $impact_item->fields['parent_id'];
+      $new_node['position_x']    = $impact_item->fields['position_x'];
+      $new_node['position_y']    = $impact_item->fields['position_y'];
 
-      // Load parent compound
-      if (!empty($newNode['parent'])) {
+      // If the node has a parent, add it to the node list aswell
+      if (!empty($new_node['parent'])) {
          $compound = new ImpactCompound();
-         $compound->getFromDB($newNode['parent']);
+         $compound->getFromDB($new_node['parent']);
 
-         // Add parent compound if not loaded yet
-         if (!isset($nodes[$newNode['parent']])) {
-            $nodes[$newNode['parent']] = [
+         if (!isset($nodes[$new_node['parent']])) {
+            $nodes[$new_node['parent']] = [
                'id'    => $compound->fields['id'],
                'label' => $compound->fields['name'],
                'color' => $compound->fields['color'],
@@ -918,7 +488,7 @@ class Impact extends CommonDBRelation {
       }
 
       // Insert the node
-      $nodes[$key] = $newNode;
+      $nodes[$key] = $new_node;
       return true;
    }
 
@@ -940,8 +510,8 @@ class Impact extends CommonDBRelation {
       string $key,
       CommonDBTM $itemA,
       CommonDBTM $itemB,
-      int $direction) {
-
+      int $direction
+   ) {
       // Just update the flag if the edge already exist
       if (isset($edges[$key])) {
          $edges[$key]['flag'] = $edges[$key]['flag'] | $direction;
@@ -970,7 +540,7 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Build the vis.js object and insert it into the page
+    * Build the graph and the cytoscape object
     *
     * @since 9.5
     *
@@ -989,20 +559,26 @@ class Impact extends CommonDBRelation {
       ");
    }
 
+   /**
+    * Get saved graph params for the current item
+    *
+    * @param CommonDBTM $item
+    *
+    * @return string $item
+    */
    public static function prepareParams(CommonDBTM $item) {
-      // Add saved context for current node
-      $impactItem = ImpactItem::findForItem($item);
+      $impact_item = ImpactItem::findForItem($item);
 
       return json_encode([
-         'zoom'                     => $impactItem->fields['zoom'],
-         'pan_x'                    => $impactItem->fields['pan_x'],
-         'pan_y'                    => $impactItem->fields['pan_y'],
-         'impact_color'             => $impactItem->fields['impact_color'],
-         'depends_color'            => $impactItem->fields['depends_color'],
-         'impact_and_depends_color' => $impactItem->fields['impact_and_depends_color'],
-         'show_depends'             => $impactItem->fields['show_depends'],
-         'show_impact'              => $impactItem->fields['show_impact'],
-         'max_depth'                => $impactItem->fields['max_depth'],
+         'zoom'                     => $impact_item->fields['zoom'],
+         'pan_x'                    => $impact_item->fields['pan_x'],
+         'pan_y'                    => $impact_item->fields['pan_y'],
+         'impact_color'             => $impact_item->fields['impact_color'],
+         'depends_color'            => $impact_item->fields['depends_color'],
+         'impact_and_depends_color' => $impact_item->fields['impact_and_depends_color'],
+         'show_depends'             => $impact_item->fields['show_depends'],
+         'show_impact'              => $impact_item->fields['show_impact'],
+         'max_depth'                => $impact_item->fields['max_depth'],
       ]);
    }
 
@@ -1097,25 +673,19 @@ class Impact extends CommonDBRelation {
       echo "<table class='tab_cadre_fixe'>";
       echo "<tr>";
       echo "<td>";
-      Html::showColorField("depends_color", [
-         'value' => self::DEPENDS_COLOR
-      ]);
+      Html::showColorField("depends_color", []);
       echo "<label>&nbsp;" . __("Depends") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "<tr>";
       echo "<td>";
-      Html::showColorField("impact_color", [
-         'value' => self::IMPACT_COLOR
-      ]);
+      Html::showColorField("impact_color", []);
       echo "<label>&nbsp;" . __("Impact") . "</label>";
       echo "</td>";
       echo "</tr>";
       echo "<tr>";
       echo "<td>";
-      Html::showColorField("impact_and_depends_color", [
-         'value' => self::IMPACT_AND_DEPENDS_COLOR
-      ]);
+      Html::showColorField("impact_and_depends_color", []);
       echo "<label>&nbsp;" . __("Impact and depends") . "</label>";
       echo "</td>";
       echo "</tr>";
@@ -1185,7 +755,7 @@ class Impact extends CommonDBRelation {
    public static function prepareImpactNetwork(CommonGLPI $item) {
 
       // Load requirements
-      self::loadNetworkContainerStyle();
+      echo Html::css('css/impact.css');
       self::printImpactNetworkContainer();
       self::printAddNodeDialog();
       self::printColorConfigDialog();
@@ -1195,8 +765,8 @@ class Impact extends CommonDBRelation {
       // Print impact script
       echo Html::script("js/impact.js");
 
-      $locales   = self::getVisJSLocales();
-      $default   = "black";
+      $locales   = self::getLocales();
+      $default   = self::DEFAULT_COLOR;
       $forward   = self::IMPACT_COLOR;
       $backward  = self::DEPENDS_COLOR;
       $both      = self::IMPACT_AND_DEPENDS_COLOR;
@@ -1243,15 +813,15 @@ class Impact extends CommonDBRelation {
          ]
       ]);
       $toolbar = json_encode([
-         ['key'    => 'helpText',      'id' => "#helpText"],
-         ['key'    => 'tools',         'id' => "#impactTools"],
-         ['key'    => 'save',          'id' => "#saveImpact"],
+         ['key'    => 'helpText',      'id' => "#help_text"],
+         ['key'    => 'tools',         'id' => "#impact_tools"],
+         ['key'    => 'save',          'id' => "#save_impact"],
          ['key'    => 'addNode',       'id' => "#add_node"],
          ['key'    => 'addEdge',       'id' => "#add_edge"],
-         ['key'    => 'addCompound',   'id' => "#addCompound"],
+         ['key'    => 'addCompound',   'id' => "#add_compound"],
          ['key'    => 'deleteElement', 'id' => "#delete_element"],
-         ['key'    => 'export',        'id' => "#exportGraph"],
-         ['key'    => 'expandToolbar', 'id' => "#expandToolbar"],
+         ['key'    => 'export',        'id' => "#export_graph"],
+         ['key'    => 'expandToolbar', 'id' => "#expand_toolbar"],
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
@@ -1262,7 +832,7 @@ class Impact extends CommonDBRelation {
       // Get var from server side
       $js = "
          impact.prepareNetwork(
-            $(\"#networkContainer\"),
+            $(\"#network_container\"),
             '$locales',
             {
                default : '$default',
@@ -1437,11 +1007,11 @@ class Impact extends CommonDBRelation {
    }
 
    /**
-    * Build the visjs locales
+    * Build the locales that will be used in the client side
     *
     * @return string json encoded locales array
     */
-   public static function getVisJSLocales() {
+   public static function getLocales() {
       $locales = [
          'add'                  => __('Add'),
          'cancel'               => __('Cancel'),
