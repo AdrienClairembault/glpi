@@ -289,8 +289,8 @@ function update94to95() {
    $migration->addConfig(['impact_assets_list' => '[]']);
 
    // Impact dependencies
-   if (!$DB->tableExists('glpi_impacts')) {
-      $query = "CREATE TABLE `glpi_impacts` (
+   if (!$DB->tableExists('glpi_impactrelations')) {
+      $query = "CREATE TABLE `glpi_impactrelations` (
          `id` INT(11) NOT NULL AUTO_INCREMENT,
          `itemtype_source` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
          `items_id_source` INT(11) NOT NULL DEFAULT '0',

@@ -60,14 +60,9 @@ $item->getFromDB($itemID);
 $graph = Impact::makeDataForCytoscape(Impact::buildGraph($item));
 $params = Impact::prepareParams($item);
 
-// Remove array keys
-// $graph['nodes'] = array_values($graph['nodes']);
-// $graph['edges'] = array_values($graph['edges']);
-
 // Export graph to json
 $json = json_encode([
    'graph'  => $graph,
    'params' => $params
 ]);
 echo str_replace('\\\\', '\\', $json);
-// error_log($graph);

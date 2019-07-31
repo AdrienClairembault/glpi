@@ -1385,8 +1385,8 @@ INSERT INTO `glpi_configs` VALUES ('210','core','impact_assets_list','[]');
 
 ### Dump table glpi_impacts
 
-DROP TABLE IF EXISTS `glpi_impacts`;
-CREATE TABLE `glpi_impacts` (
+DROP TABLE IF EXISTS `glpi_impactrelations`;
+CREATE TABLE `glpi_impactrelations` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`itemtype_source` VARCHAR(255) NOT NULL DEFAULT '' COLLATE 'utf8_unicode_ci',
 	`items_id_source` INT(11) NOT NULL DEFAULT '0',

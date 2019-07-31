@@ -19,7 +19,7 @@ if (isset($_POST['impacts'])) {
    }
 
    // Save edge delta
-   $em = new Impact();
+   $em = new ImpactRelation();
    foreach ($data['edges'] as $impact) {
       // Extract action
       $action = $impact['action'];
@@ -31,6 +31,7 @@ if (isset($_POST['impacts'])) {
             break;
 
          case DELTA_ACTION_DELETE:
+            $impact['id'] = ImpactRelation::getIDFromInput($impact);
             $em->delete($impact);
             break;
 

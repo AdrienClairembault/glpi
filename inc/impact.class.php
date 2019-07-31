@@ -7,13 +7,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * @since 9.5.0
  */
-class Impact extends CommonDBRelation {
-   // Required by CommonDBRelation
-   static public $itemtype_1          = 'itemtype_source';
-   static public $items_id_1          = 'items_id_source';
-   static public $itemtype_2          = 'itemtype_impacted';
-   static public $items_id_2          = 'items_id_impacted';
-
+class Impact extends CommonDBTM {
    /* Constants used to express the direction or "flow" of a graph
       Theses constants can also be used to express if and edge is accessible
       when exploring the graph forward, backward or both (0b11) */
@@ -39,7 +33,7 @@ class Impact extends CommonDBRelation {
       if (isset($CFG_GLPI['impact_asset_types'][$class])) {
          // Tab name for an asset : get number of directs dependencies
          $total = count($DB->request([
-            'FROM'   => 'glpi_impacts',
+            'FROM'   => ImpactRelation::getTable(),
             'WHERE'  => [
                'OR' => [
                   [
@@ -261,7 +255,7 @@ class Impact extends CommonDBRelation {
                   '</li>' .
                   '<li id="color_picker" class="more-menu-item">' .
                      '<span class="more-menu-btn">' .
-                        '<input name="max_depth" type="range" min="1" max ="10" step="1" value="5">' .
+                        '<input id="max_depth" type="range" min="1" max ="10" step="1" value="5">' .
                      '</span>' .
                   '</li>' .
                '</ul>' .
@@ -375,7 +369,7 @@ class Impact extends CommonDBRelation {
 
       // Get relations of the current node
       $relations = $DB->request([
-         'FROM'   => 'glpi_impacts',
+         'FROM'   => ImpactRelation::getTable(),
          'WHERE'  => [
             'itemtype_' . $target => get_class($node),
             'items_id_' . $target => $node->getID()
@@ -593,14 +587,14 @@ class Impact extends CommonDBRelation {
    public static function makeDataForCytoscape(array $graph) {
       $data = [];
 
-      foreach ($graph['nodes'] as $id => $node) {
+      foreach ($graph['nodes'] as $node) {
          $data[] = [
             'group'    => 'nodes',
             'data'     => $node,
          ];
       }
 
-      foreach ($graph['edges'] as $id => $edge) {
+      foreach ($graph['edges'] as $edge) {
          $data[] = [
             'group' => 'edges',
             'data'  => $edge,
@@ -619,10 +613,10 @@ class Impact extends CommonDBRelation {
       global $CFG_GLPI;
       $rand = mt_rand();
 
-      echo '<div id="addNodeDialog" title="' . __('New asset') . '" class="impactDialog">';
+      echo '<div id="add_node_dialog" class="impact-dialog">';
       echo '<table class="tab_cadre_fixe">';
 
-      // Item type field
+      // First row: itemtype field
       echo "<tr>";
       echo "<td> <label>" . __('Item type') . "</label> </td>";
       echo "<td>";
@@ -639,7 +633,7 @@ class Impact extends CommonDBRelation {
       echo "</td>";
       echo "</tr>";
 
-      // Item id field
+      // Second row: items_id field
       echo "<tr>";
       echo "<td> <label>" . __('Item') . "</label> </td>";
       echo "<td>";
@@ -663,119 +657,100 @@ class Impact extends CommonDBRelation {
 
       echo "</table>";
       echo "</div>";
-
-      // This dialog will be built on the front end
-      echo '<div id="ongoingDialog"></div>';
    }
 
+   /**
+    * Load the "show ongoing tickets" dialog
+    *
+    * @since 9.5
+    */
+   public static function printShowOngoingDialog() {
+      // This dialog will be built dynamically on the front end
+      echo '<div id="ongoing_dialog"></div>';
+   }
+
+   /**
+    * Load the color configuration dialog
+    *
+    * @since 9.5
+    */
    public static function printColorConfigDialog() {
-      echo '<div id="configColorDialog" class="impactDialog">';
+      echo '<div id="color_config_dialog" class="impact-dialog">';
       echo "<table class='tab_cadre_fixe'>";
+
+      // First row: depends color field
       echo "<tr>";
       echo "<td>";
       Html::showColorField("depends_color", []);
       echo "<label>&nbsp;" . __("Depends") . "</label>";
       echo "</td>";
       echo "</tr>";
+
+      // Second row: impact color field
       echo "<tr>";
       echo "<td>";
       Html::showColorField("impact_color", []);
       echo "<label>&nbsp;" . __("Impact") . "</label>";
       echo "</td>";
       echo "</tr>";
+
+      // Third row: impact and depends color field
       echo "<tr>";
       echo "<td>";
       Html::showColorField("impact_and_depends_color", []);
       echo "<label>&nbsp;" . __("Impact and depends") . "</label>";
       echo "</td>";
       echo "</tr>";
-      echo "</table>";
-      echo "</div>";
-   }
 
-   public static function printExportDialog() {
-      echo '<div id="exportDialog" class="impactDialog">';
-      echo "<table>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<label>" . __("File format: ") . "</label>";
-      Dropdown::showFromArray("impact_format", [
-         'png' => "PNG",
-         'jpeg' => "JPEG",
-      ]);
-      echo "</td>";
-      echo "</tr>";
-      echo "<tr>";
-      echo "<td>";
-      echo Html::getCheckbox([
-         "id"    => "transparentBackground",
-         "name"  => "transparentBackground",
-         "title" => __("Transparent background (only available for png)")
-      ]);
-      echo "&nbsp;<label>" . __("Transparent background (only available for png)") . "</label>";
-      echo "</td>";
-      echo "</tr>";
-      echo "</table>";
-      echo "<a id=\"export_link\" href=\"\" download=\"impact.png\" style=\"display:none;\">";
-      echo "</div>";
-   }
-
-   public static function printEditCompoundDialog() {
-      echo '<div id="editCompoundDialog"  class="impactDialog">';
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<label>&nbsp;" . __("Name") . "</label>";
-      echo "</td>";
-      echo "<td>";
-      echo Html::input("compoundName", []);
-      echo "</td>";
-      echo "</tr>";
-      echo "<tr>";
-      echo "<td>";
-      echo "<label>&nbsp;" . __("Color") . "</label>";
-      echo "</td>";
-      echo "<td>";
-      Html::showColorField("compoundColor", [
-         'value' => '#d2d2d2'
-      ]);
-      echo "</td>";
-      echo "</tr>";
       echo "</table>";
       echo "</div>";
    }
 
    /**
-    * Prepare the impact network
+    * Load the "edit compound" dialog
     *
     * @since 9.5
-    *
-    * @param CommonGLPI $item The specified item
     */
-   public static function prepareImpactNetwork(CommonGLPI $item) {
+   public static function printEditCompoundDialog() {
+      echo '<div id="edit_compound_dialog"  class="impact-dialog">';
+      echo "<table class='tab_cadre_fixe'>";
 
-      // Load requirements
-      echo Html::css('css/impact.css');
-      self::printImpactNetworkContainer();
-      self::printAddNodeDialog();
-      self::printColorConfigDialog();
-      self::printExportDialog();
-      self::printEditCompoundDialog();
+      // First row: name field
+      echo "<tr>";
+      echo "<td>";
+      echo "<label>&nbsp;" . __("Name") . "</label>";
+      echo "</td>";
+      echo "<td>";
+      echo Html::input("compound_name", []);
+      echo "</td>";
+      echo "</tr>";
 
-      // Print impact script
-      echo Html::script("js/impact.js");
+      // Second row: color field
+      echo "<tr>";
+      echo "<td>";
+      echo "<label>&nbsp;" . __("Color") . "</label>";
+      echo "</td>";
+      echo "<td>";
+      Html::showColorField("compound_color", [
+         'value' => '#d2d2d2'
+      ]);
+      echo "</td>";
+      echo "</tr>";
 
-      $locales   = self::getLocales();
-      $default   = self::DEFAULT_COLOR;
-      $forward   = self::IMPACT_COLOR;
-      $backward  = self::DEPENDS_COLOR;
-      $both      = self::IMPACT_AND_DEPENDS_COLOR;
-      $startNode = self::getNodeID($item);
-      $form      = "form[name=form_impact_network]";
-      $dialogs   = json_encode([
+      echo "</table>";
+      echo "</div>";
+   }
+
+   /**
+    * Export the dialogs defined in the backend
+    *
+    * @return string
+    */
+   public static function exportDialogs() {
+      return json_encode([
          [
             'key'    => 'addNode',
-            'id'     => "#addNodeDialog",
+            'id'     => "#add_node_dialog",
             'inputs' => [
                'itemType' => "select[name=item_type]",
                'itemID'   => "select[name=item_id]"
@@ -783,7 +758,7 @@ class Impact extends CommonDBRelation {
          ],
          [
             'key'    => 'configColor',
-            'id'     => '#configColorDialog',
+            'id'     => '#edit_compound_dialog',
             'inputs' => [
                'dependsColor'          => "input[name=depends_color]",
                'impactColor'           => "input[name=impact_color]",
@@ -791,28 +766,27 @@ class Impact extends CommonDBRelation {
             ]
          ],
          [
-            'key'    => 'exportDialog',
-            'id'     => '#exportDialog',
-            'inputs' => [
-               'format'     => "select[name=impact_format]",
-               'background' => "#transparentBackground",
-               'link'       => "#export_link",
-            ]
-         ],
-         [
             'key' => "ongoingDialog",
-            'id'  => "#ongoingDialog"
+            'id'  => "#ongoing_dialog"
          ],
          [
             'key'    => "editCompoundDialog",
-            'id'     => "#editCompoundDialog",
+            'id'     => "#edit_compound_dialog",
             'inputs' => [
-               'name'  => "input[name=compoundName]",
-               'color' => "input[name=compoundColor]",
+               'name'  => "input[name=compound_name]",
+               'color' => "input[name=compound_color]",
             ]
          ]
       ]);
-      $toolbar = json_encode([
+   }
+
+   /**
+    * Export the toolbar defined in the backend
+    *
+    * @return string
+    */
+   public static function exportToolbar() {
+      return json_encode([
          ['key'    => 'helpText',      'id' => "#help_text"],
          ['key'    => 'tools',         'id' => "#impact_tools"],
          ['key'    => 'save',          'id' => "#save_impact"],
@@ -825,12 +799,40 @@ class Impact extends CommonDBRelation {
          ['key'    => 'toggleImpact',  'id' => "#toggle_impact"],
          ['key'    => 'toggleDepends', 'id' => "#toggle_depends"],
          ['key'    => 'colorPicker',   'id' => "#color_picker"],
-         ['key'    => 'maxDepth',      'id' => "input[name=max_depth]"],
+         ['key'    => 'maxDepth',      'id' => "#max_depth"],
          ['key'    => 'maxDepthView',  'id' => "#max_depth_view"],
       ]);
+    }
 
-      // Get var from server side
-      $js = "
+   /**
+    * Prepare the impact network
+    *
+    * @since 9.5
+    *
+    * @param CommonGLPI $item The specified item
+    */
+   public static function prepareImpactNetwork(CommonGLPI $item) {
+      // Load requirements
+      echo Html::css('css/impact.css');
+      self::printImpactNetworkContainer();
+      self::printAddNodeDialog();
+      self::printColorConfigDialog();
+      self::printEditCompoundDialog();
+      echo Html::script("js/impact.js");
+
+      // Load backend values
+      $locales   = self::getLocales();
+      $default   = self::DEFAULT_COLOR;
+      $forward   = self::IMPACT_COLOR;
+      $backward  = self::DEPENDS_COLOR;
+      $both      = self::IMPACT_AND_DEPENDS_COLOR;
+      $start_node = self::getNodeID($item);
+      $form      = "form[name=form_impact_network]";
+      $dialogs   = self::exportDialogs();
+      $toolbar   = self::exportToolbar();
+
+      // Bind the backend values to the client and start the network
+      echo  Html::scriptBlock("
          impact.prepareNetwork(
             $(\"#network_container\"),
             '$locales',
@@ -840,134 +842,46 @@ class Impact extends CommonDBRelation {
                backward: '$backward',
                both    : '$both',
             },
-            '$startNode',
+            '$start_node',
             '$form',
             '$dialogs',
             '$toolbar'
          )
-      ";
-
-      echo Html::scriptBlock($js);
+      ");
    }
 
    /**
-    * Add a new impact relation
+    * Check that a given asset exist in the DB
     *
-    * @param array $input   Array containing the new relations values
-    * @param array $options
-    * @param bool  $history
-    *
-    * @return int|bool id or false on failure
+    * @param string $itemtype Class of the asset
+    * @param string $items_id id of the asset
     */
-   public function add(array $input, $options = [], $history = true) {
-      global $DB;
-
-      // Check that mandatory values are set
-      $required = [
-         "itemtype_source",
-         "items_id_source",
-         "itemtype_impacted",
-         "items_id_impacted"
-      ];
-
-      if (array_diff($required, array_keys($input))) {
-         return false;
-      }
-
-      // Check that source and impacted are different items
-      if ($input['itemtype_source'] == $input['itemtype_impacted'] &&
-          $input['items_id_source'] == $input['items_id_impacted']) {
-         return false;
-      }
-
-      // Check for duplicate
-      $it = $DB->request([
-         'FROM'   => 'glpi_impacts',
-         'WHERE'  => [
-            'itemtype_source'   => $input['itemtype_source'],
-            'items_id_source'   => $input['items_id_source'],
-            'itemtype_impacted' => $input['itemtype_impacted'],
-            'items_id_impacted' => $input['items_id_impacted']
-         ]
-      ]);
-
-      if (count($it)) {
-         return false;
-      }
-
-      // Check if source and impacted are valid objets
-      if (!self::assetExist(
-            $input['itemtype_source'],
-            $input['items_id_source']) ||
-         !self::assetExist(
-            $input['itemtype_impacted'],
-            $input['items_id_impacted'])) {
-         return false;
-      }
-
-      return parent::add($input, $options, $history);
-   }
-
-   /**
-    * Delete an existing impact relation
-    *
-    * @param array $input   Array containing the impact to be deleted
-    * @param array $options
-    * @param bool  $history
-    *
-    * @return bool false on failure
-    */
-   public function delete(array $input, $options = [], $history = true) {
-      global $DB;
-
-      // Check that the link exist
-      $it = $DB->request([
-         'FROM'   => 'glpi_impacts',
-         'WHERE'  => [
-            'itemtype_source'   => $input['itemtype_source'],
-            'items_id_source'   => $input['items_id_source'],
-            'itemtype_impacted' => $input['itemtype_impacted'],
-            'items_id_impacted' => $input['items_id_impacted']
-         ]
-      ]);
-
-      if (count($it)) {
-         $input['id'] = $it->next()['id'];
-         return parent::delete($input, $options, $history);
-      }
-   }
-
-   /**
-    * Check that a given asset exist in the db
-    *
-    * @param string $itemType Class of the asset
-    * @param string $itemID id of the asset
-    */
-   public static function assetExist(string $itemType, string $itemID) {
+   public static function assetExist(string $itemtype, string $items_id) {
       global $CFG_GLPI;
 
       try {
          // Check this asset type is enabled
-         if (!isset($CFG_GLPI['impact_asset_types'][$itemType])) {
+         if (!isset($CFG_GLPI['impact_asset_types'][$itemtype])) {
             return false;
          }
 
-         $reflectionClass = new ReflectionClass($itemType);
-
-         if (!$reflectionClass->isInstantiable()) {
+         // Try to create an object matching the given item type
+         $reflection_class = new ReflectionClass($itemtype);
+         if (!$reflection_class->isInstantiable()) {
             return false;
          }
 
-         $asset = new $itemType();
-         return $asset->getFromDB($itemID);
+         // Look for a matching asset in the DB
+         $asset = new $itemtype();
+         return $asset->getFromDB($items_id);
       } catch (ReflectionException $e) {
-         // class does not exist
+         // Class does not exist
          return false;
       }
    }
 
    /**
-    * Create an ID for a node (ItemType::ItemID)
+    * Create an ID for a node (itemtype::items_id)
     *
     * @param CommonDBTM  $item Name of the node
     *

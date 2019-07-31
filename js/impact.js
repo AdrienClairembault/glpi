@@ -115,14 +115,6 @@ var impact = {
             impactAndDependsColor: null
          }
       },
-      exportDialog: {
-         id: null,
-         inputs: {
-            format    : null,
-            background: null,
-            link      : null
-         }
-      },
       ongoingDialog: {
          id: null
       },
@@ -659,6 +651,7 @@ var impact = {
       };
 
       return {
+         title: this.getLocale("new_asset"),
          modal: true,
          position: {
             my: 'center',
@@ -718,41 +711,6 @@ var impact = {
          draggable: false,
          title: this.getLocale("colorConfiguration"),
          buttons: [buttonUpdate]
-      };
-   },
-
-   /**
-    * Build the export dialog
-    *
-    * @param {JQuery} format
-    * @param {JQuery} transparentBackground
-    * @param {JQuery} link
-    *
-    * @returns {Object}
-    */
-   getExportDialog: function(format, transparentBackground, link) {
-      var exportButton = {
-         text: this.getLocale("export"),
-         click: function() {
-            impact.download(
-               format.find("option:selected").val(),
-               transparentBackground.is(':checked'),
-               link
-            );
-         }
-      };
-
-      return {
-         modal: true,
-         width: 'auto',
-         position: {
-            my: 'center',
-            at: 'center',
-            of: impact.impactContainer
-         },
-         draggable: false,
-         title: this.getLocale("export"),
-         buttons: [exportButton]
       };
    },
 
@@ -2371,14 +2329,6 @@ var impact = {
 
       // Export graph
       $(impact.toolbar.export).click(function() {
-         // Old behavior (advanced export, maybe add it to dropdown menu ?)
-         // $(impact.dialogs.exportDialog.id).dialog(impact.getExportDialog(
-         //    $(impact.dialogs.exportDialog.inputs.format),
-         //    $(impact.dialogs.exportDialog.inputs.background),
-         //    $(impact.dialogs.exportDialog.inputs.link)
-         // ));
-
-         // One shot download
          impact.download(
             'png',
             false,
