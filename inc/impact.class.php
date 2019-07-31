@@ -8,9 +8,9 @@ if (!defined('GLPI_ROOT')) {
  * @since 9.5.0
  */
 class Impact extends CommonDBTM {
-   /* Constants used to express the direction or "flow" of a graph
-      Theses constants can also be used to express if and edge is accessible
-      when exploring the graph forward, backward or both (0b11) */
+   // Constants used to express the direction or "flow" of a graph
+   // Theses constants can also be used to express if and edge is reachable
+   // when exploring the graph forward, backward or both (0b11)
    const DIRECTION_FORWARD    = 0b01;
    const DIRECTION_BACKWARD   = 0b10;
 
@@ -163,11 +163,11 @@ class Impact extends CommonDBTM {
                var values = $(selector + " option:selected").val().split("::");
 
                $.ajax({
-                  type: "POST",
+                  type: "GET",
                   url: "'. $CFG_GLPI['root_doc'] . '/ajax/impact.php",
                   data: {
-                     itemType:   values[0],
-                     itemID:     values[1],
+                     itemtype:   values[0],
+                     items_id:     values[1],
                   },
                   success: function(data, textStatus, jqXHR) {
                      impact.buildNetwork(
@@ -187,7 +187,7 @@ class Impact extends CommonDBTM {
     * @since 9.5
     */
    public static function printImpactNetworkContainer() {
-      $action = Toolbox::getItemTypeFormURL(__CLASS__);
+      $action = '../ajax/impact.php';
       $formName = "form_impact_network";
 
       echo "<form name=\"$formName\" action=\"$action\" method=\"post\">";
@@ -255,7 +255,7 @@ class Impact extends CommonDBTM {
                   '</li>' .
                   '<li id="color_picker" class="more-menu-item">' .
                      '<span class="more-menu-btn">' .
-                        '<input id="max_depth" type="range" min="1" max ="10" step="1" value="5">' .
+                        '<input id="max_depth" type="range" class="impact-range" min="1" max ="10" step="1" value="5">' .
                      '</span>' .
                   '</li>' .
                '</ul>' .
@@ -921,6 +921,69 @@ class Impact extends CommonDBTM {
    }
 
    /**
+    * Print the form for the global impact page
+    */
+   public static function printImpactForm() {
+      global $CFG_GLPI;
+      $rand = mt_rand();
+
+      echo "<form name=\"item\" action=\"{$_SERVER['PHP_SELF']}\" method=\"GET\">";
+
+      echo '<table class="tab_cadre_fixe" style="width:30%">';
+
+      // First row: header
+      echo "<tr>";
+      echo "<th colspan=\"2\">" . __('Impact analysis') . "</th>";
+      echo "</tr>";
+
+      // Second row: itemtype field
+      echo "<tr>";
+      echo "<td width=\"40%\"> <label>" . __('Item type') . "</label> </td>";
+      echo "<td>";
+      Dropdown::showItemTypes(
+         'type',
+         array_keys($CFG_GLPI['impact_asset_types']),
+         [
+            'value'        => null,
+            'width'        => '100%',
+            'emptylabel'   => Dropdown::EMPTY_VALUE,
+            'rand'         => $rand
+         ]
+      );
+      echo "</td>";
+      echo "</tr>";
+
+      // Third row: items_id field
+      echo "<tr>";
+      echo "<td> <label>" . __('Item') . "</label> </td>";
+      echo "<td>";
+      Ajax::updateItemOnSelectEvent("dropdown_type$rand", "form_results",
+         $CFG_GLPI["root_doc"] . "/ajax/dropdownTrackingDeviceType.php",
+         [
+            'itemtype'        => '__VALUE__',
+            'entity_restrict' => 0,
+            'multiple'        => 1,
+            'admin'           => 1,
+            'rand'            => $rand,
+            'myname'          => "id",
+         ]
+      );
+      echo "<span id='form_results'>\n";
+      echo "</span>\n";
+      echo "</td>";
+      echo "</tr>";
+
+      // Fourth row: submit
+      echo "<tr><td colspan=\"2\" style=\"text-align:center\">";
+      echo Html::submit(__("Show impact analysis"));
+      echo "</td></tr>";
+
+      echo "</table>";
+      echo "<br><br>";
+      Html::closeForm();
+   }
+
+   /**
     * Build the locales that will be used in the client side
     *
     * @return string json encoded locales array
@@ -928,61 +991,62 @@ class Impact extends CommonDBTM {
    public static function getLocales() {
       $locales = [
          'add'                  => __('Add'),
-         'cancel'               => __('Cancel'),
-         'edit'                 => __('Edit'),
-         'del'                  => __('Delete selected'),
-         'back'                 => __('Back'),
-         'addNode'              => __('Add Asset'),
-         'addEdge'              => __('Add Impact relation'),
-         'editNode'             => __('Edit Asset'),
-         'editEdge'             => __('Edit Impact relation'),
          'addDescription'       => __('Click in an empty space to place a new asset.'),
-         'edgeDescription'      => __('Click on an asset and drag the link to another asset to connect them.'),
-         'editEdgeDescription'  => __('Click on the control points and drag them to a asset to connect to it.'),
-         'createEdgeError'      => __('Cannot link edges to a cluster.'),
-         'deleteClusterError'   => __('Clusters cannot be deleted.'),
-         'editClusterError'     => __('Clusters cannot be edited.'),
-         'duplicateAsset'       => __('This asset already exists.'),
-         'linkToSelf'           => __("Can't link an asset to itself."),
-         'duplicateEdge'        => __("An identical link already exist between theses two asset."),
-         'unexpectedError'      => __("Unexpected error."),
-         'Incidents'            => __("Incidents"),
-         'Requests'             => __("Requests"),
-         'Changes'              => __("Changes"),
-         'Problems'             => __("Problems"),
-         'showDepends'          => __("Depends"),
-         'showImpact'           => __("Impact"),
+         'addEdge'              => __('Add Impact relation'),
+         'addEdgeHelpText'      => __("Draw a line between two assets to add an impact relation"),
+         'addNode'              => __('Add Asset'),
+         'addNodeHelpText'      => __("Click anywhere to add a new asset"),
+         'addCompoundHelpText'  => __("Draw a square containing the assets you wish to group"),
+         'addCompoundTooltip'   => __("Create a new group"),
+         'addEdgeTooltip'       => __("Add a new impact relation"),
+         'addNodeTooltip'       => __("Add a new asset to the impact network"),
+         'back'                 => __('Back'),
+         'cancel'               => __('Cancel'),
+         'changes'              => __("Changes"),
          'colorConfiguration'   => __("Colors"),
+         'compoundProperties'   => __("Group properties..."),
+         'compoundProperties+'  => __("Set name and/or color for this group"),
+         'createEdgeError'      => __('Cannot link edges to a cluster.'),
+         'del'                  => __('Delete selected'),
+         'delete'               => __("Delete"),
+         'delete+'              => __("Delete element"),
+         'deleteClusterError'   => __('Clusters cannot be deleted.'),
+         'deleteHelpText'       => __("Click on an element to remove it from the network"),
+         'deleteTooltip'        => __("Delete an element from the impact network"),
+         'downloadTooltip'      => __("Export the impact network"),
+         'duplicateAsset'       => __('This asset already exists.'),
+         'duplicateEdge'        => __("An identical link already exist between theses two asset."),
+         'edgeDescription'      => __('Click on an asset and drag the link to another asset to connect them.'),
+         'edit'                 => __('Edit'),
+         'editEdge'             => __('Edit Impact relation'),
+         'editEdgeDescription'  => __('Click on the control points and drag them to a asset to connect to it.'),
+         'editGroup'            => __("Edit group"),
+         'editNode'             => __('Edit Asset'),
+         'editClusterError'     => __('Clusters cannot be edited.'),
+         'expandToolbarTooltip' => __("Show more options ..."),
          'export'               => __("Export"),
          'goTo'                 => __("Go to"),
          'goTo+'                => __("Open this element in a new tab"),
-         'showOngoing'          => __("Show ongoing tickets"),
-         'showOngoing+'         => __("Show ongoing tickets for this item"),
-         'delete'               => __("Delete"),
-         'delete+'              => __("Delete element"),
+         'incidents'            => __("Incidents"),
+         'linkToSelf'           => __("Can't link an asset to itself."),
          'new'                  => __("Add asset"),
          'new+'                 => __("Add a new asset to the graph"),
+         'newAsset'             => __("New asset"),
+         'notEnoughItems'       => __("You need to select at least 2 assets to make a group"),
+         'ongoingTickets'       => __("Ongoing tickets"),
+         'problems'             => __("Problems"),
          'removeFromCompound'   => __("Remove from group"),
          'removeFromCompound+'  => __("Remove this asset from the group"),
-         'ongoingTickets'       => __("Ongoing tickets"),
-         'addNodeTooltip'       => __("Add a new asset to the impact network"),
-         'addEdgeTooltip'       => __("Add a new impact relation"),
-         'addCompoundTooltip'   => __("Create a new group"),
-         'deleteTooltip'        => __("Delete an element from the impact network"),
-         'downloadTooltip'      => __("Export the impact network"),
-         'expandToolbarTooltip' => __("Show more options ..."),
-         'showImpactTooltip'    => __("Toggle \"impacted\" visibility"),
-         'showDependsTooltip'   => __("Toggle \"depends\" visibility"),
-         'showColorsTooltip'    => __("Edit relation's color"),
-         'addNodeHelpText'      => __("Click anywhere to add a new asset"),
-         'addEdgeHelpText'      => __("Draw a line between two assets to add an impact relation"),
-         'addCompoundHelpText'  => __("Draw a square containing the assets you wish to group"),
-         'deleteHelpText'       => __("Click on an element to remove it from the network"),
-         'editGroup'            => __("Edit group"),
+         'requests'             => __("Requests"),
          'save'                 => __("Save"),
-         'notEnoughItems'       => __("You need to select at least 2 assets to make a group"),
-         'compoundProperties'   => __("Group properties..."),
-         'compoundProperties+'  => __("Set name and/or color for this group"),
+         'showDepends'          => __("Depends"),
+         'showImpact'           => __("Impact"),
+         'showColorsTooltip'    => __("Edit relation's color"),
+         'showDependsTooltip'   => __("Toggle \"depends\" visibility"),
+         'showImpactTooltip'    => __("Toggle \"impacted\" visibility"),
+         'showOngoing'          => __("Show ongoing tickets"),
+         'showOngoing+'         => __("Show ongoing tickets for this item"),
+         'unexpectedError'      => __("Unexpected error."),
          'unsavedChanges'       => __("You have unsaved changes"),
          'workspaceSaved'       => __("No unsaved changes"),
       ];

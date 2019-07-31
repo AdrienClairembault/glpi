@@ -29,43 +29,34 @@
  * ---------------------------------------------------------------------
  */
 
-// Global to store event data;
-var eventData = {
-   addEdgeStart: null, // Store starting node of a new edge
-   tmpEles     : null, // Temporary collection used when adding an edge
-   boxSelected : [],
-   lastClick : null // Store last click timestamp
-};
-
 // Constants to represent nodes and edges
 var NODE = 1;
 var EDGE = 2;
 
-// Constant for graph direction (bitmask)
+// Constants for graph direction (bitmask)
 var DEFAULT  = 0;   // 0b00
 var FORWARD  = 1;   // 0b01
 var BACKWARD = 2;   // 0b10
 var BOTH     = 3;   // 0b11
 
-// Constant for graph edition mode
+// Constants for graph edition mode
 var EDITION_DEFAULT      = 1;
 var EDITION_ADD_NODE     = 2;
 var EDITION_ADD_EDGE     = 3;
 var EDITION_DELETE       = 4;
 var EDITION_ADD_COMPOUND = 5;
 
-// Constant for ID separator
+// Constants for ID separator
 var NODE_ID_SEPERATOR = "::";
 var EDGE_ID_SEPERATOR = "->";
 
-// Const for delta action
+// Constants for delta action
 var DELTA_ACTION_ADD    = 1;
 var DELTA_ACTION_UPDATE = 2;
 var DELTA_ACTION_DELETE = 3;
 
 // Load cytoscape
 var cytoscape = window.cytoscape;
-
 var impact = {
 
    // Store the initial state of the graph
@@ -74,7 +65,7 @@ var impact = {
    // Store translated labels
    locales: {},
 
-   // Store if the different direction of the graph should be colorized
+   // Store the visibility settings of the different direction of the graph
    directionVisibility: {},
 
    // Store color for egdes
@@ -145,6 +136,16 @@ var impact = {
       maxDepthView : null,
    },
 
+   // Data that needs to be stored/shared between events
+   eventData: {
+      addEdgeStart : null,   // Store starting node of a new edge
+      tmpEles      : null,   // Temporary collection used when adding an edge
+      lastClick    : null,   // Store last click timestamp
+      boxSelected  : [],
+      grabNodeStart: null,
+      boundingBox  : null
+   },
+
    /**
     * Get network style
     *
@@ -209,7 +210,7 @@ var impact = {
                'background-fit'    : 'contain',
                'background-opacity': '0',
                'font-size'         : '1em',
-               'text-opacity'      : 0.7
+               'text-opacity'      : 0.7,
             }
          },
          {
@@ -286,16 +287,6 @@ var impact = {
          name: 'dagre',
          rankDir: 'LR',
          fit: false
-
-         // transform: function(node, position) {
-            // var sin = 1 // Math.sin(90 * (Math.PI / 180));
-            // var cos = 0; // Math.cos(360 * (Math.PI / 180));
-
-            // return {
-               // x: position.x * cos - position.y * sin,
-               // y: position.x * sin + position.y * cos
-            // };
-         // }
       };
    },
 
@@ -305,7 +296,7 @@ var impact = {
     * @returns {Object}
     */
    getCurrentState: function() {
-      var data = {edges: {}, compounds: {}, parents: {}};
+      var data = {edges: {}, compounds: {}, items: {}};
 
       // Load edges
       impact.cy.edges().forEach(function(edge) {
@@ -323,9 +314,9 @@ var impact = {
          };
       });
 
-      // Load parents
+      // Load items
       impact.cy.filter("node:childless").forEach(function(node) {
-         data.parents[node.data('id')] = {
+         data.items[node.data('id')] = {
             impactitem_id: node.data('impactitem_id'),
             parent       : node.data('parent'),
             position     : node.position()
@@ -348,7 +339,7 @@ var impact = {
          var edge = impact.initialState.edges[edgeID];
          if (currentEdges.hasOwnProperty(edgeID)) {
             // If the edge is still here in the current state, nothing happened
-            // Remove it from the currentEdges data
+            // Remove it from the currentEdges data so we can skip it later
             delete currentEdges[edgeID];
          } else {
             // If the edge is missing in the current state, it has been deleted
@@ -366,7 +357,7 @@ var impact = {
 
       // Now iterate on the edges we have in the current state
       // Since we removed the edges that were not modified in the previous step,
-      // the remaining edges are new ones
+      // the remaining edges can only be new ones
       Object.keys(currentEdges).forEach(function (edgeID) {
          var edge = currentEdges[edgeID];
          var source = edge.source.split(NODE_ID_SEPERATOR);
@@ -435,50 +426,19 @@ var impact = {
     *
     * @returns {Object}
     */
-   computeParentsDelta: function(currentParents) {
-      var parentsDelta = {};
-
-      // // First iterate on the parents we had in the initial state
-      // Object.keys(impact.initialState.parents).forEach(function(nodeID) {
-         // var parent = impact.initialState.parents[nodeID];
-      //    if (currentParents.hasOwnProperty(nodeID)) {
-      //       // If the node still have a parrent in the current state
-      //       var currentParent = currentParents[nodeID];
-
-      //       // Check for updates ...
-      //       if (parent != currentParent) {
-      //          var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
-      //          parentsDelta[nodeID] = {
-      //             action   : DELTA_ACTION_UPDATE,
-      //             parent_id: currentParent,
-      //             itemtype : nodeDetails[0],
-      //             items_id : nodeDetails[1]
-      //          }
-      //       }
-
-      //       // Remove it from the currentParents data
-      //       delete currentParents[nodeID];
-      //    } else {
-      //       // If the parent is missing in the current state, it's been deleted
-      //       var nodeDetails = nodeID.split(NODE_ID_SEPERATOR);
-      //       parentsDelta[nodeID] = {
-      //          action           : DELTA_ACTION_DELETE,
-      //          itemtype : nodeDetails[0],
-      //          items_id : nodeDetails[1]
-      //       };
-      //    }
-      // });
+   computeItemsDelta: function(currentNodes) {
+      var itemsDelta = {};
 
       // Prepare position map
-      var nodes_positions = {};
+      var nodesPositions = {};
       impact.cy.filter("node:childless").forEach(function(node) {
-         nodes_positions[node.data('id')] = node.position();
+         nodesPositions[node.data('id')] = node.position();
       });
 
       // Now iterate on the parents we have in the current state
-      Object.keys(currentParents).forEach(function (nodeID) {
-         var node = currentParents[nodeID];
-         parentsDelta[node.impactitem_id] = {
+      Object.keys(currentNodes).forEach(function (nodeID) {
+         var node = currentNodes[nodeID];
+         itemsDelta[node.impactitem_id] = {
             action   : DELTA_ACTION_UPDATE,
             parent_id: node.parent,
          };
@@ -490,7 +450,7 @@ var impact = {
 
          if (nodeID == impact.startNode) {
             // Starting node of the graph, save viewport and edge colors
-            parentsDelta[node.impactitem_id] = {
+            itemsDelta[node.impactitem_id] = {
                action                  : DELTA_ACTION_UPDATE,
                parent_id               : node.parent,
                position_x              : node.position.x,
@@ -501,24 +461,24 @@ var impact = {
                impact_color            : impact.edgeColors[FORWARD],
                depends_color           : impact.edgeColors[BACKWARD],
                impact_and_depends_color: impact.edgeColors[BOTH],
-               nodes_positions         : nodes_positions,
+               nodes_positions         : nodesPositions,
                show_depends            : impact.directionVisibility[BACKWARD],
                show_impact             : impact.directionVisibility[FORWARD],
                max_depth               : impact.maxDepth,
             };
          } else {
             // Others nodes of the graph, store only their parents and position
-            parentsDelta[node.impactitem_id] = {
-               action   : DELTA_ACTION_UPDATE,
-               parent_id: node.parent,
-               position_x              : node.position.x,
-               position_y              : node.position.y,
+            itemsDelta[node.impactitem_id] = {
+               action    : DELTA_ACTION_UPDATE,
+               parent_id : node.parent,
+               position_x: node.position.x,
+               position_y: node.position.y,
             };
          }
 
       });
 
-      return parentsDelta;
+      return itemsDelta;
    },
 
    /**
@@ -536,7 +496,7 @@ var impact = {
       // Compute each deltas
       result.edges = this.computeEdgeDelta(currentState.edges);
       result.compounds = this.computeCompoundsDelta(currentState.compounds);
-      result.parents = this.computeParentsDelta(currentState.parents);
+      result.items = this.computeItemsDelta(currentState.items);
 
       return result;
    },
@@ -608,14 +568,13 @@ var impact = {
          text: impact.getLocale("add"),
          click: function() {
             var node = {
-               itemType: $(itemID).val(),
-               itemID  : $(itemType).val(),
+               itemtype: $(itemID).val(),
+               items_id: $(itemType).val(),
             };
-            var nodeID = impact.makeID(NODE, node.itemType, node.itemID);
+            var nodeID = impact.makeID(NODE, node.itemtype, node.items_id);
 
             // Check if the node is already on the graph
-            if (impact.cy.filter('node[id="' + nodeID + '"]')
-               .length > 0) {
+            if (impact.cy.filter('node[id="' + nodeID + '"]').length > 0) {
                alert(impact.getLocale("duplicateAsset"));
                return;
             }
@@ -651,7 +610,7 @@ var impact = {
       };
 
       return {
-         title: this.getLocale("new_asset"),
+         title: this.getLocale("newAsset"),
          modal: true,
          position: {
             my: 'center',
@@ -1080,12 +1039,15 @@ var impact = {
     */
    updateStyle: function() {
       this.cy.style(this.getNetworkStyle());
-      // Hide orphan edges
-      this.cy.nodes().forEach(function(node) {
-         if (!node.visible()) {
-            node.connectedEdges().data('depth', Number.MAX_VALUE);
+      // If either the source of the target node of an edge is hidden, hide the
+      // edge too by setting it's dept to the maximum value
+      this.cy.edges().forEach(function(edge) {
+         var source = impact.cy.filter(impact.makeIDSelector(edge.data('source')));
+         var target = impact.cy.filter(impact.makeIDSelector(edge.data('target')));
+         if (source.visible() && target.visible()) {
+            edge.data('depth', 0);
          } else {
-            node.connectedEdges().data('depth', 0);
+            edge.data('depth', Number.MAX_VALUE);
          }
       });
    },
@@ -1459,7 +1421,7 @@ var impact = {
          case EDITION_ADD_EDGE:
             $(impact.toolbar.addEdge).removeClass("active");
             // Empty event data and remove tmp node
-            eventData.addEdgeStart = null;
+            impact.eventData.addEdgeStart = null;
             impact.cy.filter("#tmp_node").remove();
             break;
 
@@ -1593,7 +1555,18 @@ var impact = {
    /**
     * Enable the save button
     */
-   showSave: function() {
+   showCleanWorkspaceStatus: function() {
+      $(impact.toolbar.save).removeClass('dirty');
+      $(impact.toolbar.save).addClass('clean');
+      $(impact.toolbar.save).find('i').removeClass("fas fa-exclamation-triangle");
+      $(impact.toolbar.save).find('i').addClass("fas fa-check");
+      $(impact.toolbar.save).find('i').qtip(impact.getTooltip("workspaceSaved"));
+   },
+
+   /**
+    * Enable the save button
+    */
+   showDirtyWorkspaceStatus: function() {
       $(impact.toolbar.save).removeClass('clean');
       $(impact.toolbar.save).addClass('dirty');
       $(impact.toolbar.save).find('i').removeClass("fas fa-check");
@@ -1619,10 +1592,10 @@ var impact = {
     * @returns {string}
     */
    buildOngoingDialogContent: function(ITILObjects) {
-      return this.listElements("Requests", ITILObjects.requests, "ticket")
-         + this.listElements("Incidents", ITILObjects.incidents, "ticket")
-         + this.listElements("Changes", ITILObjects.changes , "change")
-         + this.listElements("Problems", ITILObjects.problems, "problem");
+      return this.listElements("requests", ITILObjects.requests, "ticket")
+         + this.listElements("incidents", ITILObjects.incidents, "ticket")
+         + this.listElements("changes", ITILObjects.changes , "change")
+         + this.listElements("problems", ITILObjects.problems, "problem");
    },
 
    /**
@@ -1657,14 +1630,14 @@ var impact = {
     */
    addCompoundFromSelection: _.debounce(function(){
       // Check that there is enough selected nodes
-      if (eventData.boxSelected.length < 2) {
+      if (impact.eventData.boxSelected.length < 2) {
          alert(impact.getLocale("notEnoughItems"));
       } else {
          // Create the compound
          var newCompound = impact.cy.add({group: 'nodes'});
 
          // Set parent for coumpound member
-         eventData.boxSelected.forEach(function(ele) {
+         impact.eventData.boxSelected.forEach(function(ele) {
             ele.move({'parent': newCompound.data('id')});
          });
 
@@ -1678,7 +1651,7 @@ var impact = {
       }
 
       // Clear the selection
-      eventData.boxSelected = [];
+      impact.eventData.boxSelected = [];
       impact.cy.filter(":selected").unselect();
    }, 100, false),
 
@@ -1776,14 +1749,14 @@ var impact = {
    nodeOnClick: function (event) {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
-            if (eventData.lastClick != null) {
+            if (impact.eventData.lastClick != null) {
                // Trigger homemade double click event
-               if (event.timeStamp - eventData.lastClick < 500) {
+               if (event.timeStamp - impact.eventData.lastClick < 500) {
                   event.target.trigger('doubleClick', event);
                }
             }
 
-            eventData.lastClick = event.timeStamp;
+            impact.eventData.lastClick = event.timeStamp;
             break;
 
          case EDITION_ADD_NODE:
@@ -1821,7 +1794,7 @@ var impact = {
             var ele = event.target;
             // Add node to selected list if he is not part of a compound already
             if (ele.isNode() && ele.isOrphan() && !ele.isParent()) {
-               eventData.boxSelected.push(ele);
+               impact.eventData.boxSelected.push(ele);
             }
             impact.addCompoundFromSelection();
             break;
@@ -1834,7 +1807,7 @@ var impact = {
     * @param {*} event
     */
    onChange: function(event) {
-      impact.showSave();
+      impact.showDirtyWorkspaceStatus();
    },
 
    /**
@@ -1887,7 +1860,7 @@ var impact = {
 
             // If we are not on a compound node or a node already inside one
             if (event.target.isOrphan() && !event.target.isParent()) {
-               eventData.grabNodeStart = event.target;
+               impact.eventData.grabNodeStart = event.target;
             }
             break;
 
@@ -1896,7 +1869,7 @@ var impact = {
 
          case EDITION_ADD_EDGE:
             if (!event.target.isParent()) {
-               eventData.addEdgeStart = this.data('id');
+               impact.eventData.addEdgeStart = this.data('id');
             }
             break;
 
@@ -1919,10 +1892,10 @@ var impact = {
             $(impact.impactContainer).css('cursor', "grab");
 
             // Check if we were grabbing a node
-            if (eventData.grabNodeStart != null) {
+            if (impact.eventData.grabNodeStart != null) {
                // Reset eventData for node grabbing
-               eventData.grabNodeStart = null;
-               eventData.boundingBox = null;
+               impact.eventData.grabNodeStart = null;
+               impact.eventData.boundingBox = null;
             }
 
             break;
@@ -1932,17 +1905,17 @@ var impact = {
 
          case EDITION_ADD_EDGE:
             // Exit if no start node
-            if (eventData.addEdgeStart == null) {
+            if (impact.eventData.addEdgeStart == null) {
                return;
             }
 
             // Reset addEdgeStart
-            var startEdge = eventData.addEdgeStart; // Keep a copy to use later
-            eventData.addEdgeStart = null;
+            var startEdge = impact.eventData.addEdgeStart; // Keep a copy to use later
+            impact.eventData.addEdgeStart = null;
 
             // Remove current tmp collection
-            event.cy.remove(eventData.tmpEles);
-            eventData.tmpEles = null;
+            event.cy.remove(impact.eventData.tmpEles);
+            impact.eventData.tmpEles = null;
 
             // Option 1: Edge between a node and the fake tmp_node -> ignore
             if (this.data('id') == 'tmp_node') {
@@ -1989,7 +1962,7 @@ var impact = {
       switch (impact.editionMode) {
          case EDITION_DEFAULT:
             // No action if we are not grabbing a node
-            if (eventData.grabNodeStart == null) {
+            if (impact.eventData.grabNodeStart == null) {
                return;
             }
 
@@ -2003,27 +1976,27 @@ var impact = {
                // being placed into a compound, we need to check if it was moved
                // outside this original bouding box to know if the user is trying
                // to move if away from the compound
-               if (eventData.boundingBox != null) {
+               if (impact.eventData.boundingBox != null) {
                   // If the user tried to move out of the compound
-                  if (eventData.boundingBox.x1 > event.position.x
-                     || eventData.boundingBox.x2 < event.position.x
-                     || eventData.boundingBox.y1 > event.position.y
-                     || eventData.boundingBox.y2 < event.position.y) {
+                  if (impact.eventData.boundingBox.x1 > event.position.x
+                     || impact.eventData.boundingBox.x2 < event.position.x
+                     || impact.eventData.boundingBox.y1 > event.position.y
+                     || impact.eventData.boundingBox.y2 < event.position.y) {
                      // Remove it from the compound
-                     eventData.grabNodeStart.move({parent: null});
-                     eventData.boundingBox = null;
+                     impact.eventData.grabNodeStart.move({parent: null});
+                     impact.eventData.boundingBox = null;
                   }
                } else {
                   // If we found a compound, add the grabbed node inside
-                  eventData.grabNodeStart.move({parent: node.data('id')});
+                  impact.eventData.grabNodeStart.move({parent: node.data('id')});
 
                   // Store the original bouding box of the compound
-                  eventData.boundingBox = node.boundingBox();
+                  impact.eventData.boundingBox = node.boundingBox();
                }
             } else {
                // Else; reset it's parent so it can be removed from any temporary
                // compound while the user is stil grabbing
-               eventData.grabNodeStart.move({parent: null});
+               impact.eventData.grabNodeStart.move({parent: null});
             }
 
             break;
@@ -2033,20 +2006,20 @@ var impact = {
 
          case EDITION_ADD_EDGE:
             // No action if we are not placing an edge
-            if (eventData.addEdgeStart == null) {
+            if (impact.eventData.addEdgeStart == null) {
                return;
             }
 
             // Remove current tmp collection
-            if (eventData.tmpEles != null) {
-               event.cy.remove(eventData.tmpEles);
+            if (impact.eventData.tmpEles != null) {
+               event.cy.remove(impact.eventData.tmpEles);
             }
 
             var node = impact.getNodeAt(event.position, function(node) {
                var nodeID = node.data('id');
 
                // Can't link to itself
-               if (nodeID == eventData.addEdgeStart) {
+               if (nodeID == impact.eventData.addEdgeStart) {
                   return false;
                }
 
@@ -2056,7 +2029,7 @@ var impact = {
                }
 
                // The created edge shouldn't already exist
-               var edgeID = impact.makeID(EDGE, eventData.addEdgeStart, nodeID);
+               var edgeID = impact.makeID(EDGE, impact.eventData.addEdgeStart, nodeID);
                if (impact.cy.filter('edge[id="' + edgeID + '"]').length > 0) {
                   return false;
                }
@@ -2073,19 +2046,19 @@ var impact = {
                node = node.data('id');
 
                // Add temporary edge to node hovered by the user
-               eventData.tmpEles = event.cy.add([
+               impact.eventData.tmpEles = event.cy.add([
                   {
                      group: 'edges',
                      data: {
-                        id: impact.makeID(EDGE, eventData.addEdgeStart, node),
-                        source: eventData.addEdgeStart,
+                        id: impact.makeID(EDGE, impact.eventData.addEdgeStart, node),
+                        source: impact.eventData.addEdgeStart,
                         target: node
                      }
                   }
                ]);
             } else {
                // Add temporary edge to a new invisible node at mouse position
-               eventData.tmpEles = event.cy.add([
+               impact.eventData.tmpEles = event.cy.add([
                   {
                      group: 'nodes',
                      data: {
@@ -2101,10 +2074,10 @@ var impact = {
                      data: {
                         id: impact.makeID(
                            EDGE,
-                           eventData.addEdgeStart,
+                           impact.eventData.addEdgeStart,
                            "tmp_node"
                         ),
-                        source: eventData.addEdgeStart,
+                        source: impact.eventData.addEdgeStart,
                         target: 'tmp_node',
                      }
                   }
@@ -2276,31 +2249,22 @@ var impact = {
    initToolbar: function() {
       // Save the graph
       $(impact.toolbar.save).click(function() {
+         impact.showCleanWorkspaceStatus();
          // Send data as JSON on submit
          $.ajax({
             type: "POST",
             url: $(impact.form).prop('action'),
             data: {
-               'impacts': JSON.stringify(impact.computeDelta()),
-               '_glpi_csrf_token': $(impact.form).find('input[name="_glpi_csrf_token"]').val()
+               'impacts': JSON.stringify(impact.computeDelta())
             },
             success: function(){
-               $(impact.toolbar.save).removeClass('dirty');
-               $(impact.toolbar.save).addClass('clean');
-               $(impact.toolbar.save).find('i').removeClass("fas fa-exclamation-triangle");
-               $(impact.toolbar.save).find('i').addClass("fas fa-check");
-               $(impact.toolbar.save).find('i').qtip(impact.getTooltip("workspaceSaved"));
                impact.initialState = impact.getCurrentState();
             },
             error: function(){
+               impact.showDirtyWorkspaceStatus();
                alert("error");
             },
          });
-
-         // $(impact.form).find('input[name=impacts]').val(
-         //    JSON.stringify(impact.computeDelta())
-         // );
-         // $(impact.form).submit();
       });
 
       // Add a new node on the graph

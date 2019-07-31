@@ -34,81 +34,16 @@ include ('../inc/includes.php');
 Html::header(__('Impact'), $_SERVER['PHP_SELF'], "tools", "impact");
 
 
-$itemType = $_POST["type"]   ?? $_GET["type"]  ?? null;
-$itemID   = $_POST["id"]     ?? $_GET["id"]    ?? null;
+$itemtype = $_GET["type"]  ?? null;
+$items_id = $_GET["id"]    ?? null;
 
-// Handle submitted form
-if (!empty($itemType) && !empty($itemID) &&
-   Impact::assetExist($itemType, $itemID)) {
-
-   $item = new $itemType;
-   $item->getFromDB($itemID);
+if (!empty($itemtype) && !empty($items_id) && Impact::assetExist($itemtype, $items_id)) {
+   $item = new $itemtype;
+   $item->getFromDB($items_id);
    Impact::loadLibs();
    Impact::prepareImpactNetwork($item);
    Impact::buildNetwork($item);
 }
-printForm();
+
+Impact::printImpactForm();
 Html::footer();
-
-// Print the item_type and item_id selection form
-function printForm() {
-   global $CFG_GLPI;
-   $rand = mt_rand();
-   // Session::checkRight("impact", READ);
-
-   echo "<form name=\"item\" action=\"{$_SERVER['PHP_SELF']}\" method=\"GET\">";
-   echo '<div id="itemform" title="' . __('New asset') . '">';
-
-   echo '<table class="tab_cadre_fixe" style="width:30%">';
-
-   echo "<tr>";
-   echo "<th colspan=\"2\">" . __('Impact analysis') . "</th>";
-   echo "</tr>";
-
-   // Item type field
-   echo "<tr>";
-   echo "<td width=\"40%\"> <label>" . __('Item type') . "</label> </td>";
-   echo "<td>";
-
-   Dropdown::showItemTypes(
-      'type',
-      array_keys($CFG_GLPI['impact_asset_types']),
-      [
-         'value'        => null,
-         'width'        => '100%',
-         'emptylabel'   => Dropdown::EMPTY_VALUE,
-         'rand'         => $rand
-      ]
-   );
-   echo "</td>";
-   echo "</tr>";
-
-   // Item id field
-   echo "<tr>";
-   echo "<td> <label>" . __('Item') . "</label> </td>";
-   echo "<td>";
-   Ajax::updateItemOnSelectEvent("dropdown_type$rand", "form_results",
-      $CFG_GLPI["root_doc"] . "/ajax/dropdownTrackingDeviceType.php",
-      [
-         'itemtype'        => '__VALUE__',
-         'entity_restrict' => 0,
-         'multiple'        => 1,
-         'admin'           => 1,
-         'rand'            => $rand,
-         'myname'          => "id",
-      ]
-   );
-   echo "<span id='form_results'>\n";
-   echo "</span>\n";
-   echo "</td>";
-   echo "</tr>";
-
-   echo "<tr><td colspan=\"2\" style=\"text-align:center\">";
-   echo Html::submit(__("Show impact analysis"));
-   echo "</td></tr>";
-
-   echo "</table>";
-   echo "</div>";
-   echo "<br><br>";
-   Html::closeForm();
-}

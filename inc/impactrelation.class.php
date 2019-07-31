@@ -50,11 +50,11 @@ class ImpactRelation extends CommonDBRelation {
       }
 
       // Check if source and impacted are valid objets
-      $source_exist = self::assetExist(
+      $source_exist = Impact::assetExist(
          $input['itemtype_source'],
          $input['items_id_source']
       );
-      $impacted_exist = self::assetExist(
+      $impacted_exist = Impact::assetExist(
          $input['itemtype_impacted'],
          $input['items_id_impacted']
       );
@@ -79,7 +79,7 @@ class ImpactRelation extends CommonDBRelation {
 
       // Check that the link exist
       $it = $DB->request([
-         'FROM'   => 'glpi_impacts',
+         'FROM'   => self::getTable(),
          'WHERE'  => [
             'itemtype_source'   => $input['itemtype_source'],
             'items_id_source'   => $input['items_id_source'],
