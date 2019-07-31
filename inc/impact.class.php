@@ -758,7 +758,7 @@ class Impact extends CommonDBTM {
          ],
          [
             'key'    => 'configColor',
-            'id'     => '#edit_compound_dialog',
+            'id'     => '#color_config_dialog',
             'inputs' => [
                'dependsColor'          => "input[name=depends_color]",
                'impactColor'           => "input[name=impact_color]",
