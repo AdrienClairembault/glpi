@@ -1073,8 +1073,32 @@ HTML;
             $widget_args['filters'] = $card['filters'];
          }
 
+         $user = new user();
+         $user->getFromDB(Session::getLoginUserID());
+         $user->computePreferences();
+         if ($user->fields['palette'] == "darker") {
+            $widget_color = $widget_args['color'] ?? '#FFFFFF';
+
+            // Convert the hex string into an array
+            $hex_colors = str_split(substr($widget_color, 1), 2);
+
+            // Check if the values for R, G and B are above to 230
+            // If all three are above this value it mean we have a ligh color very
+            // close to white
+            $match_light = array_filter($hex_colors, function ($color) {
+               return hexdec($color) >= 230;
+            });
+
+            // If all three parameters matched we have a very ligh color that won't
+            // mix with the dark theme so we switch it to a default dark color
+            if (count($match_light) == 3) {
+               $widget_args['color'] = "#1f1f1f";
+            }
+         }
+         Toolbox::logError("Running this");
          // call widget function
          $html = call_user_func($widgetfct, $widget_args);
+
       }
 
       // display a warning for empty card
