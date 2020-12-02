@@ -1,0 +1,64 @@
+diff --git a/inc/knowbaseitem.class.php b/inc/knowbaseitem.class.php
+index eb04d9766b..a972bac77b 100644
+--- a/inc/knowbaseitem.class.php
++++ b/inc/knowbaseitem.class.php
+@@ -1510,7 +1510,7 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria {
+          echo Search::showHeaderItem($output_type, __('Category'), $header_num);
+ 
+          if ($output_type == Search::HTML_OUTPUT) {
+-            echo Search::showHeaderItem($output_type, _n('Associated element', 'Associated elements', Session::getPluralNumber()), $header_num);
++            // echo Search::showHeaderItem($output_type, _n('Associated element', 'Associated elements', Session::getPluralNumber()), $header_num);
+          }
+ 
+          if (isset($options['item_itemtype'])
+@@ -1611,28 +1611,28 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria {
+             }
+             echo Search::showItem($output_type, $categ, $item_num, $row_num);
+ 
+-            if ($output_type == Search::HTML_OUTPUT) {
+-               echo "<td class='center'>";
+-               $j=0;
+-               $iterator = $DBread->request([
+-                  'FIELDS' => 'documents_id',
+-                  'FROM'   => 'glpi_documents_items',
+-                  'WHERE'  => [
+-                     'items_id'  => $data["id"],
+-                     'itemtype'  => 'KnowbaseItem'
+-                  ]
+-               ] + getEntitiesRestrictCriteria());
+-               while ($docs = $iterator->next()) {
+-                  $doc = new Document();
+-                  $doc->getFromDB($docs["documents_id"]);
+-                  echo $doc->getDownloadLink();
+-                  $j++;
+-                  if ($j > 1) {
+-                     echo "<br>";
+-                  }
+-               }
+-               echo "</td>";
+-            }
++            // if ($output_type == Search::HTML_OUTPUT) {
++            //    echo "<td class='center'>";
++            //    $j=0;
++            //    $iterator = $DBread->request([
++            //       'FIELDS' => 'documents_id',
++            //       'FROM'   => 'glpi_documents_items',
++            //       'WHERE'  => [
++            //          'items_id'  => $data["id"],
++            //          'itemtype'  => 'KnowbaseItem'
++            //       ]
++            //    ] + getEntitiesRestrictCriteria());
++            //    while ($docs = $iterator->next()) {
++            //       $doc = new Document();
++            //       $doc->getFromDB($docs["documents_id"]);
++            //       echo $doc->getDownloadLink();
++            //       $j++;
++            //       if ($j > 1) {
++            //          echo "<br>";
++            //       }
++            //    }
++            //    echo "</td>";
++            // }
+ 
+             if (isset($options['item_itemtype'])
+                   && isset($options['item_items_id'])

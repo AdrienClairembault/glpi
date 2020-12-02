@@ -1625,6 +1625,12 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria {
                while ($docs = $iterator->next()) {
                   $doc = new Document();
                   $doc->getFromDB($docs["documents_id"]);
+
+                  // Skip inline images
+                  if (strpos($doc->fields['name'], "image_paste") !== false) {
+                     continue;
+                  }
+
                   echo $doc->getDownloadLink();
                   $j++;
                   if ($j > 1) {
