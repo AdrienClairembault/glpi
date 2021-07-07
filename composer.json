@@ -59,6 +59,7 @@
         "symfony/dom-crawler": "^5.3",
         "tecnickcom/tcpdf": "^6.2",
         "true/punycode": "^2.1",
+        "twig/twig": "^3.3",
         "wapmorgan/unified-archive": "^1.0"
     },
     "require-dev": {

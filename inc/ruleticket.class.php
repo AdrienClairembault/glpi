@@ -30,6 +30,8 @@
  * ---------------------------------------------------------------------
  */
 
+use Glpi\User_Templates\UserTemplates;
+
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
@@ -228,11 +230,27 @@ class RuleTicket extends Rule {
                      //load template
                      $template = new SolutionTemplate();
                      if ($template->getFromDB($action->fields["value"]) && $output['id'] != null) {
+                        // Load parent item
+                        $parent = new Ticket();
+                        if (!$parent->getFromDB($output['id'])) {
+                           break;
+                        }
+
+                        // Parse twig template
+                        $parameters_class = $parent::getUserTemplatesParametersClass();
+                        $parameters = new $parameters_class();
+                        $solution_content = UserTemplates::render(
+                           Toolbox::addslashes_deep($template->getField('content')),
+                           [
+                              'ticket' => $parameters->getValues($parent)
+                           ]
+                        );
+
                         $solution = new ITILSolution();
                         $solution->add([
                            "itemtype" => "Ticket",
                            "solutiontypes_id" => $template->getField("solutiontypes_id"),
-                           "content" => Toolbox::addslashes_deep($template->getField('content')),
+                           "content" => $solution_content,
                            "status" => CommonITILValidation::WAITING,
                            "items_id" => $output['id']]);
                      }

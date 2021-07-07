@@ -34,7 +34,7 @@
  * @since 9.5
  */
 
-use Glpi\Toolbox\RichText;
+use Glpi\User_Templates\UserTemplates;
 
 $AJAX_INCLUDE = 1;
 
@@ -44,16 +44,42 @@ Html::header_nocache();
 
 Session::checkLoginUser();
 
-if (isset($_POST['itilfollowuptemplates_id'])
-    && $_POST['itilfollowuptemplates_id'] > 0) {
-   $template = new ITILFollowupTemplate();
-   $template->getFromDB($_POST['itilfollowuptemplates_id']);
-
-   echo json_encode(
-      [
-         'content'         => RichText::getSafeHtml($template->fields['content'], true),
-         'requesttypes_id' => $template->fields['requesttypes_id'],
-         'is_private'      => $template->fields['is_private'],
-      ]
-   );
+// Mandatory parameter: itilfollowuptemplates_id
+$itilfollowuptemplates_id = $_POST['itilfollowuptemplates_id'] ?? 0;
+if (!$itilfollowuptemplates_id) {
+   Toolbox::throwError(400, "Missing or invalid parameter: 'itilfollowuptemplates_id'");
 }
+
+// Mandatory parameter: parents_id
+$parents_id = $_POST['parents_id'] ?? 0;
+if (!$parents_id) {
+   Toolbox::throwError(400, "Missing or invalid parameter: 'parents_id'");
+}
+
+// Mandatory parameter: parents_itemtype
+$parents_itemtype = $_POST['parents_itemtype'] ?? '';
+if (empty($parents_itemtype) || !is_subclass_of($parents_itemtype, CommonITILObject::class)) {
+   Toolbox::throwError(400, "Missing or invalid parameter: 'parents_itemtype'");
+}
+
+// Load followup template
+$template = new ITILFollowupTemplate();
+if (!$template->getFromDB($itilfollowuptemplates_id)) {
+   Toolbox::throwError(400, "Unable to load template: $itilfollowuptemplates_id");
+}
+
+// Load parent item
+$parent = new $parents_itemtype();
+if (!$parent->getFromDB($parents_id)) {
+   Toolbox::throwError(400, "Unable to load parent item: $parents_itemtype $parents_id");
+}
+
+// Render template content using twig
+$parameters_class = $parent::getUserTemplatesParametersClass();
+$parameters = new $parameters_class();
+$template->fields['content'] = UserTemplates::render($template->fields['content'], [
+   'ticket' => $parameters->getValues($parent)
+]);
+
+// Return json response with the template fields
+echo json_encode($template->fields);
