@@ -35,6 +35,8 @@ if (!defined('GLPI_ROOT')) {
 }
 
 use Glpi\Toolbox\RichText;
+use Glpi\User_Templates\Parameters\CommonITILObjectParameters;
+use Glpi\User_Templates\UserTemplates;
 
 /**
  * CommonITILObject Class
@@ -8473,7 +8475,17 @@ abstract class CommonITILObject extends CommonDBTM {
       $itiltask   = new $itiltask_class;
       foreach ($this->input['_tasktemplates_id'] as $tasktemplates_id) {
          $tasktemplate->getFromDB($tasktemplates_id);
-         $tasktemplate_content = Toolbox::addslashes_deep($tasktemplate->fields["content"]);
+
+         // Parse twig template
+         $parameters_class = self::getUserTemplatesParametersClass();
+         $parameters = new $parameters_class();
+         $tasktemplate_content = UserTemplates::render(
+            Toolbox::addslashes_deep($tasktemplate->fields["content"]),
+            [
+               'ticket' => $parameters->getValues($this)
+            ]
+         );
+
          $itiltask->add([
             'tasktemplates_id'            => $tasktemplates_id,
             'content'                     => $tasktemplate_content,
@@ -8510,9 +8522,18 @@ abstract class CommonITILObject extends CommonDBTM {
             continue;
          };
 
+         // Parse twig template
+         $parameters_class = self::getUserTemplatesParametersClass();
+         $parameters = new $parameters_class();
+         $new_fup_content = UserTemplates::render(
+            Toolbox::addslashes_deep($fup_template->fields["content"]),
+            [
+               'ticket' => $parameters->getValues($this)
+            ]
+         );
+
          // Insert new followup from template
          $fup = new ITILFollowup();
-         $new_fup_content = Toolbox::addslashes_deep($fup_template->fields["content"]);
          $fup->add([
             'itemtype'        => $this->getType(),
             'items_id'        => $this->getID(),
@@ -8599,4 +8620,11 @@ abstract class CommonITILObject extends CommonDBTM {
       return $input;
    }
 
+   /**
+    * Parameter class to be use for this item (user templates)
+    * @return string class name
+    */
+   public static function getUserTemplatesParametersClass(): string {
+      return CommonITILObjectParameters::class;
+   }
 }

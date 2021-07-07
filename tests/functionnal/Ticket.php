@@ -172,7 +172,7 @@ class Ticket extends DbTestCase {
       $tasktemplate = new \TaskTemplate;
       $ttA_id          = $tasktemplate->add([
          'name'              => 'my task template A',
-         'content'           => 'my task template A',
+         'content'           => '<p>my task template A</p>',
          'taskcategories_id' => $taskcat_id,
          'actiontime'        => 60,
          'is_private'        => true,
@@ -241,7 +241,7 @@ class Ticket extends DbTestCase {
 
       // 6.1 -> check first task
       $taskA = array_shift($found_tasks);
-      $this->string($taskA['content'])->isIdenticalTo('my task template A');
+      $this->string($taskA['content'])->isIdenticalTo('<p>my task template A</p>');
       $this->variable($taskA['taskcategories_id'])->isEqualTo($taskcat_id);
       $this->variable($taskA['actiontime'])->isEqualTo(60);
       $this->variable($taskA['is_private'])->isEqualTo(1);

@@ -427,7 +427,7 @@ class RuleTicket extends DbTestCase {
       // Create solution template
       $solutionTemplate = new \SolutionTemplate();
       $solutionTemplate_id = $solutionTemplate->add($solutionInput = [
-         'content' => Toolbox::addslashes_deep("content of solution template  white ' quote")
+         'content' => Toolbox::addslashes_deep("<p>content of solution template  white ' quote</p>")
       ]);
       $this->integer((int)$solutionTemplate_id)->isGreaterThan(0);
 
@@ -481,7 +481,7 @@ class RuleTicket extends DbTestCase {
       $itilSolution = new \ITILSolution();
       $this->boolean($itilSolution->getFromDBByCrit(['items_id'            => $tickets_id,
                                                    'itemtype'              => 'Ticket',
-                                                   'content'               => Toolbox::addslashes_deep("content of solution template  white ' quote")]))->isTrue();
+                                                   'content'               => Toolbox::addslashes_deep("<p>content of solution template  white ' quote</p>")]))->isTrue();
 
       $this->integer((int)$itilSolution->getID())->isGreaterThan(0);
 
@@ -814,7 +814,7 @@ class RuleTicket extends DbTestCase {
       // Create solution template
       $task_template = new TaskTemplate();
       $task_template_id = $task_template->add([
-         'content' => "test content"
+         'content' => "<p>test content</p>"
       ]);
       $this->integer($task_template_id)->isGreaterThan(0);
 
@@ -867,7 +867,7 @@ class RuleTicket extends DbTestCase {
       $this->array($ticket_tasks)->hasSize(1);
       $task_data = array_pop($ticket_tasks);
       $this->array($task_data)->hasKey('content');
-      $this->string($task_data['content'])->isEqualTo('test content');
+      $this->string($task_data['content'])->isEqualTo('<p>test content</p>');
 
       // Test on update
       $ticket_em = new \Ticket();
@@ -896,7 +896,7 @@ class RuleTicket extends DbTestCase {
       $this->array($ticket_tasks)->hasSize(1);
       $task_data = array_pop($ticket_tasks);
       $this->array($task_data)->hasKey('content');
-      $this->string($task_data['content'])->isEqualTo('test content');
+      $this->string($task_data['content'])->isEqualTo('<p>test content</p>');
    }
 
    public function testFollowupTemplateAssignFromRule() {
@@ -905,7 +905,7 @@ class RuleTicket extends DbTestCase {
       // Create followup template
       $followup_template = new ITILFollowupTemplate();
       $followup_template_id = $followup_template->add([
-         'content' => "test testFollowupTemplateAssignFromRule"
+         'content' => "<p>test testFollowupTemplateAssignFromRule</p>"
       ]);
       $this->integer($followup_template_id)->isGreaterThan(0);
 
@@ -959,7 +959,7 @@ class RuleTicket extends DbTestCase {
       $this->array($ticket_followups)->hasSize(1);
       $ticket_followups_data = array_pop($ticket_followups);
       $this->array($ticket_followups_data)->hasKey('content');
-      $this->string($ticket_followups_data['content'])->isEqualTo('test testFollowupTemplateAssignFromRule');
+      $this->string($ticket_followups_data['content'])->isEqualTo('<p>test testFollowupTemplateAssignFromRule</p>');
 
       // Test on update
       $ticket = new \Ticket();
@@ -992,7 +992,7 @@ class RuleTicket extends DbTestCase {
       $this->array($ticket_followups)->hasSize(1);
       $ticket_followups_data = array_pop($ticket_followups);
       $this->array($ticket_followups_data)->hasKey('content');
-      $this->string($ticket_followups_data['content'])->isEqualTo('test testFollowupTemplateAssignFromRule');
+      $this->string($ticket_followups_data['content'])->isEqualTo('<p>test testFollowupTemplateAssignFromRule</p>');
    }
 
    public function testGroupRequesterAssignFromUserGroupsAndRegexOnUpdateTicketContent() {
