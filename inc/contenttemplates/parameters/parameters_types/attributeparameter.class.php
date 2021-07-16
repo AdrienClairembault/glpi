@@ -30,41 +30,46 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters\Parameters_Types;
-
-use Glpi\User_Templates\Parameters\AbstractTemplatesParameters;
+namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * ObjectParameter represent a whole object to use as a parameter.
- * For exemple, this entity of a ticket or its category.
+ * AttributeParameter represent a simple parameter value accessed by a key.
+ * This can be a simple value from the database (e.g the title of a ticket) or a
+ * computed value (e.g. the link to a ticket)
  */
-class ObjectParameter extends AbstractParameterType
+class AttributeParameter extends AbstractParameterType
 {
    /**
-    * Parameters availables in the item that will be linked
+    * Suggested twig filter to use when displaying the value of this parameter
+    * This may be a 'raw" filter when the value is raw html, a 'date' filter
+    * when dealing with timestamp so the user know how to reformat the date as
+    * needed, ...
     *
-    * @var AbstractTemplatesParameters
+    * @var string
     */
-   protected $template_parameters;
+   protected $filter;
 
    /**
-    * @param string $key                                       Key to access this value
-    * @param AbstractTemplatesParameters $template_parameters  Parameters to add
+    * @param string $key    Key to access this value
+    * @param string $label  Label to display in the autocompletion widget
+    * @param string $filter Recommanded twig filter to apply on this value
     */
-   public function __construct(string $key, AbstractTemplatesParameters $template_parameters) {
+   public function __construct(string $key, string $label, string $filter = "") {
       $this->key = $key;
-      $this->template_parameters = $template_parameters;
+      $this->label = $label;
+      $this->filter = $filter;
    }
 
    public function compute(): array {
       return [
-         'type'       => "ObjectParameter",
-         'key'        => $this->key,
-         'properties' => $this->template_parameters->getAvailableParameters(),
+         'type'   => "AttributeParameter",
+         'key'    => $this->key,
+         'label'  => $this->label,
+         'filter' => $this->filter,
       ];
    }
 }

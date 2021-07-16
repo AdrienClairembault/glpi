@@ -30,40 +30,36 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use KnowbaseItem;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use ITILCategory;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "KnowbaseItem" items
+ * Parameters for "ITILCategory" items
  */
-class KnowbaseItemParameters extends AbstractTemplatesParameters
+class ITILCategoryParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      return [KnowbaseItem::class];
+      return [ITILCategory::class];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Knowledge base article's id")),
-         new AttributeParameter("name", __("Knowledge base article's title")),
-         new AttributeParameter("answer", __("Knowledge base article's content"), "raw"),
-         new AttributeParameter("link", __("Link to the knowledge base article"), "raw"),
+         new AttributeParameter("id", __("Category id")),
+         new AttributeParameter("name", __("Category name")),
       ];
    }
 
-   public function defineValues(CommonDBTM $kbi): array {
+   public function defineValues(CommonDBTM $itilcategory): array {
       return [
-         'id'     => $kbi->fields['id'],
-         'name'   => $kbi->fields['name'],
-         'answer' => $kbi->fields['answer'],
-         'link'   => $kbi->getLink(),
+         'id'   => $itilcategory->fields['id'],
+         'name' => $itilcategory->fields['name'],
       ];
    }
 }

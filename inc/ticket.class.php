@@ -32,7 +32,7 @@
 
 use Glpi\Event;
 use Glpi\Toolbox\RichText;
-use Glpi\User_Templates\Parameters\TicketParameters;
+use Glpi\ContentTemplates\Parameters\TicketParameters;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -7702,7 +7702,7 @@ JAVASCRIPT;
       return TicketTask::class;
    }
 
-   public static function getUserTemplatesParametersClass(): string {
+   public static function getContentTemplatesParametersClass(): string {
       return TicketParameters::class;
    }
 }

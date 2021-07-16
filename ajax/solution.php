@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\User_Templates\UserTemplates;
+use Glpi\ContentTemplates\TemplateManager;
 
 $AJAX_INCLUDE = 1;
 
@@ -71,9 +71,9 @@ if (!$parent->getFromDB($parents_id)) {
 }
 
 // Render template content using twig
-$parameters_class = $parent::getUserTemplatesParametersClass();
+$parameters_class = $parent::getContentTemplatesParametersClass();
 $parameters = new $parameters_class();
-$template->fields['content'] = UserTemplates::render($template->fields['content'], [
+$template->fields['content'] = TemplateManager::render($template->fields['content'], [
    'ticket' => $parameters->getValues($parent)
 ]);
 

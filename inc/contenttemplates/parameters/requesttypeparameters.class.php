@@ -30,34 +30,36 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use Group;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use RequestType;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "Group" items
+ * Parameters for "RequestType" items
  */
-class GroupParameters extends AbstractTemplatesParameters
+class RequestTypeParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      return [Group::class];
+      return [RequestType::class];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("name", __("Group's name")),
+         new AttributeParameter("id", __("Request type id")),
+         new AttributeParameter("name", __("Request type name")),
       ];
    }
 
-   public function defineValues(CommonDBTM $group): array {
+   public function defineValues(CommonDBTM $requesttype): array {
       return [
-         'name' => $group->fields['name'],
+         'id'   => $requesttype->fields['id'],
+         'name' => $requesttype->fields['name'],
       ];
    }
 }

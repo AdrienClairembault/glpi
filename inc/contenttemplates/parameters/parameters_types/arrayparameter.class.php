@@ -30,9 +30,9 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters\Parameters_Types;
+namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
 
-use Glpi\User_Templates\Parameters\AbstractTemplatesParameters;
+use Glpi\ContentTemplates\Parameters\AbstractTemplatesParameters;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");

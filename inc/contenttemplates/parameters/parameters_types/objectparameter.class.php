@@ -30,38 +30,41 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
 
-use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use Location;
+use Glpi\ContentTemplates\Parameters\AbstractTemplatesParameters;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "Location" items
+ * ObjectParameter represent a whole object to use as a parameter.
+ * For exemple, this entity of a ticket or its category.
  */
-class LocationParameters extends AbstractTemplatesParameters
+class ObjectParameter extends AbstractParameterType
 {
-   public static function getTargetClasses(): array {
-      return [Location::class];
+   /**
+    * Parameters availables in the item that will be linked
+    *
+    * @var AbstractTemplatesParameters
+    */
+   protected $template_parameters;
+
+   /**
+    * @param string $key                                       Key to access this value
+    * @param AbstractTemplatesParameters $template_parameters  Parameters to add
+    */
+   public function __construct(string $key, AbstractTemplatesParameters $template_parameters) {
+      $this->key = $key;
+      $this->template_parameters = $template_parameters;
    }
 
-   public function defineParameters(): array {
+   public function compute(): array {
       return [
-         new AttributeParameter("id", __("Location's id")),
-         new AttributeParameter("name", __("Location's name")),
-         new AttributeParameter("completename", __("Location's completename")),
-      ];
-   }
-
-   public function defineValues(CommonDBTM $entity): array {
-      return [
-         'id'           => $entity->fields['id'],
-         'name'         => $entity->fields['name'],
-         'completename' => $entity->fields['completename'],
+         'type'       => "ObjectParameter",
+         'key'        => $this->key,
+         'properties' => $this->template_parameters->getAvailableParameters(),
       ];
    }
 }

@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\User_Templates\UserTemplates;
+use Glpi\ContentTemplates\TemplateManager;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -237,9 +237,9 @@ class RuleTicket extends Rule {
                         }
 
                         // Parse twig template
-                        $parameters_class = $parent::getUserTemplatesParametersClass();
+                        $parameters_class = $parent::getContentTemplatesParametersClass();
                         $parameters = new $parameters_class();
-                        $solution_content = UserTemplates::render(
+                        $solution_content = TemplateManager::render(
                            Toolbox::addslashes_deep($template->getField('content')),
                            [
                               'ticket' => $parameters->getValues($parent)

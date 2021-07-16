@@ -30,34 +30,34 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use User;
+use Entity;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "User" items
+ * Parameters for "Entity" items
  */
-class UserParameters extends AbstractTemplatesParameters
+class EntityParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      return [User::class];
+      return [Entity::class];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("name", __("User's login")),
+         new AttributeParameter("name", __("Name of the entity")),
       ];
    }
 
-   public function defineValues(CommonDBTM $user): array {
+   public function defineValues(CommonDBTM $entity): array {
       return [
-         'name' => $user->fields['name'],
+         'name' => $entity->fields['name'],
       ];
    }
 }

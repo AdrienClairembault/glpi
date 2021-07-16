@@ -4071,7 +4071,7 @@ JAVASCRIPT
          $(
             function() {
                var editor_id = $('{$selector}').attr('id');
-               var user_templates_autocomplete = new GLPI.RichText.UserTemplatesParameters(
+               var user_templates_autocomplete = new GLPI.RichText.ContentTemplatesParameters(
                   tinymce.get(editor_id),
                   '{$values}'
                );
@@ -6583,7 +6583,7 @@ JAVASCRIPT;
          case 'tinymce':
             $_SESSION['glpi_js_toload'][$name][] = 'public/lib/tinymce.js';
             $_SESSION['glpi_js_toload'][$name][] = 'js/RichText/UserMention.js';
-            $_SESSION['glpi_js_toload'][$name][] = 'js/RichText/UserTemplatesParameters.js';
+            $_SESSION['glpi_js_toload'][$name][] = 'js/RichText/ContentTemplatesParameters.js';
             break;
          case 'planning':
             $_SESSION['glpi_js_toload'][$name][] = 'js/planning.js';

@@ -30,36 +30,35 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
-
-use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use RequestType;
+namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "RequestType" items
+ * Define the base interface for parameters types
  */
-class RequestTypeParameters extends AbstractTemplatesParameters
+abstract class AbstractParameterType
 {
-   public static function getTargetClasses(): array {
-      return [RequestType::class];
-   }
+   /**
+    * The parameter key that need to be used to retrieve its value in a template
+    *
+    * @var string
+    */
+   protected $key;
 
-   public function defineParameters(): array {
-      return [
-         new AttributeParameter("id", __("Request type id")),
-         new AttributeParameter("name", __("Request type name")),
-      ];
-   }
+   /**
+    * The parameter label, to be displayed in the client side autocompletion
+    *
+    * @var string
+    */
+   protected $label;
 
-   public function defineValues(CommonDBTM $requesttype): array {
-      return [
-         'id'   => $requesttype->fields['id'],
-         'name' => $requesttype->fields['name'],
-      ];
-   }
+   /**
+    * To be defined in each subclasses, convert the parameter data into an array
+    * that can be shared to the client side code as json and used for
+    * autocompletion.
+    */
+   abstract function compute(): array;
 }

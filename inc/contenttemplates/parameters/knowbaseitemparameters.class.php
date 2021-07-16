@@ -30,51 +30,40 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Entity;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use Glpi\User_Templates\Parameters\Parameters_Types\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use KnowbaseItem;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "Assets" items (Compute, Monitor, ...)
+ * Parameters for "KnowbaseItem" items
  */
-class AssetParameters extends AbstractTemplatesParameters
+class KnowbaseItemParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      global $CFG_GLPI;
-      return $CFG_GLPI["asset_types"];
+      return [KnowbaseItem::class];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Asset's id")),
-         new AttributeParameter("name", __("Asset's name")),
-         new AttributeParameter("itemtype", __("Asset's itemtype")),
-         new AttributeParameter("serial", __("Asset's serial number")),
-         new ObjectParameter("entity", new EntityParameters()),
+         new AttributeParameter("id", __("Knowledge base article's id")),
+         new AttributeParameter("name", __("Knowledge base article's title")),
+         new AttributeParameter("answer", __("Knowledge base article's content"), "raw"),
+         new AttributeParameter("link", __("Link to the knowledge base article"), "raw"),
       ];
    }
 
-   public function defineValues(CommonDBTM $asset): array {
-      $values = [
-         'id'       => $asset->fields['id'],
-         'name'     => $asset->fields['name'],
-         'itemtype' => $asset->getType(),
-         'serial'   => $asset->fields['serial'],
+   public function defineValues(CommonDBTM $kbi): array {
+      return [
+         'id'     => $kbi->fields['id'],
+         'name'   => $kbi->fields['name'],
+         'answer' => $kbi->fields['answer'],
+         'link'   => $kbi->getLink(),
       ];
-
-      // Add asset's entity
-      if ($entity = Entity::getById($asset->fields['entities_id'])) {
-         $entity_parameters = new EntityParameters();
-         $values['entity'] = $entity_parameters->getValues($entity);
-      }
-
-      return $values;
    }
 }

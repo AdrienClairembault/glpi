@@ -30,42 +30,34 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use SLA;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use Group;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "SLA" items
+ * Parameters for "Group" items
  */
-class SLAParameters extends AbstractTemplatesParameters
+class GroupParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      return [SLA::class];
+      return [Group::class];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("SLA's ID")),
-         new AttributeParameter("name", __("SLAs's name")),
-         new AttributeParameter("type", __("SLA's type")),
-         new AttributeParameter("duration", __("SLA's duration")),
-         new AttributeParameter("unit", __("SLA's duration unit")),
+         new AttributeParameter("name", __("Group's name")),
       ];
    }
 
-   public function defineValues(CommonDBTM $sla): array {
+   public function defineValues(CommonDBTM $group): array {
       return [
-         'id'       => $sla->fields['id'],
-         'name'     => $sla->fields['name'],
-         'type'     => SLA::getOneTypeName($sla->fields['type']),
-         'duration' => $sla->fields['number_time'],
-         'unit'     => strtolower(SLA::getDefinitionTimeLabel($sla->fields['definition_time'])),
+         'name' => $group->fields['name'],
       ];
    }
 }

@@ -30,35 +30,38 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters\Parameters_Types;
+namespace Glpi\ContentTemplates\Parameters;
+
+use CommonDBTM;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use Location;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Define the base interface for parameters types
+ * Parameters for "Location" items
  */
-abstract class AbstractParameterType
+class LocationParameters extends AbstractTemplatesParameters
 {
-   /**
-    * The parameter key that need to be used to retrieve its value in a template
-    *
-    * @var string
-    */
-   protected $key;
+   public static function getTargetClasses(): array {
+      return [Location::class];
+   }
 
-   /**
-    * The parameter label, to be displayed in the client side autocompletion
-    *
-    * @var string
-    */
-   protected $label;
+   public function defineParameters(): array {
+      return [
+         new AttributeParameter("id", __("Location's id")),
+         new AttributeParameter("name", __("Location's name")),
+         new AttributeParameter("completename", __("Location's completename")),
+      ];
+   }
 
-   /**
-    * To be defined in each subclasses, convert the parameter data into an array
-    * that can be shared to the client side code as json and used for
-    * autocompletion.
-    */
-   abstract function compute(): array;
+   public function defineValues(CommonDBTM $entity): array {
+      return [
+         'id'           => $entity->fields['id'],
+         'name'         => $entity->fields['name'],
+         'completename' => $entity->fields['completename'],
+      ];
+   }
 }

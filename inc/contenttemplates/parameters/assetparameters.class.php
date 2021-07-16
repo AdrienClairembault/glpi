@@ -30,36 +30,51 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use ITILCategory;
+use Entity;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\ObjectParameter;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "ITILCategory" items
+ * Parameters for "Assets" items (Compute, Monitor, ...)
  */
-class ITILCategoryParameters extends AbstractTemplatesParameters
+class AssetParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      return [ITILCategory::class];
+      global $CFG_GLPI;
+      return $CFG_GLPI["asset_types"];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Category id")),
-         new AttributeParameter("name", __("Category name")),
+         new AttributeParameter("id", __("Asset's id")),
+         new AttributeParameter("name", __("Asset's name")),
+         new AttributeParameter("itemtype", __("Asset's itemtype")),
+         new AttributeParameter("serial", __("Asset's serial number")),
+         new ObjectParameter("entity", new EntityParameters()),
       ];
    }
 
-   public function defineValues(CommonDBTM $itilcategory): array {
-      return [
-         'id'   => $itilcategory->fields['id'],
-         'name' => $itilcategory->fields['name'],
+   public function defineValues(CommonDBTM $asset): array {
+      $values = [
+         'id'       => $asset->fields['id'],
+         'name'     => $asset->fields['name'],
+         'itemtype' => $asset->getType(),
+         'serial'   => $asset->fields['serial'],
       ];
+
+      // Add asset's entity
+      if ($entity = Entity::getById($asset->fields['entities_id'])) {
+         $entity_parameters = new EntityParameters();
+         $values['entity'] = $entity_parameters->getValues($entity);
+      }
+
+      return $values;
    }
 }

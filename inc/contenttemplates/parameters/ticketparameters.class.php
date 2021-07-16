@@ -30,12 +30,12 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\User_Templates\Parameters\Parameters_Types\ArrayParameter;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use Glpi\User_Templates\Parameters\Parameters_Types\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\ArrayParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\ObjectParameter;
 use Item_Ticket;
 use KnowbaseItem;
 use KnowbaseItem_Item;
