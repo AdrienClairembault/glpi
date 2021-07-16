@@ -91,8 +91,19 @@ GLPI.RichText.UserTemplatesParameters = class {
          function (resolve) {
             const items = that.values.filter(
                function(item) {
+                  // Check if our item match the given pattern
+                  let match = item.value.includes(pattern);
+
+                  // If match failed, try a second time with no spaces to be more
+                  // generous
+                  if (!match) {
+                     const value_no_space = item.value.replace(' ', '');
+                     const pattern_no_space = pattern.replace(' ', '');
+                     match = value_no_space.includes(pattern_no_space);
+                  }
+
                   // Text do not match item, skip
-                  if (!item.value.includes('{' + pattern)) {
+                  if (!match) {
                      return false;
                   }
 
@@ -160,10 +171,11 @@ GLPI.RichText.UserTemplatesParameters = class {
             // Add a possible loop to the autocomplete, with extra autocomplete
             // support for the content of the array.
             case 'ArrayParameter': {
+               let value = '{% for ' + parameter.items_key + ' in ' + parameter.key + ' %}';
                parsed_parameters.push({
                   type: 'autocompleteitem',
-                  value: '{% for ' + parameter.items_key + ' in ' + parameter.key + ' %}',
-                  text: '{% for ' + parameter.items_key + ' in ' + parameter.key + ' %} - ' + parameter.label,
+                  value: value,
+                  text: value + ' - ' + parameter.label,
                });
 
                // Push content of array, hidden by default unless the parent loop exist in the editor
