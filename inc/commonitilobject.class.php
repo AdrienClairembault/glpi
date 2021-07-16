@@ -35,8 +35,8 @@ if (!defined('GLPI_ROOT')) {
 }
 
 use Glpi\Toolbox\RichText;
-use Glpi\User_Templates\Parameters\CommonITILObjectParameters;
-use Glpi\User_Templates\UserTemplates;
+use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters;
+use Glpi\ContentTemplates\TemplateManager;
 
 /**
  * CommonITILObject Class
@@ -8477,9 +8477,9 @@ abstract class CommonITILObject extends CommonDBTM {
          $tasktemplate->getFromDB($tasktemplates_id);
 
          // Parse twig template
-         $parameters_class = self::getUserTemplatesParametersClass();
+         $parameters_class = self::getContentTemplatesParametersClass();
          $parameters = new $parameters_class();
-         $tasktemplate_content = UserTemplates::render(
+         $tasktemplate_content = TemplateManager::render(
             Toolbox::addslashes_deep($tasktemplate->fields["content"]),
             [
                'ticket' => $parameters->getValues($this)
@@ -8523,9 +8523,9 @@ abstract class CommonITILObject extends CommonDBTM {
          };
 
          // Parse twig template
-         $parameters_class = self::getUserTemplatesParametersClass();
+         $parameters_class = self::getContentTemplatesParametersClass();
          $parameters = new $parameters_class();
-         $new_fup_content = UserTemplates::render(
+         $new_fup_content = TemplateManager::render(
             Toolbox::addslashes_deep($fup_template->fields["content"]),
             [
                'ticket' => $parameters->getValues($this)
@@ -8624,7 +8624,7 @@ abstract class CommonITILObject extends CommonDBTM {
     * Parameter class to be use for this item (user templates)
     * @return string class name
     */
-   public static function getUserTemplatesParametersClass(): string {
+   public static function getContentTemplatesParametersClass(): string {
       return CommonITILObjectParameters::class;
    }
 }

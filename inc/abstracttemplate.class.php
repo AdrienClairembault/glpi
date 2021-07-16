@@ -30,9 +30,9 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\User_Templates\Parameters\Parameters_Types\ObjectParameter;
-use Glpi\User_Templates\Parameters\TicketParameters;
-use Glpi\User_Templates\UserTemplates;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\TicketParameters;
+use Glpi\ContentTemplates\TemplateManager;
 
 if (!defined('GLPI_ROOT')) {
     die("Sorry. You can't access this file directly");
@@ -57,7 +57,7 @@ abstract class AbstractTemplate extends CommonDropdown
       $input = parent::prepareInputForUpdate($input);
 
       // Validate twig template
-      if (isset($input['content']) && !UserTemplates::validate($input['content'], __('Content'))) {
+      if (isset($input['content']) && !TemplateManager::validate($input['content'], __('Content'))) {
          $this->saveInput();
          return false;
       }
@@ -69,7 +69,7 @@ abstract class AbstractTemplate extends CommonDropdown
       $input = parent::prepareInputForUpdate($input);
 
       // Validate twig template
-      if (isset($input['content']) && !UserTemplates::validate($input['content'], __('Content'))) {
+      if (isset($input['content']) && !TemplateManager::validate($input['content'], __('Content'))) {
          $this->saveInput();
          return false;
       }

@@ -30,46 +30,34 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters\Parameters_Types;
+namespace Glpi\ContentTemplates\Parameters;
+
+use CommonDBTM;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use User;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * AttributeParameter represent a simple parameter value accessed by a key.
- * This can be a simple value from the database (e.g the title of a ticket) or a
- * computed value (e.g. the link to a ticket)
+ * Parameters for "User" items
  */
-class AttributeParameter extends AbstractParameterType
+class UserParameters extends AbstractTemplatesParameters
 {
-   /**
-    * Suggested twig filter to use when displaying the value of this parameter
-    * This may be a 'raw" filter when the value is raw html, a 'date' filter
-    * when dealing with timestamp so the user know how to reformat the date as
-    * needed, ...
-    *
-    * @var string
-    */
-   protected $filter;
-
-   /**
-    * @param string $key    Key to access this value
-    * @param string $label  Label to display in the autocompletion widget
-    * @param string $filter Recommanded twig filter to apply on this value
-    */
-   public function __construct(string $key, string $label, string $filter = "") {
-      $this->key = $key;
-      $this->label = $label;
-      $this->filter = $filter;
+   public static function getTargetClasses(): array {
+      return [User::class];
    }
 
-   public function compute(): array {
+   public function defineParameters(): array {
       return [
-         'type'   => "AttributeParameter",
-         'key'    => $this->key,
-         'label'  => $this->label,
-         'filter' => $this->filter,
+         new AttributeParameter("name", __("User's login")),
+      ];
+   }
+
+   public function defineValues(CommonDBTM $user): array {
+      return [
+         'name' => $user->fields['name'],
       ];
    }
 }

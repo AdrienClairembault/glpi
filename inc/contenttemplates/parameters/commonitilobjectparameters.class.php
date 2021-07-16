@@ -30,15 +30,15 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
 use CommonITILActor;
 use CommonITILObject;
 use Entity;
-use Glpi\User_Templates\Parameters\Parameters_Types\ArrayParameter;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
-use Glpi\User_Templates\Parameters\Parameters_Types\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\ArrayParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\ObjectParameter;
 use Group;
 use ITILCategory;
 use User;

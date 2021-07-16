@@ -30,34 +30,42 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Entity;
-use Glpi\User_Templates\Parameters\Parameters_Types\AttributeParameter;
+use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use SLA;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "Entity" items
+ * Parameters for "SLA" items
  */
-class EntityParameters extends AbstractTemplatesParameters
+class SLAParameters extends AbstractTemplatesParameters
 {
    public static function getTargetClasses(): array {
-      return [Entity::class];
+      return [SLA::class];
    }
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("name", __("Name of the entity")),
+         new AttributeParameter("id", __("SLA's ID")),
+         new AttributeParameter("name", __("SLAs's name")),
+         new AttributeParameter("type", __("SLA's type")),
+         new AttributeParameter("duration", __("SLA's duration")),
+         new AttributeParameter("unit", __("SLA's duration unit")),
       ];
    }
 
-   public function defineValues(CommonDBTM $entity): array {
+   public function defineValues(CommonDBTM $sla): array {
       return [
-         'name' => $entity->fields['name'],
+         'id'       => $sla->fields['id'],
+         'name'     => $sla->fields['name'],
+         'type'     => SLA::getOneTypeName($sla->fields['type']),
+         'duration' => $sla->fields['number_time'],
+         'unit'     => strtolower(SLA::getDefinitionTimeLabel($sla->fields['definition_time'])),
       ];
    }
 }

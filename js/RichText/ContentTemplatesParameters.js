@@ -39,7 +39,7 @@ GLPI.RichText = GLPI.RichText || {};
  *
  * @since 10.0.0
  */
-GLPI.RichText.UserTemplatesParameters = class {
+GLPI.RichText.ContentTemplatesParameters = class {
 
    /**
     * @param {Editor} editor

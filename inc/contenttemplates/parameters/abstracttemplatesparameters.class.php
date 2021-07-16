@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates\Parameters;
+namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
 

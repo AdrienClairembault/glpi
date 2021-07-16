@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\User_Templates;
+namespace Glpi\ContentTemplates;
 
 use Glpi\Toolbox\RichText;
 use Session;
@@ -50,7 +50,7 @@ if (!defined('GLPI_ROOT')) {
  *  - tasks templates
  *  - solutions templates
  */
-class UserTemplates
+class TemplateManager
 {
    /**
     * Boiler plate code to render a user template
@@ -104,7 +104,7 @@ class UserTemplates
    public static function validate(string $content, string $field_label): bool {
       // Needed as GLPI auto escape quotes to \" and this seems to make render
       // and tokenize fails in this context.
-      // This step was not needed in UserTemplates::render() because the data is
+      // This step was not needed in TemplateManager::render() because the data is
       // probably already "cleaned" before being inserted in the database
       // whereas we are dealing with POST data here.
       $content = str_replace('\"', '"', $content);
