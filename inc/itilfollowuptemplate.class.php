@@ -30,10 +30,6 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\User_Templates\Parameters\Parameters_Types\ObjectParameter;
-use Glpi\User_Templates\Parameters\TicketParameters;
-use Glpi\User_Templates\UserTemplates;
-
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
@@ -42,7 +38,7 @@ if (!defined('GLPI_ROOT')) {
  * Template for followups
  * @since 9.5
 **/
-class ITILFollowupTemplate extends CommonDropdown {
+class ITILFollowupTemplate extends AbstractTemplate {
 
    // From CommonDBTM
    public $dohistory          = true;
@@ -109,38 +105,5 @@ class ITILFollowupTemplate extends CommonDropdown {
       ];
 
       return $tab;
-   }
-
-   function showForm($ID, $options = []) {
-      parent::showForm($ID, $options);
-
-      // Add autocompletion for ticket properties (twig templates)
-      Html::activateUserTemplateAutocompletion('textarea[name=content]', [
-         (new ObjectParameter('ticket', new TicketParameters()))->compute()
-      ]);
-   }
-
-   function prepareInputForAdd($input) {
-      $input = parent::prepareInputForUpdate($input);
-
-      // Validate twig template
-      if (isset($input['content']) && !UserTemplates::validate($input['content'], __('Content'))) {
-         $this->saveInput();
-         return false;
-      }
-
-      return $input;
-   }
-
-   function prepareInputForUpdate($input) {
-      $input = parent::prepareInputForUpdate($input);
-
-      // Validate twig template
-      if (isset($input['content']) && !UserTemplates::validate($input['content'], __('Content'))) {
-         $this->saveInput();
-         return false;
-      }
-
-      return $input;
    }
 }
