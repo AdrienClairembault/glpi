@@ -84,7 +84,7 @@ class TemplateManager
          // error sent to the users as it not really helpful and is more likely
          // to confuse them that to help them fix the issue
          Session::addMessageAfterRedirect(
-            sprintf('%s: %s', __("Invalid twig template syntax")),
+            __("Invalid twig template syntax"),
             false,
             ERROR
          );
