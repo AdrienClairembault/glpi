@@ -240,7 +240,7 @@ class RuleTicket extends Rule {
                         $parameters_class = $parent::getContentTemplatesParametersClass();
                         $parameters = new $parameters_class();
                         $solution_content = TemplateManager::render(
-                           Toolbox::addslashes_deep($template->getField('content')),
+                           $template->getField('content'),
                            $parameters->getValues($parent, true)
                         );
 

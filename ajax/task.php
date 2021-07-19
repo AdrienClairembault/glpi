@@ -79,7 +79,8 @@ $parameters_class = $parent::getContentTemplatesParametersClass();
 $parameters = new $parameters_class();
 $template->fields['content'] = TemplateManager::render(
    $template->fields['content'],
-   $parameters->getValues($parent)
+   $parameters->getValues($parent),
+   false
 );
 
 // Return json response with the template fields

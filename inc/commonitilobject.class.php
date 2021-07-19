@@ -8480,7 +8480,7 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters_class = self::getContentTemplatesParametersClass();
          $parameters = new $parameters_class();
          $tasktemplate_content = TemplateManager::render(
-            Toolbox::addslashes_deep($tasktemplate->fields["content"]),
+            $tasktemplate->fields["content"],
             $parameters->getValues($this, true)
          );
 
@@ -8524,7 +8524,7 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters_class = self::getContentTemplatesParametersClass();
          $parameters = new $parameters_class();
          $new_fup_content = TemplateManager::render(
-            Toolbox::addslashes_deep($fup_template->fields["content"]),
+            $fup_template->fields["content"],
             $parameters->getValues($this, true)
          );
 
