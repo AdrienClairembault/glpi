@@ -62,14 +62,26 @@ class TemplateManager
     *                               content ? Should be true if inserting content
     *                               directly into the database and false if
     *                               displaying the content into a form
+    * @param bool sanitized_input   Is the input cleaned ?
     *
     * @return string The rendered HTML
     */
    public static function render(
       string $content,
       array $params,
-      bool $add_slashes_deep = true
+      bool $add_slashes_deep = true,
+      bool $sanitized_input = false
    ): string {
+      // Unclean input if needed
+      if ($sanitized_input) {
+         $content = \Toolbox::unclean_cross_side_scripting_deep($content);
+         $params = \Toolbox::unclean_cross_side_scripting_deep($params);
+      }
+
+      // Clean html
+      $content = RichText::getSafeHtml($content, true);
+
+      // Init twig
       $loader = new ArrayLoader(['template' => $content]);
       $twig = new Environment($loader);
 
@@ -79,7 +91,6 @@ class TemplateManager
       try {
          // Render the template
          $html = $twig->render('template', $params);
-         $html = RichText::getSafeHtml($html, true);
          return $add_slashes_deep ? Toolbox::addslashes_deep($html) : $html;
       } catch (\Twig\Sandbox\SecurityError $e) {
          // Security policy error: the template use a forbidden tag/function/...
