@@ -911,8 +911,8 @@ class ITILFollowup  extends CommonDBChild {
                   type: 'POST',
                   data: {
                      itilfollowuptemplates_id: value,
-                     parents_id: '{$items_id}',
-                     parents_itemtype: '{$itemtype}',
+                     items_id: '{$items_id}',
+                     itemtype: '{$itemtype}',
                   }
                }).done(function(data) {
                   var requesttypes_id = isNaN(parseInt(data.requesttypes_id))
