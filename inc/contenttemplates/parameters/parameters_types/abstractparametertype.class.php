@@ -60,5 +60,5 @@ abstract class AbstractParameterType
     * that can be shared to the client side code as json and used for
     * autocompletion.
     */
-   abstract function compute(): array;
+   abstract public function compute(): array;
 }
