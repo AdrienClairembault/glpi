@@ -135,8 +135,8 @@ class CommonITILObjectParameters extends AbstractParameters
       $user_parameters = new UserParameters();
       $users_to_add = [
          'requesters' => CommonITILActor::REQUESTER,
-         'observers' => CommonITILActor::OBSERVER,
-         'technicians' => CommonITILActor::ASSIGN,
+         'observers'  => CommonITILActor::OBSERVER,
+         'assignees'  => CommonITILActor::ASSIGN,
       ];
       foreach ($users_to_add as $key => $type) {
          foreach ($commonitil->getUsers($type) as $data) {
@@ -150,8 +150,8 @@ class CommonITILObjectParameters extends AbstractParameters
       $group_parameters = new GroupParameters();
       $groups_to_add = [
          'requesters' => CommonITILActor::REQUESTER,
-         'observers' => CommonITILActor::OBSERVER,
-         'technicians' => CommonITILActor::ASSIGN,
+         'observers'  => CommonITILActor::OBSERVER,
+         'assignees'  => CommonITILActor::ASSIGN,
       ];
       foreach ($groups_to_add as $key => $type) {
          foreach ($commonitil->getGroups($type) as $data) {
