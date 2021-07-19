@@ -34,6 +34,7 @@ namespace Glpi\ContentTemplates;
 
 use Glpi\Toolbox\RichText;
 use Session;
+use Toolbox;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
@@ -55,12 +56,20 @@ class TemplateManager
    /**
     * Boiler plate code to render a user template
     *
-    * @param string $content Template content (html + twig)
-    * @param array $params   Variables to be exposed to the templating engine
+    * @param string $content        Template content (html + twig)
+    * @param array $params          Variables to be exposed to the templating engine
+    * @param bool $add_slashes_deep Should we call add_slashes_deep on rendered
+    *                               content ? Should be true if inserting content
+    *                               directly into the database and false if
+    *                               displaying the content into a form
     *
     * @return string The rendered HTML
     */
-   public static function render(string $content, array $params): string {
+   public static function render(
+      string $content,
+      array $params,
+      bool $add_slashes_deep = true
+   ): string {
       $loader = new ArrayLoader(['template' => $content]);
       $twig = new Environment($loader);
 
@@ -70,7 +79,8 @@ class TemplateManager
       try {
          // Render the template
          $html = $twig->render('template', $params);
-         return RichText::getSafeHtml($html, true);
+         $html = RichText::getSafeHtml($html, true);
+         return $add_slashes_deep ? Toolbox::addslashes_deep($html) : $html;
       } catch (\Twig\Sandbox\SecurityError $e) {
          // Security policy error: the template use a forbidden tag/function/...
          Session::addMessageAfterRedirect(
