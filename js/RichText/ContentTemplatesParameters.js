@@ -47,7 +47,7 @@ GLPI.RichText.ContentTemplatesParameters = class {
     */
    constructor(editor, values) {
       this.editor = editor;
-      this.values = this.parseParameters(JSON.parse(values));
+      this.values = this.parseParameters(values);
    }
 
    /**
