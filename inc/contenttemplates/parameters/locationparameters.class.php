@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class LocationParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'location';
+   }
+
    public static function getTargetClasses(): array {
       return [Location::class];
    }

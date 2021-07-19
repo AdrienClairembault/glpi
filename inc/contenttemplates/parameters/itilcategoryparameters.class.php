@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class ITILCategoryParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'itilcategory';
+   }
+
    public static function getTargetClasses(): array {
       return [ITILCategory::class];
    }

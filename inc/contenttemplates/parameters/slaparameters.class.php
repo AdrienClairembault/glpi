@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class SLAParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'sla';
+   }
+
    public static function getTargetClasses(): array {
       return [SLA::class];
    }

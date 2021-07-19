@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class RequestTypeParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'requesttype';
+   }
+
    public static function getTargetClasses(): array {
       return [RequestType::class];
    }

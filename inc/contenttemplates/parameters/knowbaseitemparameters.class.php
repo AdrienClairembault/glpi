@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class KnowbaseItemParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'knowbaseitem';
+   }
+
    public static function getTargetClasses(): array {
       return [KnowbaseItem::class];
    }
