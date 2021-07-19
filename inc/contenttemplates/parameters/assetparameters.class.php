@@ -44,7 +44,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "Assets" items (Compute, Monitor, ...)
  */
-class AssetParameters extends AbstractTemplatesParameters
+class AssetParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'asset';

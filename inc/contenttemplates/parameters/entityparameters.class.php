@@ -43,7 +43,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "Entity" items
  */
-class EntityParameters extends AbstractTemplatesParameters
+class EntityParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'entity';

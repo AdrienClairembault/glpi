@@ -44,9 +44,8 @@ if (!defined('GLPI_ROOT')) {
  *  - tasks templates
  *  - solutions templates
  */
-abstract class AbstractTemplatesParameters
+abstract class AbstractParameters implements TemplatesParametersInterface
 {
-
    /**
     * To be defined in each subclasses, define all available parameters for one or
     * more itemtypes.
@@ -67,6 +66,11 @@ abstract class AbstractTemplatesParameters
     */
    abstract protected function defineValues(CommonDBTM $item): array;
 
+   /**
+    * Get top level name to use for this class
+    *
+    * @return string
+    */
    abstract public static function getRootName(): string;
 
    /**

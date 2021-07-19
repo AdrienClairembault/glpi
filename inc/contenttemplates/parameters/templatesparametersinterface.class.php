@@ -30,41 +30,30 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
+namespace Glpi\ContentTemplates\Parameters;
 
-use Glpi\ContentTemplates\Parameters\AbstractParameters;
+use CommonDBTM;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
-/**
- * ObjectParameter represent a whole object to use as a parameter.
- * For exemple, this entity of a ticket or its category.
- */
-class ObjectParameter extends AbstractParameterType
+interface TemplatesParametersInterface
 {
    /**
-    * Parameters availables in the item that will be linked
+    * Get values for a given item, used for template rendering
     *
-    * @var AbstractParameters
+    * @param CommonDBTM $item
+    * @param bool       $root
+    *
+    * @return array
     */
-   protected $template_parameters;
+   public function getValues(CommonDBTM $item, bool $root = false): array;
 
    /**
-    * @param string $key                                       Key to access this value
-    * @param AbstractParameters $template_parameters  Parameters to add
+    * Get the available parameters, used by autocomplete
+    *
+    * @return array
     */
-   public function __construct(string $key, AbstractParameters $template_parameters) {
-      $this->key = $key;
-      $this->template_parameters = $template_parameters;
-   }
-
-   public function compute(): array {
-      return [
-         'type'       => "ObjectParameter",
-         'key'        => $this->key,
-         'properties' => $this->template_parameters->getAvailableParameters(),
-      ];
-   }
+   public function getAvailableParameters(): array;
 }

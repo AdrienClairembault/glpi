@@ -43,7 +43,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "RequestType" items
  */
-class RequestTypeParameters extends AbstractTemplatesParameters
+class RequestTypeParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'requesttype';

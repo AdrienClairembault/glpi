@@ -43,7 +43,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "KnowbaseItem" items
  */
-class KnowbaseItemParameters extends AbstractTemplatesParameters
+class KnowbaseItemParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'knowbaseitem';

@@ -32,7 +32,7 @@
 
 namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
 
-use Glpi\ContentTemplates\Parameters\AbstractTemplatesParameters;
+use Glpi\ContentTemplates\Parameters\AbstractParameters;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -65,7 +65,7 @@ class ArrayParameter extends AbstractParameterType
     * @param items_key $key                          Default key to be used when
     *                                                iterating on the children
     *                                                of this array
-    * @param AbstractTemplatesParameters $parameters Types of the item contained
+    * @param AbstractParameters $parameters Types of the item contained
     *                                                in this array
     * @param string $label                           Label to display in the
     *                                                autocompletion widget
@@ -73,7 +73,7 @@ class ArrayParameter extends AbstractParameterType
    public function __construct(
       string $key,
       string $items_key,
-      AbstractTemplatesParameters $parameters,
+      AbstractParameters $parameters,
       string $label
    ) {
       $this->key = $key;
