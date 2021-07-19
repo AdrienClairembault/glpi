@@ -46,16 +46,16 @@ if ($solutiontemplates_id == 0) {
    Toolbox::throwError(400, "Missing or invalid parameter: 'solutiontemplates_id'");
 }
 
-// Mandatory parameter: parents_id
-$parents_id = $_POST['parents_id'] ?? 0;
+// Mandatory parameter: items_id
+$parents_id = $_POST['items_id'] ?? 0;
 if ($parents_id == 0) {
-   Toolbox::throwError(400, "Missing or invalid parameter: 'parents_id'");
+   Toolbox::throwError(400, "Missing or invalid parameter: 'items_id'");
 }
 
-// Mandatory parameter: parents_itemtype
-$parents_itemtype = $_POST['parents_itemtype'] ?? '';
+// Mandatory parameter: itemtype
+$parents_itemtype = $_POST['itemtype'] ?? '';
 if (empty($parents_itemtype) || !is_subclass_of($parents_itemtype, CommonITILObject::class)) {
-   Toolbox::throwError(400, "Missing or invalid parameter: 'parents_itemtype'");
+   Toolbox::throwError(400, "Missing or invalid parameter: 'itemtype'");
 }
 
 // Load solution template

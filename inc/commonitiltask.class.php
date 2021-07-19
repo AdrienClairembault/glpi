@@ -1396,8 +1396,8 @@ abstract class CommonITILTask extends CommonDBTM implements CalDAVCompatibleItem
                type: "POST",
                data: {
                   tasktemplates_id: value,
-                  parents_id: ' . $items_id . ',
-                  parents_itemtype: "' . $itemtype . '",
+                  items_id: ' . $items_id . ',
+                  itemtype: "' . $itemtype . '",
                }
             }).done(function(data) {
                var taskcategories_id = isNaN(parseInt(data.taskcategories_id))

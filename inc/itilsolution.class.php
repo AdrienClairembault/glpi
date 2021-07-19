@@ -186,8 +186,8 @@ class ITILSolution extends CommonDBChild {
                   type: 'POST',
                   data: {
                      solutiontemplates_id: value,
-                     parents_id: '{$items_id}',
-                     parents_itemtype: '{$itemtype}',
+                     items_id: '{$items_id}',
+                     itemtype: '{$itemtype}',
                   }
                }).done(function(data) {
                   tinymce.get("{$content_id}").setContent(data.content);
