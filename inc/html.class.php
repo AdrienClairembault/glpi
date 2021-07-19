@@ -4066,7 +4066,7 @@ JAVASCRIPT
     * @return void
     */
    public static function activateUserTemplateAutocompletion(string $selector, array $values): void {
-      $values = addslashes(json_encode($values));
+      $values = json_encode($values);
 
       echo Html::scriptBlock(<<<JAVASCRIPT
          $(
@@ -4074,7 +4074,7 @@ JAVASCRIPT
                var editor_id = $('{$selector}').attr('id');
                var user_templates_autocomplete = new GLPI.RichText.ContentTemplatesParameters(
                   tinymce.get(editor_id),
-                  '{$values}'
+                  {$values}
                );
                user_templates_autocomplete.register();
             }
