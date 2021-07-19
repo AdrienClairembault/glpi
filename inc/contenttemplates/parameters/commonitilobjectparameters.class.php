@@ -74,6 +74,7 @@ class CommonITILObjectParameters extends AbstractParameters
          new AttributeParameter("urgency", __("Ticket's urgency")),
          new AttributeParameter("impact", __("Ticket's impact")),
          new AttributeParameter("priority", __("Ticket's priority")),
+         new AttributeParameter("itemtype", __("Itemtype")),
          new ObjectParameter("entity", new EntityParameters()),
          new ObjectParameter("itilcategory", new ITILCategoryParameters()),
          new ArrayParameter("requesters.users", 'user', new UserParameters(), __("Ticket's requesters (users)")),
@@ -102,6 +103,7 @@ class CommonITILObjectParameters extends AbstractParameters
          'urgency'   => $commonitil::getUrgencyName($commonitil->fields['urgency']),
          'impact'    => $commonitil::getImpactName($commonitil->fields['impact']),
          'priority'  => $commonitil::getPriorityName($commonitil->fields['priority']),
+         'itemtype'  => $commonitil::getType(),
       ];
 
       // Add ticket's entity
