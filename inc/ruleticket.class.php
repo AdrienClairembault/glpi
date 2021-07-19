@@ -241,9 +241,7 @@ class RuleTicket extends Rule {
                         $parameters = new $parameters_class();
                         $solution_content = TemplateManager::render(
                            Toolbox::addslashes_deep($template->getField('content')),
-                           [
-                              'ticket' => $parameters->getValues($parent)
-                           ]
+                           $parameters->getValues($parent, true)
                         );
 
                         $solution = new ITILSolution();

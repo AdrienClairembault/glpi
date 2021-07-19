@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class UserParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'user';
+   }
+
    public static function getTargetClasses(): array {
       return [User::class];
    }

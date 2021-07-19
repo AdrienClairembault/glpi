@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class GroupParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'group';
+   }
+
    public static function getTargetClasses(): array {
       return [Group::class];
    }

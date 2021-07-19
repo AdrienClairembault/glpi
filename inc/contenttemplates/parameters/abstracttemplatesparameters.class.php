@@ -67,6 +67,8 @@ abstract class AbstractTemplatesParameters
     */
    abstract public function defineValues(CommonDBTM $item): array;
 
+   abstract public static function getRootName(): string;
+
    /**
     * Get supported classes by this parameter type
     *
@@ -78,9 +80,14 @@ abstract class AbstractTemplatesParameters
 
    /**
     * "Wrapper" function for defineValues()
-    * -> Validate the class of the given item before calling defineValues()
+    *  Validate the class of the given item before calling defineValues()
+    *
+    * @param CommonDBTM $item
+    * @param bool       $root
+    *
+    * @return array
     */
-   public function getValues(CommonDBTM $item): array {
+   public function getValues(CommonDBTM $item, bool $root = false): array {
       $valid_class = false;
       foreach (self::getTargetClasses() as $class) {
          if ($item instanceof $class) {
@@ -94,12 +101,15 @@ abstract class AbstractTemplatesParameters
          return [];
       }
 
-      return $this->defineValues($item);
+      $values = $this->defineValues($item);
+      return $root ? [static::getRootName() => $values] : $values;
    }
 
    /**
     * "Wrapper" function for defineParameters()
-    * -> Get the parameters from defineParameters() and compute them
+    * Get the parameters from defineParameters() and compute them
+    *
+    * @return array
     */
    public function getAvailableParameters(): array {
       $parameters = [];

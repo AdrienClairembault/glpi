@@ -8471,9 +8471,7 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters = new $parameters_class();
          $tasktemplate_content = TemplateManager::render(
             Toolbox::addslashes_deep($tasktemplate->fields["content"]),
-            [
-               'ticket' => $parameters->getValues($this)
-            ]
+            $parameters->getValues($this, true)
          );
 
          $itiltask->add([
@@ -8517,9 +8515,7 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters = new $parameters_class();
          $new_fup_content = TemplateManager::render(
             Toolbox::addslashes_deep($fup_template->fields["content"]),
-            [
-               'ticket' => $parameters->getValues($this)
-            ]
+            $parameters->getValues($this, true)
          );
 
          // Insert new followup from template

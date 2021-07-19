@@ -45,6 +45,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class EntityParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'entity';
+   }
+
    public static function getTargetClasses(): array {
       return [Entity::class];
    }

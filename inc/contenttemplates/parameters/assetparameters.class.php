@@ -46,6 +46,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class AssetParameters extends AbstractTemplatesParameters
 {
+   public static function getRootName(): string {
+      return 'asset';
+   }
+
    public static function getTargetClasses(): array {
       global $CFG_GLPI;
       return $CFG_GLPI["asset_types"];

@@ -54,6 +54,10 @@ if (!defined('GLPI_ROOT')) {
  */
 class TicketParameters extends CommonITILObjectParameters
 {
+   public static function getRootName(): string {
+      return 'ticket';
+   }
+
    public static function getTargetClasses(): array {
       return [Ticket::class];
    }
