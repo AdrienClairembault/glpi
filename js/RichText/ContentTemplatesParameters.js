@@ -60,7 +60,7 @@ GLPI.RichText.ContentTemplatesParameters = class {
 
       // Register autocompleter
       this.editor.ui.registry.addAutocompleter(
-         'user_mention',
+         'content_templates',
          {
             ch: '{',
             minChars: 0,
