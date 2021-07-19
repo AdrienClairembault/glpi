@@ -50,7 +50,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "CommonITILObject" items
  */
-class CommonITILObjectParameters extends AbstractTemplatesParameters
+class CommonITILObjectParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'commonitil';

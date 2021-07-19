@@ -43,7 +43,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "Location" items
  */
-class LocationParameters extends AbstractTemplatesParameters
+class LocationParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'location';

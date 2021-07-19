@@ -43,7 +43,7 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "User" items
  */
-class UserParameters extends AbstractTemplatesParameters
+class UserParameters extends AbstractParameters
 {
    public static function getRootName(): string {
       return 'user';
