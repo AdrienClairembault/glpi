@@ -61,7 +61,7 @@ class LocationParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $entity): array {
+   protected function defineValues(CommonDBTM $entity): array {
       return [
          'id'           => $entity->fields['id'],
          'name'         => $entity->fields['name'],

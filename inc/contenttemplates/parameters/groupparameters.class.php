@@ -59,7 +59,7 @@ class GroupParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $group): array {
+   protected function defineValues(CommonDBTM $group): array {
       return [
          'name' => $group->fields['name'],
       ];

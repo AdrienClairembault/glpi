@@ -85,7 +85,7 @@ class CommonITILObjectParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $commonitil): array {
+   protected function defineValues(CommonDBTM $commonitil): array {
       /** @var CommonITILObject $commonitil  */
 
       // Base values from ticket property

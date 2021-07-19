@@ -59,7 +59,7 @@ class EntityParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $entity): array {
+   protected function defineValues(CommonDBTM $entity): array {
       return [
          'name' => $entity->fields['name'],
       ];

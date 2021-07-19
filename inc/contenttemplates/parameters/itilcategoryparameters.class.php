@@ -60,7 +60,7 @@ class ITILCategoryParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $itilcategory): array {
+   protected function defineValues(CommonDBTM $itilcategory): array {
       return [
          'id'   => $itilcategory->fields['id'],
          'name' => $itilcategory->fields['name'],
