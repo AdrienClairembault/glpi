@@ -79,10 +79,10 @@ class CommonITILObjectParameters extends AbstractParameters
          new ObjectParameter("itilcategory", new ITILCategoryParameters()),
          new ArrayParameter("requesters.users", 'user', new UserParameters(), __("Ticket's requesters (users)")),
          new ArrayParameter("observers.users", 'user', new UserParameters(), __("Ticket's observers (users)")),
-         new ArrayParameter("technicians.users", 'user', new UserParameters(), __("Ticket's technicians (users)")),
+         new ArrayParameter("assignees.users", 'user', new UserParameters(), __("Ticket's technicians (users)")),
          new ArrayParameter("requesters.groups", 'group', new GroupParameters(), __("Ticket's requesters (groups)")),
          new ArrayParameter("observers.groups", 'group', new GroupParameters(), __("Ticket's observers (groups)")),
-         new ArrayParameter("technicians.groups", 'group', new GroupParameters(), __("Ticket's technicians (groups)")),
+         new ArrayParameter("assignees.groups", 'group', new GroupParameters(), __("Ticket's technicians (groups)")),
       ];
    }
 
@@ -129,7 +129,7 @@ class CommonITILObjectParameters extends AbstractParameters
          'users'  => [],
          'groups' => [],
       ];
-      $values['technicians'] = [
+      $values['assignees'] = [
          'users'  => [],
          'groups' => [],
       ];
