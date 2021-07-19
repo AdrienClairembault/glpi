@@ -79,7 +79,7 @@ class TicketParameters extends CommonITILObjectParameters
       ]);
    }
 
-   public function defineValues(CommonDBTM $ticket): array {
+   protected function defineValues(CommonDBTM $ticket): array {
       /** @var Ticket $ticket  */
       $values = parent::defineValues($ticket);
       $values['type'] = $ticket::getTicketTypeName($ticket->fields['type']);

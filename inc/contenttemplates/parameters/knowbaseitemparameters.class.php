@@ -62,7 +62,7 @@ class KnowbaseItemParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $kbi): array {
+   protected function defineValues(CommonDBTM $kbi): array {
       return [
          'id'     => $kbi->fields['id'],
          'name'   => $kbi->fields['name'],

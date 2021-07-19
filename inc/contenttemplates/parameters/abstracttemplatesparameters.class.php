@@ -65,7 +65,7 @@ abstract class AbstractTemplatesParameters
     *
     * @return array
     */
-   abstract public function defineValues(CommonDBTM $item): array;
+   abstract protected function defineValues(CommonDBTM $item): array;
 
    abstract public static function getRootName(): string;
 

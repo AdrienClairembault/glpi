@@ -63,7 +63,7 @@ class SLAParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $sla): array {
+   protected function defineValues(CommonDBTM $sla): array {
       return [
          'id'       => $sla->fields['id'],
          'name'     => $sla->fields['name'],

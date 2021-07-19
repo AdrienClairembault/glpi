@@ -65,7 +65,7 @@ class AssetParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $asset): array {
+   protected function defineValues(CommonDBTM $asset): array {
       $values = [
          'id'       => $asset->fields['id'],
          'name'     => $asset->fields['name'],

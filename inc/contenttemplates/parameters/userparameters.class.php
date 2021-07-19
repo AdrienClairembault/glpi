@@ -59,7 +59,7 @@ class UserParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $user): array {
+   protected function defineValues(CommonDBTM $user): array {
       return [
          'name' => $user->fields['name'],
       ];

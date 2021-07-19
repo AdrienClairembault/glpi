@@ -60,7 +60,7 @@ class RequestTypeParameters extends AbstractTemplatesParameters
       ];
    }
 
-   public function defineValues(CommonDBTM $requesttype): array {
+   protected function defineValues(CommonDBTM $requesttype): array {
       return [
          'id'   => $requesttype->fields['id'],
          'name' => $requesttype->fields['name'],
