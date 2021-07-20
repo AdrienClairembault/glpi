@@ -57,7 +57,7 @@ abstract class AbstractTemplate extends CommonDropdown
       $input = parent::prepareInputForUpdate($input);
 
       // Validate twig template
-      if (isset($input['content']) && !TemplateManager::validate(stripslashes($input['content']), __('Content'))) {
+      if (isset($input['content']) && !TemplateManager::validate(stripslashes($input['content']), __('Content'), true)) {
          $this->saveInput();
          return false;
       }
@@ -69,7 +69,7 @@ abstract class AbstractTemplate extends CommonDropdown
       $input = parent::prepareInputForUpdate($input);
 
       // Validate twig template
-      if (isset($input['content']) && !TemplateManager::validate(stripslashes($input['content']), __('Content'))) {
+      if (isset($input['content']) && !TemplateManager::validate(stripslashes($input['content']), __('Content'), true)) {
          $this->saveInput();
          return false;
       }

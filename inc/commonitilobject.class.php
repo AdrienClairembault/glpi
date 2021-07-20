@@ -8481,7 +8481,12 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters = new $parameters_class();
          $tasktemplate_content = TemplateManager::render(
             $tasktemplate->fields["content"],
-            $parameters->getValues($this, true)
+            $parameters->getValues($this, true),
+            true
+         );
+         // Sanitize generated HTML before adding it in DB
+         $tasktemplate_content = Toolbox::clean_cross_side_scripting_deep(
+            Toolbox::addslashes_deep($tasktemplate_content)
          );
 
          $itiltask->add([
@@ -8525,7 +8530,12 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters = new $parameters_class();
          $new_fup_content = TemplateManager::render(
             $fup_template->fields["content"],
-            $parameters->getValues($this, true)
+            $parameters->getValues($this, true),
+            true
+         );
+         // Sanitize generated HTML before adding it in DB
+         $new_fup_content = Toolbox::clean_cross_side_scripting_deep(
+            Toolbox::addslashes_deep($new_fup_content)
          );
 
          // Insert new followup from template

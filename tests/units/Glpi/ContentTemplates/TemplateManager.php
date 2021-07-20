@@ -41,46 +41,73 @@ class TemplateManager extends GLPITestCase
    protected function testTemplatesProvider(): array {
       return [
          [
-            'content'  => "{{ test_var }}",
-            'params'   => ['test_var' => 'test_value'],
-            'expected' => "<p>test_value</p>",
+            'content'   => "{{ test_var }}",
+            'params'    => ['test_var' => 'test_value'],
+            'expected'  => "<p>test_value</p>",
          ],
          [
-            'content'  => "Test var: {{ test_var }}",
-            'params'   => ['test_var' => 'test_value'],
-            'expected' => "<p>Test var: test_value</p>",
+            'content'   => "Test var: {{ test_var }}",
+            'params'    => ['test_var' => 'test_value'],
+            'expected'  => "<p>Test var: test_value</p>",
          ],
          [
-            'content'  => "Test condition: {% if test_condition == true %}TRUE{% else %}FALSE{% endif %}",
-            'params'   => ['test_condition' => 'true'],
-            'expected' => "<p>Test condition: TRUE</p>",
+            'content'   => "Test condition: {% if test_condition == true %}TRUE{% else %}FALSE{% endif %}",
+            'params'    => ['test_condition' => 'true'],
+            'expected'  => "<p>Test condition: TRUE</p>",
          ],
          [
-            'content'  => "Test condition: {% if test_condition == true %}TRUE{% else %}FALSE{% endif %}",
-            'params'   => ['test_condition' => 'false'],
-            'expected' => "<p>Test condition: TRUE</p>",
+            'content'   => "Test condition: {% if test_condition == true %}TRUE{% else %}FALSE{% endif %}",
+            'params'    => ['test_condition' => 'false'],
+            'expected'  => "<p>Test condition: TRUE</p>",
          ],
          [
-            'content'  => "Test for: {% for item in items %}{{ item }} {% else %}no items{% endfor %}",
-            'params'   => ['items' => ['a', 'b', 'c', 'd', 'e']],
-            'expected' => "<p>Test for: a b c d e </p>",
+            'content'   => "Test for: {% for item in items %}{{ item }} {% else %}no items{% endfor %}",
+            'params'    => ['items' => ['a', 'b', 'c', 'd', 'e']],
+            'expected'  => "<p>Test for: a b c d e </p>",
          ],
          [
-            'content'  => "Test for: {% for item in items %}{{ item }} {% else %}no items{% endfor %}",
-            'params'   => ['items' => []],
-            'expected' => "<p>Test for: no items</p>",
+            'content'   => "Test for: {% for item in items %}{{ item }} {% else %}no items{% endfor %}",
+            'params'    => ['items' => []],
+            'expected'  => "<p>Test for: no items</p>",
          ],
          [
-            'content'  => "Test forbidden tag: {% set var = 'value' %}",
-            'params'   => [],
-            'expected' => "",
-            'error'    => 'Invalid twig template: Tag "set" is not allowed in "template" at line 1.',
+            'content'   => "Test forbidden tag: {% set var = 'value' %}",
+            'params'    => [],
+            'expected'  => "",
+            'error'     => 'Invalid twig template: Tag "set" is not allowed in "template" at line 1.',
          ],
          [
-            'content'  => "Test syntax error {{",
-            'params'   => [],
-            'expected' => "",
-            'error'    => 'Invalid twig template syntax',
+            'content'   => "Test syntax error {{",
+            'params'    => [],
+            'expected'  => "",
+            'error'     => 'Invalid twig template syntax',
+         ],
+         [
+            'content'   => '&#60;h1&#62;Test sanitized input&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
+            'params'    => ['content' => '&#60;p&#62;Item content&#60;/p&#62;'],
+            'expected'  => '<h1>Test sanitized input</h1><hr /><p>Item content</p>',
+            'error'     => null,
+            'sanitized' => true
+         ],
+         [
+            'content'   => '&#60;h1&#62;Test misused sanitized input&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
+            'params'    => ['content' => '&#60;p&#62;Item content&#60;/p&#62;'],
+            'expected'  => '<p>&#60;h1&#62;Test misused sanitized input&#60;/h1&#62;&#60;hr /&#62;&#60;p&#62;Item content&#60;/p&#62;</p>',
+            'error'     => null,
+            'sanitized' => false
+         ],
+         [
+            'content'   => "&#60;p&#62;Test sanitized template {% if count &#62; 5 %}&#60;b&#62;++&#60;/b&#62;{% endif %}&#60;/p&#62;",
+            'params'    => ['count' => 25],
+            'expected'  => "<p>Test sanitized template <b>++</b></p>",
+            'error'     => null,
+            'sanitized' => true
+         ],
+         [
+            'content'   => "Test invalid on missing unsanitizing {% if count &#62; 5 %}test{% endif %}",
+            'params'    => [],
+            'expected'  => "",
+            'error'     => 'Invalid twig template syntax',
          ],
       ];
    }
@@ -92,13 +119,14 @@ class TemplateManager extends GLPITestCase
       string $content,
       array $params,
       string $expected,
-      string $error = ""
+      ?string $error = null,
+      bool $sanitized = false
    ): void {
-      $html = CoreTemplateManager::render($content, $params);
+      $html = CoreTemplateManager::render($content, $params, $sanitized);
       $this->string($html)->isEqualTo($expected);
 
       // Handle error if neeced
-      if (!empty($error)) {
+      if ($error !== null) {
          $errors = $_SESSION['MESSAGE_AFTER_REDIRECT'][ERROR];
          unset($_SESSION['MESSAGE_AFTER_REDIRECT']);
          $this->array($errors)->hasSize(1);
@@ -113,13 +141,14 @@ class TemplateManager extends GLPITestCase
       string $content,
       array $params,
       string $expected,
-      string $error = ""
+      ?string $error = null,
+      bool $sanitized = false
    ): void {
-      $is_valid = CoreTemplateManager::validate($content, 'field');
+      $is_valid = CoreTemplateManager::validate($content, 'field', $sanitized);
       $this->boolean($is_valid)->isEqualTo(empty($error));
 
       // Handle error if neeced
-      if (!empty($error)) {
+      if ($error !== null) {
          $errors = $_SESSION['MESSAGE_AFTER_REDIRECT'][ERROR];
          unset($_SESSION['MESSAGE_AFTER_REDIRECT']);
          $this->array($errors)->hasSize(1);

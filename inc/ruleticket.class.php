@@ -241,7 +241,12 @@ class RuleTicket extends Rule {
                         $parameters = new $parameters_class();
                         $solution_content = TemplateManager::render(
                            $template->getField('content'),
-                           $parameters->getValues($parent, true)
+                           $parameters->getValues($parent, true),
+                           true
+                        );
+                        // Sanitize generated HTML before adding it in DB
+                        $solution_content = Toolbox::clean_cross_side_scripting_deep(
+                           Toolbox::addslashes_deep($solution_content)
                         );
 
                         $solution = new ITILSolution();

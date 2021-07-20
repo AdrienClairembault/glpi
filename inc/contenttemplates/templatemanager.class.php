@@ -58,18 +58,13 @@ class TemplateManager
     *
     * @param string $content        Template content (html + twig)
     * @param array $params          Variables to be exposed to the templating engine
-    * @param bool $add_slashes_deep Should we call add_slashes_deep on rendered
-    *                               content ? Should be true if inserting content
-    *                               directly into the database and false if
-    *                               displaying the content into a form
-    * @param bool sanitized_input   Is the input cleaned ?
+    * @param bool $sanitized_input  Indicates whether the input has been transformed by GLPI sanitize process
     *
     * @return string The rendered HTML
     */
    public static function render(
       string $content,
       array $params,
-      bool $add_slashes_deep = true,
       bool $sanitized_input = false
    ): string {
       // Unclean input if needed
@@ -77,9 +72,6 @@ class TemplateManager
          $content = \Toolbox::unclean_cross_side_scripting_deep($content);
          $params = \Toolbox::unclean_cross_side_scripting_deep($params);
       }
-
-      // Clean html
-      $content = RichText::getSafeHtml($content, true);
 
       // Init twig
       $loader = new ArrayLoader(['template' => $content]);
@@ -91,7 +83,11 @@ class TemplateManager
       try {
          // Render the template
          $html = $twig->render('template', $params);
-         return $add_slashes_deep ? Toolbox::addslashes_deep($html) : $html;
+
+         // Clean generated HTML to ensure both template and values are cleaned.
+         $html = RichText::getSafeHtml($html);
+
+         return $html;
       } catch (\Twig\Sandbox\SecurityError $e) {
          // Security policy error: the template use a forbidden tag/function/...
          Session::addMessageAfterRedirect(
@@ -116,13 +112,18 @@ class TemplateManager
    /**
     * Boiler plate code to validate a template that user is trying to submit
     *
-    * @param string $content     Template content (html + twig)
-    * @param string $field_label Name of the field containing the template, may
-    *                            be used in some error messages.
+    * @param string $content        Template content (html + twig)
+    * @param string $field_label    Name of the field containing the template, may
+    *                               be used in some error messages.
+    * @param bool $sanitized_input  Indicates whether the input has been transformed by GLPI sanitize process
     *
     * @return bool
     */
-   public static function validate(string $content, string $field_label): bool {
+   public static function validate(string $content, string $field_label, bool $sanitized_input = false): bool {
+      if ($sanitized_input) {
+         $content = \Toolbox::unclean_cross_side_scripting_deep($content);
+      }
+
       $twig = new Environment(new ArrayLoader(['template' => $content]));
       $twig->addExtension(new SandboxExtension(self::getSecurityPolicy(), true));
 
