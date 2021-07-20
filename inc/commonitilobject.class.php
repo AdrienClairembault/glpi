@@ -34,7 +34,6 @@ if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
-use Glpi\ContentTemplates\TemplateManager;
 use Glpi\Toolbox\RichText;
 
 /**
@@ -8476,16 +8475,8 @@ abstract class CommonITILObject extends CommonDBTM {
          $tasktemplate->getFromDB($tasktemplates_id);
 
          // Parse twig template
-         $parameters_class = static::getContentTemplatesParametersClass();
-         $parameters = new $parameters_class();
-         $tasktemplate_content = TemplateManager::render(
-            $tasktemplate->fields["content"],
-            [
-               'itemtype' => self::getType(),
-               $parameters->getDefaultNodeName() => $parameters->getValues($this),
-            ],
-            true
-         );
+         $tasktemplate_content = $tasktemplate->getRenderedContent($this);
+
          // Sanitize generated HTML before adding it in DB
          $tasktemplate_content = Toolbox::clean_cross_side_scripting_deep(
             Toolbox::addslashes_deep($tasktemplate_content)
@@ -8528,16 +8519,8 @@ abstract class CommonITILObject extends CommonDBTM {
          };
 
          // Parse twig template
-         $parameters_class = static::getContentTemplatesParametersClass();
-         $parameters = new $parameters_class();
-         $new_fup_content = TemplateManager::render(
-            $fup_template->fields["content"],
-            [
-               'itemtype' => self::getType(),
-               $parameters->getDefaultNodeName() => $parameters->getValues($this),
-            ],
-            true
-         );
+         $new_fup_content = $fup_template->getRenderedContent($this);
+
          // Sanitize generated HTML before adding it in DB
          $new_fup_content = Toolbox::clean_cross_side_scripting_deep(
             Toolbox::addslashes_deep($new_fup_content)

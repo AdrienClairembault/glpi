@@ -1,4 +1,7 @@
 <?php
+
+use Glpi\ContentTemplates\TemplateManager;
+
 /**
  * ---------------------------------------------------------------------
  * GLPI - Gestionnaire Libre de Parc Informatique
@@ -105,5 +108,25 @@ class ITILFollowupTemplate extends AbstractTemplate {
       ];
 
       return $tab;
+   }
+
+   /**
+    * Get content rendered by template engine, using given ITIL item to build parameters.
+    *
+    * @param CommonITILObject $itil_item
+    *
+    * @return string
+    */
+   public function getRenderedContent(CommonITILObject $itil_item): string {
+      $parameters_class = $itil_item->getContentTemplatesParametersClass();
+      $parameters = new $parameters_class();
+      return TemplateManager::render(
+         $this->fields['content'],
+         [
+            'itemtype' => $itil_item->getType(),
+            $parameters->getDefaultNodeName() => $parameters->getValues($itil_item),
+         ],
+         true
+      );
    }
 }

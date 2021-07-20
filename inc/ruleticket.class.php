@@ -30,7 +30,6 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\ContentTemplates\TemplateManager;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -237,16 +236,8 @@ class RuleTicket extends Rule {
                         }
 
                         // Parse twig template
-                        $parameters_class = $parent::getContentTemplatesParametersClass();
-                        $parameters = new $parameters_class();
-                        $solution_content = TemplateManager::render(
-                           $template->getField('content'),
-                           [
-                              'itemtype' => $parent::getType(),
-                              $parameters->getDefaultNodeName() => $parameters->getValues($parent),
-                           ],
-                           true
-                        );
+                        $solution_content = $template->getRenderedContent($this);
+
                         // Sanitize generated HTML before adding it in DB
                         $solution_content = Toolbox::clean_cross_side_scripting_deep(
                            Toolbox::addslashes_deep($solution_content)
