@@ -51,7 +51,7 @@ class SLAParameters extends AbstractParameters
    }
 
    public static function getTargetClasses(): array {
-      return [SLA::class];
+      return [SLA::class, OLA::class];
    }
 
    public function defineParameters(): array {

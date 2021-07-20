@@ -45,7 +45,7 @@ class AbstractParameters extends DbTestCase
          $properties = explode('.', $parameter);
          return array_shift($properties);
       }, $parameters_keys);
-      $parameters_keys = array_unique($parameters_keys);
+      $parameters_keys = array_values(array_unique($parameters_keys));
 
       $this->array($parameters_keys)->isEqualTo($values_keys);
    }

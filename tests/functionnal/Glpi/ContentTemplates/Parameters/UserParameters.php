@@ -32,29 +32,22 @@
 
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
-use Glpi\ContentTemplates\Parameters\SLAParameters as CoreSLAParameters;
+use Glpi\ContentTemplates\Parameters\UserParameters as CoreUserParameters;
 
-class SLAParameters extends AbstractParameters
+class UserParameters extends AbstractParameters
 {
    public function testGetValues(): void {
       $test_entity_id = getItemByTypeName('Entity', '_test_child_2', true);
 
-      $this->createItem('SLA', [
-         'name'            => 'sla_testGetValues',
-         'type'            => 1,
+      $this->createItem('User', [
+         'name'            => 'user_testGetValues',
          'entities_id'     => $test_entity_id,
-         'number_time'     => 4,
-         'definition_time' => 'hour',
       ]);
 
-      $parameters = new CoreSLAParameters();
-      $values = $parameters->getValues(getItemByTypeName('SLA', 'sla_testGetValues'));
+      $parameters = new CoreUserParameters();
+      $values = $parameters->getValues(getItemByTypeName('User', 'user_testGetValues'));
       $this->array($values)->isEqualTo([
-         'id'       => getItemByTypeName('SLA', 'sla_testGetValues', true),
-         'name'     => 'sla_testGetValues',
-         'type'     => 'Time to own',
-         'duration' => '4',
-         'unit'     => 'hours',
+         'name' => 'user_testGetValues',
       ]);
 
       $this->testGetAvailableParameters($values, $parameters->getAvailableParameters());

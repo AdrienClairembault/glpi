@@ -40,6 +40,7 @@ use Item_Ticket;
 use KnowbaseItem;
 use KnowbaseItem_Item;
 use Location;
+use OLA;
 use RequestType;
 use SLA;
 use Ticket;
@@ -69,11 +70,11 @@ class TicketParameters extends CommonITILObjectParameters
          new AttributeParameter("global_validation", __("Ticket's validation")),
          new AttributeParameter("tto", __("Ticket's TTO"), 'date("d/m/y H:i")'),
          new AttributeParameter("ttr", __("Ticket's TTR"), 'date("d/m/y H:i")'),
-         new ObjectParameter("requesttype", new RequestTypeParameters()),
          new ObjectParameter('sla_tto', new SLAParameters()),
          new ObjectParameter('sla_ttr', new SLAParameters()),
          new ObjectParameter('ola_tto', new SLAParameters()),
          new ObjectParameter('ola_ttr', new SLAParameters()),
+         new ObjectParameter("requesttype", new RequestTypeParameters()),
          new ObjectParameter('location', new LocationParameters()),
          new ArrayParameter("knowbaseitems", 'knowbaseitem', new KnowbaseItemParameters(), __("Ticket's knowledge base articles")),
          new ArrayParameter("assets", 'asset', new AssetParameters(), __("Ticket's linked items")),
@@ -99,13 +100,13 @@ class TicketParameters extends CommonITILObjectParameters
          $values['sla_tto'] = $sla_parameters->getValues($sla);
       }
       if ($sla = SLA::getById($fields['slas_id_ttr'])) {
-         $values['sla_tto'] = $sla_parameters->getValues($sla);
+         $values['sla_ttr'] = $sla_parameters->getValues($sla);
       }
-      if ($sla = SLA::getById($fields['olas_id_tto'])) {
-         $values['sla_tto'] = $sla_parameters->getValues($sla);
+      if ($ola = OLA::getById($fields['olas_id_tto'])) {
+         $values['ola_tto'] = $sla_parameters->getValues($ola);
       }
-      if ($sla = SLA::getById($fields['olas_id_ttr'])) {
-         $values['sla_tto'] = $sla_parameters->getValues($sla);
+      if ($ola = OLA::getById($fields['olas_id_ttr'])) {
+         $values['ola_ttr'] = $sla_parameters->getValues($ola);
       }
 
       // Add ticket's request type
