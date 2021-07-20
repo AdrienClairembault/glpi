@@ -32,26 +32,41 @@
 
 namespace Glpi\ContentTemplates\Parameters;
 
-use SLA;
+use CommonDBTM;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
+use LevelAgreement;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "SLA" items
+ * Parameters for "LevelAgreement" items
  */
-class SLAParameters extends LevelAgreementParameters
+abstract class LevelAgreementParameters extends AbstractParameters
 {
-   public static function getDefaultNodeName(): string {
-      return 'sla';
+   public function defineParameters(): array {
+      return [
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Name')),
+         new AttributeParameter("type", _n('Type', 'Types', 1)),
+         new AttributeParameter("duration", __('Duration')),
+         new AttributeParameter("unit", __('Duration unit')),
+      ];
    }
 
-   public static function getObjectLabel(): string {
-      return SLA::getTypeName(1);
-   }
+   protected function defineValues(CommonDBTM $sla): array {
 
-   protected function getTargetClasses(): array {
-      return [SLA::class];
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($sla->fields);
+
+      return [
+         'id'       => $fields['id'],
+         'name'     => $fields['name'],
+         'type'     => LevelAgreement::getOneTypeName($fields['type']),
+         'duration' => $fields['number_time'],
+         'unit'     => strtolower(LevelAgreement::getDefinitionTimeLabel($fields['definition_time'])),
+      ];
    }
 }

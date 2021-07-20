@@ -77,8 +77,8 @@ class TicketParameters extends CommonITILObjectParameters
          new AttributeParameter("ttr", __('Time to resolve'), 'date("d/m/y H:i")'),
          new ObjectParameter(new SLAParameters(), 'sla_tto'),
          new ObjectParameter(new SLAParameters(), 'sla_ttr'),
-         new ObjectParameter(new SLAParameters(), 'ola_tto'),
-         new ObjectParameter(new SLAParameters(), 'ola_ttr'),
+         new ObjectParameter(new OLAParameters(), 'ola_tto'),
+         new ObjectParameter(new OLAParameters(), 'ola_ttr'),
          new ObjectParameter(new RequestTypeParameters()),
          new ObjectParameter(new LocationParameters()),
          new ArrayParameter("knowbaseitems", new KnowbaseItemParameters(), KnowbaseItem_Item::getTypeName(Session::getPluralNumber())),
@@ -107,11 +107,12 @@ class TicketParameters extends CommonITILObjectParameters
       if ($sla = SLA::getById($fields['slas_id_ttr'])) {
          $values['sla_ttr'] = $sla_parameters->getValues($sla);
       }
+      $ola_parameters = new OLAParameters();
       if ($ola = OLA::getById($fields['olas_id_tto'])) {
-         $values['ola_tto'] = $sla_parameters->getValues($ola);
+         $values['ola_tto'] = $ola_parameters->getValues($ola);
       }
       if ($ola = OLA::getById($fields['olas_id_ttr'])) {
-         $values['ola_ttr'] = $sla_parameters->getValues($ola);
+         $values['ola_ttr'] = $ola_parameters->getValues($ola);
       }
 
       // Add ticket's request type

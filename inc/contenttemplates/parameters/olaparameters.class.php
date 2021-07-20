@@ -32,26 +32,26 @@
 
 namespace Glpi\ContentTemplates\Parameters;
 
-use SLA;
+use OLA;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
 /**
- * Parameters for "SLA" items
+ * Parameters for "OLA" items
  */
-class SLAParameters extends LevelAgreementParameters
+class OLAParameters extends LevelAgreementParameters
 {
    public static function getDefaultNodeName(): string {
-      return 'sla';
+      return 'ola';
    }
 
    public static function getObjectLabel(): string {
-      return SLA::getTypeName(1);
+      return OLA::getTypeName(1);
    }
 
    protected function getTargetClasses(): array {
-      return [SLA::class];
+      return [OLA::class];
    }
 }
