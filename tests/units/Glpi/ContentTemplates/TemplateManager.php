@@ -116,6 +116,13 @@ class TemplateManager extends GLPITestCase
             'expected'  => "",
             'error'     => 'Invalid twig template syntax',
          ],
+         [
+            'content'   => '&#60;h1 onclick="alert(1);"&#62;Test safe HTML2&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
+            'params'    => ['content' => 'Fill this form:<iframe src="phishing.php"></iframe>'],
+            'expected'  => '<h1>Test safe HTML2</h1><hr />Fill this form:',
+            'error'     => null,
+            'sanitized' => true
+         ],
       ];
    }
 
