@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class RequestTypeParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'requesttype';
+   }
+
+   public static function getObjectLabel(): string {
+      return RequestType::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,8 +60,8 @@ class RequestTypeParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Request type id")),
-         new AttributeParameter("name", __("Request type name")),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Name')),
       ];
    }
 

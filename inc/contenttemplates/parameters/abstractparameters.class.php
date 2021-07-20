@@ -52,7 +52,7 @@ abstract class AbstractParameters implements TemplatesParametersInterface
     * These parameters informations are meant to be used for autocompletion on
     * the client side
     *
-    * @return AbstractParameterType[]
+    * @return \Glpi\ContentTemplates\Parameters\ParametersTypes\AbstractParameterType[]
     */
    abstract protected function defineParameters(): array;
 
@@ -65,22 +65,6 @@ abstract class AbstractParameters implements TemplatesParametersInterface
     * @return array
     */
    abstract protected function defineValues(CommonDBTM $item): array;
-
-   /**
-    * Get top level name to use for this class
-    *
-    * @return string
-    */
-   abstract public static function getRootName(): string;
-
-   /**
-    * Get supported classes by this parameter type
-    *
-    * @return array
-    */
-   public static function getTargetClasses(): array {
-      return [];
-   }
 
    /**
     * "Wrapper" function for defineValues()
@@ -106,7 +90,7 @@ abstract class AbstractParameters implements TemplatesParametersInterface
       }
 
       $values = $this->defineValues($item);
-      return $root ? [static::getRootName() => $values] : $values;
+      return $root ? [static::getRootNodeName() => $values] : $values;
    }
 
    /**

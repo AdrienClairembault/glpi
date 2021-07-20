@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class LocationParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'location';
+   }
+
+   public static function getObjectLabel(): string {
+      return Location::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,9 +60,9 @@ class LocationParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Location's id")),
-         new AttributeParameter("name", __("Location's name")),
-         new AttributeParameter("completename", __("Location's completename")),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Name')),
+         new AttributeParameter("completename", __('Complete name')),
       ];
    }
 

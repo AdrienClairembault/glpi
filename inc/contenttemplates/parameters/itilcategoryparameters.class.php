@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class ITILCategoryParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'itilcategory';
+   }
+
+   public static function getObjectLabel(): string {
+      return ITILCategory::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,8 +60,8 @@ class ITILCategoryParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Category id")),
-         new AttributeParameter("name", __("Category name")),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Name')),
       ];
    }
 

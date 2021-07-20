@@ -41,6 +41,7 @@ use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\ObjectParameter;
 use Group;
 use ITILCategory;
+use Session;
 use Toolbox;
 use User;
 
@@ -53,8 +54,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class CommonITILObjectParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'commonitil';
+   }
+
+   public static function getObjectLabel(): string {
+      return '';
    }
 
    public static function getTargetClasses(): array {
@@ -63,27 +68,27 @@ class CommonITILObjectParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Ticket's id")),
-         new AttributeParameter("ref", __("Reference of the ticket (# + id)")),
-         new AttributeParameter("link", __("Link to this ticket"), "raw"),
-         new AttributeParameter("name", __("Ticket's title")),
-         new AttributeParameter("content", __("Ticket's description"), "raw"),
-         new AttributeParameter("date", __("Ticket's opening date"), 'date("d/m/y H:i")'),
-         new AttributeParameter("solvedate", __("Ticket's resolution date"), 'date("d/m/y H:i")'),
-         new AttributeParameter("closedate", __("Ticket's close date"), 'date("d/m/y H:i")'),
-         new AttributeParameter("status", __("Ticket's status")),
-         new AttributeParameter("urgency", __("Ticket's urgency")),
-         new AttributeParameter("impact", __("Ticket's impact")),
-         new AttributeParameter("priority", __("Ticket's priority")),
-         new AttributeParameter("itemtype", __("Itemtype")),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("ref", __("Reference (# + id)")),
+         new AttributeParameter("link", _n('Link', 'Links', 1), "raw"),
+         new AttributeParameter("name", __('Title')),
+         new AttributeParameter("content", __('Description'), "raw"),
+         new AttributeParameter("date", __('Opening date'), 'date("d/m/y H:i")'),
+         new AttributeParameter("solvedate", __('Resolution date'), 'date("d/m/y H:i")'),
+         new AttributeParameter("closedate", __('Closing date'), 'date("d/m/y H:i")'),
+         new AttributeParameter("status", __('Status')),
+         new AttributeParameter("urgency", __('Urgency')),
+         new AttributeParameter("impact", __('Impact')),
+         new AttributeParameter("priority", __('Priority')),
+         new AttributeParameter("itemtype", __('Itemtype')),
          new ObjectParameter("entity", new EntityParameters()),
          new ObjectParameter("itilcategory", new ITILCategoryParameters()),
-         new ArrayParameter("requesters.users", 'user', new UserParameters(), __("Ticket's requesters (users)")),
-         new ArrayParameter("observers.users", 'user', new UserParameters(), __("Ticket's observers (users)")),
-         new ArrayParameter("assignees.users", 'user', new UserParameters(), __("Ticket's technicians (users)")),
-         new ArrayParameter("requesters.groups", 'group', new GroupParameters(), __("Ticket's requesters (groups)")),
-         new ArrayParameter("observers.groups", 'group', new GroupParameters(), __("Ticket's observers (groups)")),
-         new ArrayParameter("assignees.groups", 'group', new GroupParameters(), __("Ticket's technicians (groups)")),
+         new ArrayParameter("requesters.users", 'user', new UserParameters(), _n('Requester', 'Requesters', Session::getPluralNumber())),
+         new ArrayParameter("observers.users", 'user', new UserParameters(), _n('Watcher', 'Watchers', Session::getPluralNumber())),
+         new ArrayParameter("assignees.users", 'user', new UserParameters(), _n('Assignee', 'Assignees', Session::getPluralNumber())),
+         new ArrayParameter("requesters.groups", 'group', new GroupParameters(), _n('Requester group', 'Requester groups', Session::getPluralNumber())),
+         new ArrayParameter("observers.groups", 'group', new GroupParameters(), _n('Watcher group', 'Watcher groups', Session::getPluralNumber())),
+         new ArrayParameter("assignees.groups", 'group', new GroupParameters(), _n('Assigned group', 'Assigned groups', Session::getPluralNumber())),
       ];
    }
 

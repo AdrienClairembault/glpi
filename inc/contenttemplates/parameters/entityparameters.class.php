@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class EntityParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'entity';
+   }
+
+   public static function getObjectLabel(): string {
+      return Entity::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,7 +60,7 @@ class EntityParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("name", __("Name of the entity")),
+         new AttributeParameter("name", __('Name')),
       ];
    }
 

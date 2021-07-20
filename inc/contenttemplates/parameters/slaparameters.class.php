@@ -47,8 +47,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class SLAParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'sla';
+   }
+
+   public static function getObjectLabel(): string {
+      return SLA::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -57,11 +61,11 @@ class SLAParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("SLA's ID")),
-         new AttributeParameter("name", __("SLAs's name")),
-         new AttributeParameter("type", __("SLA's type")),
-         new AttributeParameter("duration", __("SLA's duration")),
-         new AttributeParameter("unit", __("SLA's duration unit")),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Name')),
+         new AttributeParameter("type", _n('Type', 'Types', 1)),
+         new AttributeParameter("duration", __('Duration')),
+         new AttributeParameter("unit", __('Duration unit')),
       ];
    }
 

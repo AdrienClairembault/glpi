@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class GroupParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'group';
+   }
+
+   public static function getObjectLabel(): string {
+      return Group::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,7 +60,7 @@ class GroupParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("name", __("Group's name")),
+         new AttributeParameter("name", __('Name')),
       ];
    }
 

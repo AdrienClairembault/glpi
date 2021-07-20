@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class KnowbaseItemParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'knowbaseitem';
+   }
+
+   public static function getObjectLabel(): string {
+      return KnowbaseItem::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,10 +60,10 @@ class KnowbaseItemParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Knowledge base article's id")),
-         new AttributeParameter("name", __("Knowledge base article's title")),
-         new AttributeParameter("answer", __("Knowledge base article's content"), "raw"),
-         new AttributeParameter("link", __("Link to the knowledge base article"), "raw"),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Subject')),
+         new AttributeParameter("answer", __('Content'), "raw"),
+         new AttributeParameter("link", _n('Link', 'Links', 1), "raw"),
       ];
    }
 

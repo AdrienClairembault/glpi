@@ -47,8 +47,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class AssetParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'asset';
+   }
+
+   public static function getObjectLabel(): string {
+      return __('Asset');
    }
 
    public static function getTargetClasses(): array {
@@ -58,10 +62,10 @@ class AssetParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("id", __("Asset's id")),
-         new AttributeParameter("name", __("Asset's name")),
-         new AttributeParameter("itemtype", __("Asset's itemtype")),
-         new AttributeParameter("serial", __("Asset's serial number")),
+         new AttributeParameter("id", __('ID')),
+         new AttributeParameter("name", __('Name')),
+         new AttributeParameter("itemtype", __('Itemtype')),
+         new AttributeParameter("serial", __('Serial number')),
          new ObjectParameter("entity", new EntityParameters()),
       ];
    }

@@ -42,6 +42,7 @@ use KnowbaseItem_Item;
 use Location;
 use OLA;
 use RequestType;
+use Session;
 use SLA;
 use Ticket;
 use TicketValidation;
@@ -56,8 +57,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class TicketParameters extends CommonITILObjectParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'ticket';
+   }
+
+   public static function getObjectLabel(): string {
+      return Ticket::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -66,18 +71,18 @@ class TicketParameters extends CommonITILObjectParameters
 
    public function defineParameters(): array {
       return array_merge(parent::defineParameters(), [
-         new AttributeParameter("type", __("Ticket's type")),
-         new AttributeParameter("global_validation", __("Ticket's validation")),
-         new AttributeParameter("tto", __("Ticket's TTO"), 'date("d/m/y H:i")'),
-         new AttributeParameter("ttr", __("Ticket's TTR"), 'date("d/m/y H:i")'),
+         new AttributeParameter("type", _n('Type', 'Types', 1)),
+         new AttributeParameter("global_validation", _n('Approval', 'Approvals', 1)),
+         new AttributeParameter("tto", __('Time to own'), 'date("d/m/y H:i")'),
+         new AttributeParameter("ttr", __('Time to resolve'), 'date("d/m/y H:i")'),
          new ObjectParameter('sla_tto', new SLAParameters()),
          new ObjectParameter('sla_ttr', new SLAParameters()),
          new ObjectParameter('ola_tto', new SLAParameters()),
          new ObjectParameter('ola_ttr', new SLAParameters()),
          new ObjectParameter("requesttype", new RequestTypeParameters()),
          new ObjectParameter('location', new LocationParameters()),
-         new ArrayParameter("knowbaseitems", 'knowbaseitem', new KnowbaseItemParameters(), __("Ticket's knowledge base articles")),
-         new ArrayParameter("assets", 'asset', new AssetParameters(), __("Ticket's linked items")),
+         new ArrayParameter("knowbaseitems", 'knowbaseitem', new KnowbaseItemParameters(), KnowbaseItem_Item::getTypeName(Session::getPluralNumber())),
+         new ArrayParameter("assets", 'asset', new AssetParameters(), Item_Ticket::getTypeName(Session::getPluralNumber())),
       ]);
    }
 

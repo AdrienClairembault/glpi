@@ -130,19 +130,24 @@ GLPI.RichText.ContentTemplatesParameters = class {
     * @private
     *
     * @param {Array} parameters
-    * @param {string} prefix
+    * @param {string} key_prefix
+    * @param {string} label_prefix
     *
     * @returns {Array} Parsed parameters
     */
-   parseParameters(parameters, prefix = "") {
+   parseParameters(parameters, key_prefix = "", label_prefix = "") {
       const parsed_parameters = [];
       const that = this;
 
       parameters.forEach(parameter => {
-         // Add prefix, needed when we go down recursivly so we don't lose track
+         // Add key prefix, needed when we go down recursivly so we don't lose track
          // of the main item (e.g ticket.entity.name instead of entity.name)
-         if (prefix.length > 0) {
-            parameter.key = prefix + "." + parameter.key;
+         if (key_prefix.length > 0) {
+            parameter.key = key_prefix + "." + parameter.key;
+         }
+         // Add label prefix to enhance lisibility
+         if (label_prefix.length > 0) {
+            parameter.label = label_prefix + " > " + parameter.label;
          }
 
          switch (parameter.type) {
@@ -164,7 +169,7 @@ GLPI.RichText.ContentTemplatesParameters = class {
 
             // Recursivly parse parameters of the given object
             case 'ObjectParameter': {
-               parsed_parameters.push(...that.parseParameters(parameter.properties, parameter.key));
+               parsed_parameters.push(...that.parseParameters(parameter.properties, parameter.key, parameter.label));
                break;
             }
 

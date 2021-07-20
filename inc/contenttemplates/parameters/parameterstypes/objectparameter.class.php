@@ -64,6 +64,7 @@ class ObjectParameter extends AbstractParameterType
       return [
          'type'       => "ObjectParameter",
          'key'        => $this->key,
+         'label'      => $this->template_parameters->getObjectLabel(),
          'properties' => $this->template_parameters->getAvailableParameters(),
       ];
    }

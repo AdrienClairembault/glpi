@@ -46,8 +46,12 @@ if (!defined('GLPI_ROOT')) {
  */
 class UserParameters extends AbstractParameters
 {
-   public static function getRootName(): string {
+   public static function getRootNodeName(): string {
       return 'user';
+   }
+
+   public static function getObjectLabel(): string {
+      return User::getTypeName(1);
    }
 
    public static function getTargetClasses(): array {
@@ -56,7 +60,7 @@ class UserParameters extends AbstractParameters
 
    public function defineParameters(): array {
       return [
-         new AttributeParameter("name", __("User's login")),
+         new AttributeParameter("name", __('Login')),
       ];
    }
 

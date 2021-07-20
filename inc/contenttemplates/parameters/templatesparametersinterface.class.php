@@ -41,6 +41,20 @@ if (!defined('GLPI_ROOT')) {
 interface TemplatesParametersInterface
 {
    /**
+    * Get top level node name to use for this class.
+    *
+    * @return string
+    */
+   public static function getRootNodeName(): string;
+
+   /**
+    * Get label to use for this class.
+    *
+    * @return string
+    */
+   public static function getObjectLabel(): string;
+
+   /**
     * Get values for a given item, used for template rendering
     *
     * @param CommonDBTM $item

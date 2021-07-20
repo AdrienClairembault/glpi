@@ -61,14 +61,10 @@ class ArrayParameter extends AbstractParameterType
    protected $content;
 
    /**
-    * @param string $key                             Key to access this value
-    * @param items_key $key                          Default key to be used when
-    *                                                iterating on the children
-    *                                                of this array
-    * @param AbstractParameters $parameters Types of the item contained
-    *                                                in this array
-    * @param string $label                           Label to display in the
-    *                                                autocompletion widget
+    * @param string              $key        Key to access this value
+    * @param string              $items_key  Default key to be used when iterating on the children of this array
+    * @param AbstractParameters  $parameters Types of the item contained in this array
+    * @param string              $label      Label to display in the autocompletion widget
     */
    public function __construct(
       string $key,
