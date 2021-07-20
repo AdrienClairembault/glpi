@@ -114,7 +114,7 @@ class TicketParameters extends AbstractParameters
          'ref'       => "#$tickets_id",
          'link'      => "<a  href='/glpi/front/ticket.form.php?id=$tickets_id'  title=\"ticket_testGetValues\">ticket_testGetValues</a>",
          'name'      => 'ticket_testGetValues',
-         'content'   => Toolbox::clean_cross_side_scripting_deep('<p>ticket_testGetValues content</p>'),
+         'content'   => '<p>ticket_testGetValues content</p>',
          'date'      => $now,
          'solvedate' => null,
          'closedate' => null,
