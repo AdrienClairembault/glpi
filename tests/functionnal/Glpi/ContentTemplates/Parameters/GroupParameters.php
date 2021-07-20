@@ -32,15 +32,22 @@
 
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
-use Glpi\ContentTemplates\Parameters\EntityParameters as CoreEntityParameters;
+use Glpi\ContentTemplates\Parameters\GroupParameters as CoreGroupParameters;
 
-class EntityParameters extends AbstractParameter
+class GroupParameters extends AbstractParameters
 {
    public function testGetValues(): void {
-      $parameters = new CoreEntityParameters();
-      $values = $parameters->getValues(getItemByTypeName('Entity', '_test_child_2'));
+      $test_entity_id = getItemByTypeName('Entity', '_test_child_2', true);
+
+      $this->createItem('Group', [
+         'name'        => 'group_testGetValues',
+         'entities_id' => $test_entity_id
+      ]);
+
+      $parameters = new CoreGroupParameters();
+      $values = $parameters->getValues(getItemByTypeName('Group', 'group_testGetValues'));
       $this->array($values)->isEqualTo([
-         'name' => '_test_child_2',
+         'name' => 'group_testGetValues',
       ]);
 
       $this->testGetAvailableParameters($values, $parameters->getAvailableParameters());

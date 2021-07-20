@@ -32,29 +32,15 @@
 
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
-use Glpi\ContentTemplates\Parameters\AssetParameters as CoreAssetParameters;
+use Glpi\ContentTemplates\Parameters\EntityParameters as CoreEntityParameters;
 
-class AssetParameters extends AbstractParameters
+class EntityParameters extends AbstractParameters
 {
    public function testGetValues(): void {
-      $test_entity_id = getItemByTypeName('Entity', '_test_child_2', true);
-
-      $this->createItem('Computer', [
-         'name'        => 'pc_testGetValues',
-         'serial'      => 'abcd1234',
-         'entities_id' => $test_entity_id
-      ]);
-
-      $parameters = new CoreAssetParameters();
-      $values = $parameters->getValues(getItemByTypeName('Computer', 'pc_testGetValues'));
+      $parameters = new CoreEntityParameters();
+      $values = $parameters->getValues(getItemByTypeName('Entity', '_test_child_2'));
       $this->array($values)->isEqualTo([
-         'id'          => getItemByTypeName('Computer', 'pc_testGetValues', true),
-         'name'        => 'pc_testGetValues',
-         'itemtype'    => 'Computer',
-         'serial'      => 'abcd1234',
-         'entity' => [
-            'name' => '_test_child_2',
-         ]
+         'name' => '_test_child_2',
       ]);
 
       $this->testGetAvailableParameters($values, $parameters->getAvailableParameters());

@@ -32,21 +32,25 @@
 
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
-use DbTestCase;
+use Glpi\ContentTemplates\Parameters\ITILCategoryParameters as CoreITILCategoryParameters;
 
-class AbstractParameter extends DbTestCase
+class ITILCategoryParameters extends AbstractParameters
 {
-   protected function testGetAvailableParameters($values, $parameters): void {
-      $values_keys = array_keys($values);
-      $parameters_keys = array_column($parameters, 'key');
+   public function testGetValues(): void {
+      $test_entity_id = getItemByTypeName('Entity', '_test_child_2', true);
 
-      // Remove "flat" arrays (requester.user, requester.groups, ...)
-      $parameters_keys = array_map(function($parameter) {
-         $properties = explode('.', $parameter);
-         return array_shift($properties);
-      }, $parameters_keys);
-      $parameters_keys = array_unique($parameters_keys);
+      $this->createItem('ITILCategory', [
+         'name'        => 'itilcategory_testGetValues',
+         'entities_id' => $test_entity_id
+      ]);
 
-      $this->array($parameters_keys)->isEqualTo($values_keys);
+      $parameters = new CoreITILCategoryParameters();
+      $values = $parameters->getValues(getItemByTypeName('ITILCategory', 'itilcategory_testGetValues'));
+      $this->array($values)->isEqualTo([
+         'id'   => getItemByTypeName('ITILCategory', 'itilcategory_testGetValues', true),
+         'name' => 'itilcategory_testGetValues',
+      ]);
+
+      $this->testGetAvailableParameters($values, $parameters->getAvailableParameters());
    }
 }

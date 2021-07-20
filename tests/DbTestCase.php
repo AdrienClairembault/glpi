@@ -173,7 +173,7 @@ class DbTestCase extends \GLPITestCase {
     */
    protected function createItem($itemtype, $input) {
       $item = new $itemtype();
-      $id = $item->add($input);
+      $id = $item->add(Toolbox::addslashes_deep($input));
       $this->integer($id)->isGreaterThan(0);
       $this->checkInput($item, $id, $input);
    }
@@ -184,10 +184,10 @@ class DbTestCase extends \GLPITestCase {
     * @param string $itemtype
     * @param array $input
     */
-    protected function updateItem($itemtype, $id, $input) {
+   protected function updateItem($itemtype, $id, $input) {
       $item = new $itemtype();
       $input['id'] = $id;
-      $success = $item->update($input);
+      $success = $item->update(Toolbox::addslashes_deep($input));
       $this->boolean($success)->isTrue();
       $this->checkInput($item, $id, $input);
    }

@@ -32,23 +32,27 @@
 
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
-use Glpi\ContentTemplates\Parameters\ITILCategoryParameters as CoreITILCategoryParameters;
+use Glpi\ContentTemplates\Parameters\KnowbaseItemParameters as CoreKnowbaseItemParameters;
 
-class ITILCategoryParameters extends AbstractParameter
+class KnowbaseItemParameters extends AbstractParameters
 {
    public function testGetValues(): void {
-      $test_entity_id = getItemByTypeName('Entity', '_test_child_2', true);
+      $this->login();
 
-      $this->createItem('ITILCategory', [
-         'name'        => 'itilcategory_testGetValues',
-         'entities_id' => $test_entity_id
+      $this->createItem('KnowbaseItem', [
+         'name'        => 'kbi_testGetValues',
+         'answer'      => "test answer' \"testGetValues",
       ]);
 
-      $parameters = new CoreITILCategoryParameters();
-      $values = $parameters->getValues(getItemByTypeName('ITILCategory', 'itilcategory_testGetValues'));
+      $kbi_id = getItemByTypeName('KnowbaseItem', 'kbi_testGetValues', true);
+
+      $parameters = new CoreKnowbaseItemParameters();
+      $values = $parameters->getValues(getItemByTypeName('KnowbaseItem', 'kbi_testGetValues'));
       $this->array($values)->isEqualTo([
-         'id'   => getItemByTypeName('ITILCategory', 'itilcategory_testGetValues', true),
-         'name' => 'itilcategory_testGetValues',
+         'id'     => $kbi_id,
+         'name'   => 'kbi_testGetValues',
+         'answer' => "test answer' \"testGetValues",
+         'link'   => "<a  href='/glpi/front/knowbaseitem.form.php?id=$kbi_id'  title=\"kbi_testGetValues\">kbi_testGetValues</a>",
       ]);
 
       $this->testGetAvailableParameters($values, $parameters->getAvailableParameters());

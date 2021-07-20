@@ -34,7 +34,7 @@ namespace tests\units\Glpi\ContentTemplates\Parameters;
 
 use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters as CoreCommonITILObjectParameters;
 
-class CommonITILObjectParameters extends AbstractParameter
+class CommonITILObjectParameters extends AbstractParameters
 {
    public function testGetValues(): void {
       $this->login();
