@@ -33,7 +33,6 @@
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
 use Glpi\ContentTemplates\Parameters\TicketParameters as CoreTicketParameters;
-use Toolbox;
 
 class TicketParameters extends AbstractParameters
 {
