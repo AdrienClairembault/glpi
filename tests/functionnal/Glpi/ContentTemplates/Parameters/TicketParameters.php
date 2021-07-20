@@ -121,7 +121,6 @@ class TicketParameters extends AbstractParameters
          'urgency'   => 'Medium',
          'impact'    => 'Medium',
          'priority'  => 'Medium',
-         'itemtype'  => 'Ticket',
          'entity'    => [
             'name' => '_test_child_2',
          ],

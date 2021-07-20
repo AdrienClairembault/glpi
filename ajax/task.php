@@ -79,7 +79,10 @@ $parameters_class = $parent::getContentTemplatesParametersClass();
 $parameters = new $parameters_class();
 $template->fields['content'] = TemplateManager::render(
    $template->fields['content'],
-   $parameters->getValues($parent),
+   [
+      'itemtype' => $parents_itemtype,
+      $parameters->getRootNodeName() => $parameters->getValues($parent),
+   ],
    true
 );
 

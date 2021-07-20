@@ -30,7 +30,10 @@
  * ---------------------------------------------------------------------
  */
 
+use Glpi\ContentTemplates\Parameters\ChangeParameters;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\ProblemParameters;
 use Glpi\ContentTemplates\Parameters\TicketParameters;
 use Glpi\ContentTemplates\TemplateManager;
 
@@ -49,7 +52,10 @@ abstract class AbstractTemplate extends CommonDropdown
 
       // Add autocompletion for ticket properties (twig templates)
       Html::activateUserTemplateAutocompletion('textarea[name=content]', [
-         (new ObjectParameter(TicketParameters::getRootNodeName(), new TicketParameters()))->compute()
+         (new AttributeParameter('itemtype', __('Itemtype')))->compute(),
+         (new ObjectParameter(TicketParameters::getRootNodeName(), new TicketParameters()))->compute(),
+         (new ObjectParameter(ChangeParameters::getRootNodeName(), new ChangeParameters()))->compute(),
+         (new ObjectParameter(ProblemParameters::getRootNodeName(), new ProblemParameters()))->compute(),
       ]);
    }
 

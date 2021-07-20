@@ -52,20 +52,8 @@ if (!defined('GLPI_ROOT')) {
 /**
  * Parameters for "CommonITILObject" items
  */
-class CommonITILObjectParameters extends AbstractParameters
+abstract class CommonITILObjectParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
-      return 'commonitil';
-   }
-
-   public static function getObjectLabel(): string {
-      return '';
-   }
-
-   protected function getTargetClasses(): array {
-      return [CommonITILObject::class];
-   }
-
    public function defineParameters(): array {
       return [
          new AttributeParameter("id", __('ID')),
@@ -80,7 +68,6 @@ class CommonITILObjectParameters extends AbstractParameters
          new AttributeParameter("urgency", __('Urgency')),
          new AttributeParameter("impact", __('Impact')),
          new AttributeParameter("priority", __('Priority')),
-         new AttributeParameter("itemtype", __('Itemtype')),
          new ObjectParameter("entity", new EntityParameters()),
          new ObjectParameter("itilcategory", new ITILCategoryParameters()),
          new ArrayParameter("requesters.users", 'user', new UserParameters(), _n('Requester', 'Requesters', Session::getPluralNumber())),
@@ -112,7 +99,6 @@ class CommonITILObjectParameters extends AbstractParameters
          'urgency'   => $commonitil::getUrgencyName($fields['urgency']),
          'impact'    => $commonitil::getImpactName($fields['impact']),
          'priority'  => $commonitil::getPriorityName($fields['priority']),
-         'itemtype'  => $commonitil::getType(),
       ];
 
       // Add ticket's entity

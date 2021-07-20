@@ -34,7 +34,6 @@ if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
 }
 
-use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters;
 use Glpi\ContentTemplates\TemplateManager;
 use Glpi\Toolbox\RichText;
 
@@ -8481,7 +8480,10 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters = new $parameters_class();
          $tasktemplate_content = TemplateManager::render(
             $tasktemplate->fields["content"],
-            $parameters->getValues($this, true),
+            [
+               'itemtype' => self::getType(),
+               $parameters->getRootNodeName() => $parameters->getValues($this),
+            ],
             true
          );
          // Sanitize generated HTML before adding it in DB
@@ -8530,7 +8532,10 @@ abstract class CommonITILObject extends CommonDBTM {
          $parameters = new $parameters_class();
          $new_fup_content = TemplateManager::render(
             $fup_template->fields["content"],
-            $parameters->getValues($this, true),
+            [
+               'itemtype' => self::getType(),
+               $parameters->getRootNodeName() => $parameters->getValues($this),
+            ],
             true
          );
          // Sanitize generated HTML before adding it in DB
@@ -8630,7 +8635,5 @@ abstract class CommonITILObject extends CommonDBTM {
     * Parameter class to be use for this item (user templates)
     * @return string class name
     */
-   public static function getContentTemplatesParametersClass(): string {
-      return CommonITILObjectParameters::class;
-   }
+   abstract public static function getContentTemplatesParametersClass(): string;
 }

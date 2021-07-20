@@ -241,7 +241,10 @@ class RuleTicket extends Rule {
                         $parameters = new $parameters_class();
                         $solution_content = TemplateManager::render(
                            $template->getField('content'),
-                           $parameters->getValues($parent, true),
+                           [
+                              'itemtype' => $parent::getType(),
+                              $parameters->getRootNodeName() => $parameters->getValues($parent),
+                           ],
                            true
                         );
                         // Sanitize generated HTML before adding it in DB

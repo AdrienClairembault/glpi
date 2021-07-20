@@ -32,9 +32,9 @@
 
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
-use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters as CoreCommonITILObjectParameters;
+use Glpi\ContentTemplates\Parameters\ProblemParameters as CoreProblemParameters;
 
-class CommonITILObjectParameters extends AbstractParameters
+class ProblemParameters extends AbstractParameters
 {
    public function testGetValues(): void {
       $this->login();
@@ -46,24 +46,24 @@ class CommonITILObjectParameters extends AbstractParameters
 
       $itilcategories_id = getItemByTypeName('ITILCategory', 'category_testGetValues', true);
 
-      $this->createItem('Change', [
-         'name'              => 'change_testGetValues',
-         'content'           => '<p>change_testGetValues content</p>',
+      $this->createItem('Problem', [
+         'name'              => 'problem_testGetValues',
+         'content'           => '<p>problem_testGetValues content</p>',
          'entities_id'       => $test_entity_id,
          'date'              => '2021-07-19 17:11:28',
          'itilcategories_id' => $itilcategories_id,
       ]);
 
-      $changes_id = getItemByTypeName('Change', 'change_testGetValues', true);
+      $problems_id = getItemByTypeName('Problem', 'problem_testGetValues', true);
 
-      $parameters = new CoreCommonITILObjectParameters();
-      $values = $parameters->getValues(getItemByTypeName('Change', 'change_testGetValues'));
+      $parameters = new CoreProblemParameters();
+      $values = $parameters->getValues(getItemByTypeName('Problem', 'problem_testGetValues'));
       $this->array($values)->isEqualTo([
-         'id'        => $changes_id,
-         'ref'       => "#$changes_id",
-         'link'      => "<a  href='/glpi/front/change.form.php?id=$changes_id'  title=\"change_testGetValues\">change_testGetValues</a>",
-         'name'      => 'change_testGetValues',
-         'content'   => '<p>change_testGetValues content</p>',
+         'id'        => $problems_id,
+         'ref'       => "#$problems_id",
+         'link'      => "<a  href='/glpi/front/problem.form.php?id=$problems_id'  title=\"problem_testGetValues\">problem_testGetValues</a>",
+         'name'      => 'problem_testGetValues',
+         'content'   => '<p>problem_testGetValues content</p>',
          'date'      => '2021-07-19 17:11:28',
          'solvedate' => null,
          'closedate' => null,
@@ -71,7 +71,6 @@ class CommonITILObjectParameters extends AbstractParameters
          'urgency'   => 'Medium',
          'impact'    => 'Medium',
          'priority'  => 'Medium',
-         'itemtype'  => 'Change',
          'entity'    => [
             'name' => '_test_child_2',
          ],
