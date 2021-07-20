@@ -202,7 +202,7 @@ class DbTestCase extends \GLPITestCase {
     */
    protected function createItems($itemtype, $inputs) {
       foreach ($inputs as $input) {
-        $this->createItem($itemtype, $input);
+         $this->createItem($itemtype, $input);
       }
    }
 }

@@ -34,7 +34,6 @@ namespace Glpi\ContentTemplates;
 
 use Glpi\Toolbox\RichText;
 use Session;
-use Toolbox;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;

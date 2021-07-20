@@ -34,6 +34,7 @@ namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
+use OLA;
 use SLA;
 use Toolbox;
 

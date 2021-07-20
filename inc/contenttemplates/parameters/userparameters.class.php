@@ -34,8 +34,8 @@ namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
-use User;
 use Toolbox;
+use User;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");

@@ -33,7 +33,6 @@
 namespace tests\units\Glpi\ContentTemplates\Parameters;
 
 use Glpi\ContentTemplates\Parameters\CommonITILObjectParameters as CoreCommonITILObjectParameters;
-use Toolbox;
 
 class CommonITILObjectParameters extends AbstractParameters
 {
