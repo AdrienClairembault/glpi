@@ -64,7 +64,7 @@ class CommonITILObjectParameters extends AbstractParameters
          'ref'       => "#$changes_id",
          'link'      => "<a  href='/glpi/front/change.form.php?id=$changes_id'  title=\"change_testGetValues\">change_testGetValues</a>",
          'name'      => 'change_testGetValues',
-         'content'   => Toolbox::clean_cross_side_scripting_deep('<p>change_testGetValues content</p>'),
+         'content'   => '<p>change_testGetValues content</p>',
          'date'      => '2021-07-19 17:11:28',
          'solvedate' => null,
          'closedate' => null,

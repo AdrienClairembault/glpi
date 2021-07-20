@@ -42,6 +42,7 @@ use Glpi\ContentTemplates\Parameters\ParametersTypes\ObjectParameter;
 use Group;
 use ITILCategory;
 use User;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -89,31 +90,34 @@ class CommonITILObjectParameters extends AbstractParameters
    protected function defineValues(CommonDBTM $commonitil): array {
       /** @var CommonITILObject $commonitil  */
 
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($commonitil->fields);
+
       // Base values from ticket property
       $values = [
-         'id'        => $commonitil->fields['id'],
-         'ref'       => "#" . $commonitil->fields['id'],
+         'id'        => $fields['id'],
+         'ref'       => "#" . $fields['id'],
          'link'      => $commonitil->getLink(),
-         'name'      => $commonitil->fields['name'],
-         'content'   => $commonitil->fields['content'],
-         'date'      => $commonitil->fields['date'],
-         'solvedate' => $commonitil->fields['solvedate'],
-         'closedate' => $commonitil->fields['closedate'],
-         'status'    => $commonitil::getStatus($commonitil->fields['status']),
-         'urgency'   => $commonitil::getUrgencyName($commonitil->fields['urgency']),
-         'impact'    => $commonitil::getImpactName($commonitil->fields['impact']),
-         'priority'  => $commonitil::getPriorityName($commonitil->fields['priority']),
+         'name'      => $fields['name'],
+         'content'   => $fields['content'],
+         'date'      => $fields['date'],
+         'solvedate' => $fields['solvedate'],
+         'closedate' => $fields['closedate'],
+         'status'    => $commonitil::getStatus($fields['status']),
+         'urgency'   => $commonitil::getUrgencyName($fields['urgency']),
+         'impact'    => $commonitil::getImpactName($fields['impact']),
+         'priority'  => $commonitil::getPriorityName($fields['priority']),
          'itemtype'  => $commonitil::getType(),
       ];
 
       // Add ticket's entity
-      if ($entity = Entity::getById($commonitil->fields['entities_id'])) {
+      if ($entity = Entity::getById($fields['entities_id'])) {
          $entity_parameters = new EntityParameters();
          $values['entity'] = $entity_parameters->getValues($entity);
       }
 
       // Add ticket's category
-      if ($itilcategory = ITILCategory::getById($commonitil->fields['itilcategories_id'])) {
+      if ($itilcategory = ITILCategory::getById($fields['itilcategories_id'])) {
          $itilcategory_parameters = new ITILCategoryParameters();
          $values['itilcategory'] = $itilcategory_parameters->getValues($itilcategory);
       }

@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use SLA;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -64,12 +65,16 @@ class SLAParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $sla): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($sla->fields);
+
       return [
-         'id'       => $sla->fields['id'],
-         'name'     => $sla->fields['name'],
-         'type'     => SLA::getOneTypeName($sla->fields['type']),
-         'duration' => $sla->fields['number_time'],
-         'unit'     => strtolower(SLA::getDefinitionTimeLabel($sla->fields['definition_time'])),
+         'id'       => $fields['id'],
+         'name'     => $fields['name'],
+         'type'     => SLA::getOneTypeName($fields['type']),
+         'duration' => $fields['number_time'],
+         'unit'     => strtolower(SLA::getDefinitionTimeLabel($fields['definition_time'])),
       ];
    }
 }

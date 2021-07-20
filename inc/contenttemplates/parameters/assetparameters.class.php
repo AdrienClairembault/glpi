@@ -36,6 +36,7 @@ use CommonDBTM;
 use Entity;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\ObjectParameter;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -66,15 +67,19 @@ class AssetParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $asset): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($asset->fields);
+
       $values = [
-         'id'       => $asset->fields['id'],
-         'name'     => $asset->fields['name'],
+         'id'       => $fields['id'],
+         'name'     => $fields['name'],
          'itemtype' => $asset->getType(),
-         'serial'   => $asset->fields['serial'],
+         'serial'   => $fields['serial'],
       ];
 
       // Add asset's entity
-      if ($entity = Entity::getById($asset->fields['entities_id'])) {
+      if ($entity = Entity::getById($fields['entities_id'])) {
          $entity_parameters = new EntityParameters();
          $values['entity'] = $entity_parameters->getValues($entity);
       }

@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use KnowbaseItem;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -63,10 +64,14 @@ class KnowbaseItemParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $kbi): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($kbi->fields);
+
       return [
-         'id'     => $kbi->fields['id'],
-         'name'   => $kbi->fields['name'],
-         'answer' => $kbi->fields['answer'],
+         'id'     => $fields['id'],
+         'name'   => $fields['name'],
+         'answer' => $fields['answer'],
          'link'   => $kbi->getLink(),
       ];
    }

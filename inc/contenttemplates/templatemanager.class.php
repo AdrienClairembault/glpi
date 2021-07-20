@@ -56,21 +56,20 @@ class TemplateManager
    /**
     * Boiler plate code to render a user template
     *
-    * @param string $content        Template content (html + twig)
-    * @param array $params          Variables to be exposed to the templating engine
-    * @param bool $sanitized_input  Indicates whether the input has been transformed by GLPI sanitize process
+    * @param string $content           Template content (html + twig)
+    * @param array $params             Variables to be exposed to the templating engine
+    * @param bool $sanitized_content   Indicates whether the content has been transformed by GLPI sanitize process
     *
     * @return string The rendered HTML
     */
    public static function render(
       string $content,
       array $params,
-      bool $sanitized_input = false
+      bool $sanitized_content = false
    ): string {
       // Unclean input if needed
-      if ($sanitized_input) {
+      if ($sanitized_content) {
          $content = \Toolbox::unclean_cross_side_scripting_deep($content);
-         $params = \Toolbox::unclean_cross_side_scripting_deep($params);
       }
 
       // Init twig
@@ -112,15 +111,15 @@ class TemplateManager
    /**
     * Boiler plate code to validate a template that user is trying to submit
     *
-    * @param string $content        Template content (html + twig)
-    * @param string $field_label    Name of the field containing the template, may
-    *                               be used in some error messages.
-    * @param bool $sanitized_input  Indicates whether the input has been transformed by GLPI sanitize process
+    * @param string $content           Template content (html + twig)
+    * @param string $field_label       Name of the field containing the template, may
+    *                                  be used in some error messages.
+    * @param bool $sanitized_content  Indicates whether the content has been transformed by GLPI sanitize process
     *
     * @return bool
     */
-   public static function validate(string $content, string $field_label, bool $sanitized_input = false): bool {
-      if ($sanitized_input) {
+   public static function validate(string $content, string $field_label, bool $sanitized_content = false): bool {
+      if ($sanitized_content) {
          $content = \Toolbox::unclean_cross_side_scripting_deep($content);
       }
 

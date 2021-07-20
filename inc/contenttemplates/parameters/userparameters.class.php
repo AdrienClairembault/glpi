@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use User;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -60,8 +61,12 @@ class UserParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $user): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($user->fields);
+
       return [
-         'name' => $user->fields['name'],
+         'name' => $fields['name'],
       ];
    }
 }

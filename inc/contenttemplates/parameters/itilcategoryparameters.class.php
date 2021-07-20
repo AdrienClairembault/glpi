@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use ITILCategory;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -61,9 +62,13 @@ class ITILCategoryParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $itilcategory): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($itilcategory->fields);
+
       return [
-         'id'   => $itilcategory->fields['id'],
-         'name' => $itilcategory->fields['name'],
+         'id'   => $fields['id'],
+         'name' => $fields['name'],
       ];
    }
 }

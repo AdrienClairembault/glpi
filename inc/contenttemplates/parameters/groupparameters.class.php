@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use Group;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -60,8 +61,12 @@ class GroupParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $group): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($group->fields);
+
       return [
-         'name' => $group->fields['name'],
+         'name' => $fields['name'],
       ];
    }
 }

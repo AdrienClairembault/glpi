@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use RequestType;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -61,9 +62,13 @@ class RequestTypeParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $requesttype): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($requesttype->fields);
+
       return [
-         'id'   => $requesttype->fields['id'],
-         'name' => $requesttype->fields['name'],
+         'id'   => $fields['id'],
+         'name' => $fields['name'],
       ];
    }
 }

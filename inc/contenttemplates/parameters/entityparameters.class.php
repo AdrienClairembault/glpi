@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Entity;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -60,8 +61,12 @@ class EntityParameters extends AbstractParameters
    }
 
    protected function defineValues(CommonDBTM $entity): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($entity->fields);
+
       return [
-         'name' => $entity->fields['name'],
+         'name' => $fields['name'],
       ];
    }
 }

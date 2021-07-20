@@ -35,6 +35,7 @@ namespace Glpi\ContentTemplates\Parameters;
 use CommonDBTM;
 use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use Location;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -61,11 +62,15 @@ class LocationParameters extends AbstractParameters
       ];
    }
 
-   protected function defineValues(CommonDBTM $entity): array {
+   protected function defineValues(CommonDBTM $location): array {
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($location->fields);
+
       return [
-         'id'           => $entity->fields['id'],
-         'name'         => $entity->fields['name'],
-         'completename' => $entity->fields['completename'],
+         'id'           => $fields['id'],
+         'name'         => $fields['name'],
+         'completename' => $fields['completename'],
       ];
    }
 }

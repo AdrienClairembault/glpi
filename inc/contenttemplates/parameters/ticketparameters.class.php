@@ -44,6 +44,7 @@ use RequestType;
 use SLA;
 use Ticket;
 use TicketValidation;
+use Toolbox;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");
@@ -81,35 +82,40 @@ class TicketParameters extends CommonITILObjectParameters
 
    protected function defineValues(CommonDBTM $ticket): array {
       /** @var Ticket $ticket  */
+
+      // Output "unsanitized" values
+      $fields = Toolbox::unclean_cross_side_scripting_deep($ticket->fields);
+
       $values = parent::defineValues($ticket);
-      $values['type'] = $ticket::getTicketTypeName($ticket->fields['type']);
-      $values['global_validation'] = TicketValidation::getStatus($ticket->fields['global_validation']);
-      $values['tto'] = $ticket->fields['time_to_own'];
-      $values['ttr'] = $ticket->fields['time_to_resolve'];
+
+      $values['type'] = $ticket::getTicketTypeName($fields['type']);
+      $values['global_validation'] = TicketValidation::getStatus($fields['global_validation']);
+      $values['tto'] = $fields['time_to_own'];
+      $values['ttr'] = $fields['time_to_resolve'];
 
       // Add ticket's SLA / OLA
       $sla_parameters = new SLAParameters();
-      if ($sla = SLA::getById($ticket->fields['slas_id_tto'])) {
+      if ($sla = SLA::getById($fields['slas_id_tto'])) {
          $values['sla_tto'] = $sla_parameters->getValues($sla);
       }
-      if ($sla = SLA::getById($ticket->fields['slas_id_ttr'])) {
+      if ($sla = SLA::getById($fields['slas_id_ttr'])) {
          $values['sla_tto'] = $sla_parameters->getValues($sla);
       }
-      if ($sla = SLA::getById($ticket->fields['olas_id_tto'])) {
+      if ($sla = SLA::getById($fields['olas_id_tto'])) {
          $values['sla_tto'] = $sla_parameters->getValues($sla);
       }
-      if ($sla = SLA::getById($ticket->fields['olas_id_ttr'])) {
+      if ($sla = SLA::getById($fields['olas_id_ttr'])) {
          $values['sla_tto'] = $sla_parameters->getValues($sla);
       }
 
       // Add ticket's request type
-      if ($requesttype = RequestType::getById($ticket->fields['requesttypes_id'])) {
+      if ($requesttype = RequestType::getById($fields['requesttypes_id'])) {
          $requesttype_parameters = new RequestTypeParameters();
          $values['requesttype'] = $requesttype_parameters->getValues($requesttype);
       }
 
       // Add location
-      if ($location = Location::getById($ticket->fields['locations_id'])) {
+      if ($location = Location::getById($fields['locations_id'])) {
          $location_parameters = new LocationParameters();
          $values['location'] = $location_parameters->getValues($location);
       }
@@ -126,7 +132,7 @@ class TicketParameters extends CommonITILObjectParameters
 
       // Add assets
       $values['assets'] = [];
-      $items_ticket = Item_Ticket::getItemsAssociatedTo($ticket::getType(), $ticket->fields['id']);
+      $items_ticket = Item_Ticket::getItemsAssociatedTo($ticket::getType(), $fields['id']);
       foreach ($items_ticket as $item_ticket) {
          $itemtype = $item_ticket->fields['itemtype'];
          if ($item = $itemtype::getById($item_ticket->fields['items_id'])) {

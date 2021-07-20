@@ -83,16 +83,23 @@ class TemplateManager extends GLPITestCase
             'error'     => 'Invalid twig template syntax',
          ],
          [
-            'content'   => '&#60;h1&#62;Test sanitized input&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
-            'params'    => ['content' => '&#60;p&#62;Item content&#60;/p&#62;'],
-            'expected'  => '<h1>Test sanitized input</h1><hr /><p>Item content</p>',
+            'content'   => '&#60;h1&#62;Test sanitized template&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
+            'params'    => ['content' => '<p>Item content</p>'],
+            'expected'  => '<h1>Test sanitized template</h1><hr /><p>Item content</p>',
+            'error'     => null,
+            'sanitized' => true
+         ],
+         [
+            'content'   => '&#60;h1&#62;Test sanitized template 2&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
+            'params'    => ['content' => 'Item content should not be unsanitized: &#60;--'],
+            'expected'  => '<h1>Test sanitized template 2</h1><hr />Item content should not be unsanitized: &#60;--',
             'error'     => null,
             'sanitized' => true
          ],
          [
             'content'   => '&#60;h1&#62;Test misused sanitized input&#60;/h1&#62;&#60;hr /&#62;{{content|raw}}',
-            'params'    => ['content' => '&#60;p&#62;Item content&#60;/p&#62;'],
-            'expected'  => '<p>&#60;h1&#62;Test misused sanitized input&#60;/h1&#62;&#60;hr /&#62;&#60;p&#62;Item content&#60;/p&#62;</p>',
+            'params'    => ['content' => '<p>Item content</p>'],
+            'expected'  => '&#60;h1&#62;Test misused sanitized input&#60;/h1&#62;&#60;hr /&#62;<p>Item content</p>',
             'error'     => null,
             'sanitized' => false
          ],
