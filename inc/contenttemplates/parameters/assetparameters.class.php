@@ -55,7 +55,7 @@ class AssetParameters extends AbstractParameters
       return __('Asset');
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       global $CFG_GLPI;
       return $CFG_GLPI["asset_types"];
    }

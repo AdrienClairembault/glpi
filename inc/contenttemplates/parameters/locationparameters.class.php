@@ -54,7 +54,7 @@ class LocationParameters extends AbstractParameters
       return Location::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [Location::class];
    }
 

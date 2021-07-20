@@ -54,7 +54,7 @@ class EntityParameters extends AbstractParameters
       return Entity::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [Entity::class];
    }
 

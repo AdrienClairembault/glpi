@@ -54,7 +54,7 @@ class RequestTypeParameters extends AbstractParameters
       return RequestType::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [RequestType::class];
    }
 

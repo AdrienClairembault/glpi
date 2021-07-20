@@ -62,7 +62,7 @@ class CommonITILObjectParameters extends AbstractParameters
       return '';
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [CommonITILObject::class];
    }
 

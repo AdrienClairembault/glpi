@@ -54,7 +54,7 @@ class GroupParameters extends AbstractParameters
       return Group::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [Group::class];
    }
 

@@ -54,7 +54,7 @@ class KnowbaseItemParameters extends AbstractParameters
       return KnowbaseItem::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [KnowbaseItem::class];
    }
 

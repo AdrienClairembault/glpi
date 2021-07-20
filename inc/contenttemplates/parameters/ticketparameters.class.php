@@ -65,7 +65,7 @@ class TicketParameters extends CommonITILObjectParameters
       return Ticket::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [Ticket::class];
    }
 

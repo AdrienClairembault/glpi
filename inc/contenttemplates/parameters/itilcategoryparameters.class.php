@@ -54,7 +54,7 @@ class ITILCategoryParameters extends AbstractParameters
       return ITILCategory::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [ITILCategory::class];
    }
 

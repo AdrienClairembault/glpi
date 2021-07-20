@@ -55,7 +55,7 @@ class SLAParameters extends AbstractParameters
       return SLA::getTypeName(1);
    }
 
-   public static function getTargetClasses(): array {
+   protected function getTargetClasses(): array {
       return [SLA::class, OLA::class];
    }
 

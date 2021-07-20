@@ -67,6 +67,13 @@ abstract class AbstractParameters implements TemplatesParametersInterface
    abstract protected function defineValues(CommonDBTM $item): array;
 
    /**
+    * Get supported classes by this parameter type
+    *
+    * @return array
+    */
+   abstract protected function getTargetClasses(): array;
+
+   /**
     * "Wrapper" function for defineValues()
     *  Validate the class of the given item before calling defineValues()
     *
@@ -77,14 +84,14 @@ abstract class AbstractParameters implements TemplatesParametersInterface
     */
    public function getValues(CommonDBTM $item, bool $root = false): array {
       $valid_class = false;
-      foreach (self::getTargetClasses() as $class) {
+      foreach ($this->getTargetClasses() as $class) {
          if ($item instanceof $class) {
             $valid_class = true;
             break;
          }
       }
 
-      if ($valid_class) {
+      if (!$valid_class) {
          trigger_error(get_class($item) . " is not allowed for this parameter type");
          return [];
       }
