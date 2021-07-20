@@ -33,7 +33,7 @@
 namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
 use ITILCategory;
 
 if (!defined('GLPI_ROOT')) {

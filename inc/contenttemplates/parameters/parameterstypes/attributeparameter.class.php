@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
+namespace Glpi\ContentTemplates\Parameters\ParametersTypes;
 
 if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access this file directly");

@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\ContentTemplates\Parameters\Parameters_Types\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\ObjectParameter;
 use Glpi\ContentTemplates\Parameters\TicketParameters;
 use Glpi\ContentTemplates\TemplateManager;
 

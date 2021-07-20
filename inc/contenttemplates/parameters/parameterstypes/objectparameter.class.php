@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\ContentTemplates\Parameters\Parameters_Types;
+namespace Glpi\ContentTemplates\Parameters\ParametersTypes;
 
 use Glpi\ContentTemplates\Parameters\AbstractParameters;
 

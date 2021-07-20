@@ -33,9 +33,9 @@
 namespace Glpi\ContentTemplates\Parameters;
 
 use CommonDBTM;
-use Glpi\ContentTemplates\Parameters\Parameters_Types\ArrayParameter;
-use Glpi\ContentTemplates\Parameters\Parameters_Types\AttributeParameter;
-use Glpi\ContentTemplates\Parameters\Parameters_Types\ObjectParameter;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\ArrayParameter;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\AttributeParameter;
+use Glpi\ContentTemplates\Parameters\ParametersTypes\ObjectParameter;
 use Item_Ticket;
 use KnowbaseItem;
 use KnowbaseItem_Item;
