@@ -8476,7 +8476,7 @@ abstract class CommonITILObject extends CommonDBTM {
          $tasktemplate->getFromDB($tasktemplates_id);
 
          // Parse twig template
-         $parameters_class = self::getContentTemplatesParametersClass();
+         $parameters_class = static::getContentTemplatesParametersClass();
          $parameters = new $parameters_class();
          $tasktemplate_content = TemplateManager::render(
             $tasktemplate->fields["content"],
@@ -8528,7 +8528,7 @@ abstract class CommonITILObject extends CommonDBTM {
          };
 
          // Parse twig template
-         $parameters_class = self::getContentTemplatesParametersClass();
+         $parameters_class = static::getContentTemplatesParametersClass();
          $parameters = new $parameters_class();
          $new_fup_content = TemplateManager::render(
             $fup_template->fields["content"],
