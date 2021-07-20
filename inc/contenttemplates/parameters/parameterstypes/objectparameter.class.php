@@ -52,11 +52,11 @@ class ObjectParameter extends AbstractParameterType
    protected $template_parameters;
 
    /**
-    * @param string $key                                       Key to access this value
     * @param AbstractParameters $template_parameters  Parameters to add
+    * @param null|string $key                              Key to access this value
     */
-   public function __construct(string $key, AbstractParameters $template_parameters) {
-      $this->key = $key;
+   public function __construct(AbstractParameters $template_parameters, ?string $key = null) {
+      $this->key = $key ?? $template_parameters->getDefaultNodeName();
       $this->template_parameters = $template_parameters;
    }
 

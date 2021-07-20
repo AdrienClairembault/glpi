@@ -46,7 +46,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class LocationParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'location';
    }
 

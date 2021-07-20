@@ -53,9 +53,9 @@ abstract class AbstractTemplate extends CommonDropdown
       // Add autocompletion for ticket properties (twig templates)
       Html::activateUserTemplateAutocompletion('textarea[name=content]', [
          (new AttributeParameter('itemtype', __('Itemtype')))->compute(),
-         (new ObjectParameter(TicketParameters::getRootNodeName(), new TicketParameters()))->compute(),
-         (new ObjectParameter(ChangeParameters::getRootNodeName(), new ChangeParameters()))->compute(),
-         (new ObjectParameter(ProblemParameters::getRootNodeName(), new ProblemParameters()))->compute(),
+         (new ObjectParameter(new TicketParameters()))->compute(),
+         (new ObjectParameter(new ChangeParameters()))->compute(),
+         (new ObjectParameter(new ProblemParameters()))->compute(),
       ]);
    }
 

@@ -8482,7 +8482,7 @@ abstract class CommonITILObject extends CommonDBTM {
             $tasktemplate->fields["content"],
             [
                'itemtype' => self::getType(),
-               $parameters->getRootNodeName() => $parameters->getValues($this),
+               $parameters->getDefaultNodeName() => $parameters->getValues($this),
             ],
             true
          );
@@ -8534,7 +8534,7 @@ abstract class CommonITILObject extends CommonDBTM {
             $fup_template->fields["content"],
             [
                'itemtype' => self::getType(),
-               $parameters->getRootNodeName() => $parameters->getValues($this),
+               $parameters->getDefaultNodeName() => $parameters->getValues($this),
             ],
             true
          );

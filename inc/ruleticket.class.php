@@ -243,7 +243,7 @@ class RuleTicket extends Rule {
                            $template->getField('content'),
                            [
                               'itemtype' => $parent::getType(),
-                              $parameters->getRootNodeName() => $parameters->getValues($parent),
+                              $parameters->getDefaultNodeName() => $parameters->getValues($parent),
                            ],
                            true
                         );

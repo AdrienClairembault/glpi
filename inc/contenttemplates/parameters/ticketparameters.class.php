@@ -57,7 +57,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class TicketParameters extends CommonITILObjectParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'ticket';
    }
 
@@ -75,14 +75,14 @@ class TicketParameters extends CommonITILObjectParameters
          new AttributeParameter("global_validation", _n('Approval', 'Approvals', 1)),
          new AttributeParameter("tto", __('Time to own'), 'date("d/m/y H:i")'),
          new AttributeParameter("ttr", __('Time to resolve'), 'date("d/m/y H:i")'),
-         new ObjectParameter('sla_tto', new SLAParameters()),
-         new ObjectParameter('sla_ttr', new SLAParameters()),
-         new ObjectParameter('ola_tto', new SLAParameters()),
-         new ObjectParameter('ola_ttr', new SLAParameters()),
-         new ObjectParameter("requesttype", new RequestTypeParameters()),
-         new ObjectParameter('location', new LocationParameters()),
-         new ArrayParameter("knowbaseitems", 'knowbaseitem', new KnowbaseItemParameters(), KnowbaseItem_Item::getTypeName(Session::getPluralNumber())),
-         new ArrayParameter("assets", 'asset', new AssetParameters(), Item_Ticket::getTypeName(Session::getPluralNumber())),
+         new ObjectParameter(new SLAParameters(), 'sla_tto'),
+         new ObjectParameter(new SLAParameters(), 'sla_ttr'),
+         new ObjectParameter(new SLAParameters(), 'ola_tto'),
+         new ObjectParameter(new SLAParameters(), 'ola_ttr'),
+         new ObjectParameter(new RequestTypeParameters()),
+         new ObjectParameter(new LocationParameters()),
+         new ArrayParameter("knowbaseitems", new KnowbaseItemParameters(), KnowbaseItem_Item::getTypeName(Session::getPluralNumber())),
+         new ArrayParameter("assets", new AssetParameters(), Item_Ticket::getTypeName(Session::getPluralNumber())),
       ]);
    }
 

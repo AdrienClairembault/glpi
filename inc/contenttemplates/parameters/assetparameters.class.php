@@ -47,7 +47,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class AssetParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'asset';
    }
 
@@ -66,7 +66,7 @@ class AssetParameters extends AbstractParameters
          new AttributeParameter("name", __('Name')),
          new AttributeParameter("itemtype", __('Itemtype')),
          new AttributeParameter("serial", __('Serial number')),
-         new ObjectParameter("entity", new EntityParameters()),
+         new ObjectParameter(new EntityParameters()),
       ];
    }
 

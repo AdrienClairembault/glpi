@@ -46,7 +46,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class ITILCategoryParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'itilcategory';
    }
 

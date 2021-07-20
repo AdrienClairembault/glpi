@@ -46,7 +46,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class UserParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'user';
    }
 

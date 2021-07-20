@@ -41,14 +41,14 @@ if (!defined('GLPI_ROOT')) {
 interface TemplatesParametersInterface
 {
    /**
-    * Get top level node name to use for this class.
+    * Get default node name to use for this class.
     *
     * @return string
     */
-   public static function getRootNodeName(): string;
+   public static function getDefaultNodeName(): string;
 
    /**
-    * Get label to use for this class.
+    * Get object label to use for this class.
     *
     * @return string
     */
@@ -62,7 +62,7 @@ interface TemplatesParametersInterface
     *
     * @return array
     */
-   public function getValues(CommonDBTM $item, bool $root = false): array;
+   public function getValues(CommonDBTM $item): array;
 
    /**
     * Get the available parameters, used by autocomplete

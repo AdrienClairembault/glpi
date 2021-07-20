@@ -43,7 +43,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class ProblemParameters extends CommonITILObjectParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'problem';
    }
 

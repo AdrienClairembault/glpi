@@ -46,7 +46,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class KnowbaseItemParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'knowbaseitem';
    }
 

@@ -62,20 +62,18 @@ class ArrayParameter extends AbstractParameterType
 
    /**
     * @param string              $key        Key to access this value
-    * @param string              $items_key  Default key to be used when iterating on the children of this array
     * @param AbstractParameters  $parameters Types of the item contained in this array
     * @param string              $label      Label to display in the autocompletion widget
     */
    public function __construct(
       string $key,
-      string $items_key,
       AbstractParameters $parameters,
       string $label
    ) {
       $this->key = $key;
       $this->label = $label;
-      $this->items_key = $items_key;
-      $this->content = new ObjectParameter($items_key, $parameters);
+      $this->items_key = $parameters->getDefaultNodeName();
+      $this->content = new ObjectParameter($parameters);
    }
 
    public function compute(): array {

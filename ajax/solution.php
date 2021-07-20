@@ -77,7 +77,7 @@ $template->fields['content'] = TemplateManager::render(
    $template->fields['content'],
    [
       'itemtype' => $parents_itemtype,
-      $parameters->getRootNodeName() => $parameters->getValues($parent),
+      $parameters->getDefaultNodeName() => $parameters->getValues($parent),
    ],
    true
 );

@@ -68,14 +68,14 @@ abstract class CommonITILObjectParameters extends AbstractParameters
          new AttributeParameter("urgency", __('Urgency')),
          new AttributeParameter("impact", __('Impact')),
          new AttributeParameter("priority", __('Priority')),
-         new ObjectParameter("entity", new EntityParameters()),
-         new ObjectParameter("itilcategory", new ITILCategoryParameters()),
-         new ArrayParameter("requesters.users", 'user', new UserParameters(), _n('Requester', 'Requesters', Session::getPluralNumber())),
-         new ArrayParameter("observers.users", 'user', new UserParameters(), _n('Watcher', 'Watchers', Session::getPluralNumber())),
-         new ArrayParameter("assignees.users", 'user', new UserParameters(), _n('Assignee', 'Assignees', Session::getPluralNumber())),
-         new ArrayParameter("requesters.groups", 'group', new GroupParameters(), _n('Requester group', 'Requester groups', Session::getPluralNumber())),
-         new ArrayParameter("observers.groups", 'group', new GroupParameters(), _n('Watcher group', 'Watcher groups', Session::getPluralNumber())),
-         new ArrayParameter("assignees.groups", 'group', new GroupParameters(), _n('Assigned group', 'Assigned groups', Session::getPluralNumber())),
+         new ObjectParameter(new EntityParameters()),
+         new ObjectParameter(new ITILCategoryParameters()),
+         new ArrayParameter("requesters.users", new UserParameters(), _n('Requester', 'Requesters', Session::getPluralNumber())),
+         new ArrayParameter("observers.users", new UserParameters(), _n('Watcher', 'Watchers', Session::getPluralNumber())),
+         new ArrayParameter("assignees.users", new UserParameters(), _n('Assignee', 'Assignees', Session::getPluralNumber())),
+         new ArrayParameter("requesters.groups", new GroupParameters(), _n('Requester group', 'Requester groups', Session::getPluralNumber())),
+         new ArrayParameter("observers.groups", new GroupParameters(), _n('Watcher group', 'Watcher groups', Session::getPluralNumber())),
+         new ArrayParameter("assignees.groups", new GroupParameters(), _n('Assigned group', 'Assigned groups', Session::getPluralNumber())),
       ];
    }
 

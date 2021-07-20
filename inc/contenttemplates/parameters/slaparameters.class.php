@@ -47,7 +47,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class SLAParameters extends AbstractParameters
 {
-   public static function getRootNodeName(): string {
+   public static function getDefaultNodeName(): string {
       return 'sla';
    }
 

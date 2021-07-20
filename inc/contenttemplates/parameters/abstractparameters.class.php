@@ -78,11 +78,10 @@ abstract class AbstractParameters implements TemplatesParametersInterface
     *  Validate the class of the given item before calling defineValues()
     *
     * @param CommonDBTM $item
-    * @param bool       $root
     *
     * @return array
     */
-   public function getValues(CommonDBTM $item, bool $root = false): array {
+   public function getValues(CommonDBTM $item): array {
       $valid_class = false;
       foreach ($this->getTargetClasses() as $class) {
          if ($item instanceof $class) {
@@ -96,8 +95,7 @@ abstract class AbstractParameters implements TemplatesParametersInterface
          return [];
       }
 
-      $values = $this->defineValues($item);
-      return $root ? [static::getRootNodeName() => $values] : $values;
+      return $this->defineValues($item);
    }
 
    /**
