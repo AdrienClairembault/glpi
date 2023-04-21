@@ -1728,11 +1728,12 @@ class Search
     /**
      * Display datas extracted from DB
      *
-     * @param array $data Array of search datas prepared to get datas
+     * @param array $data   Array of search datas prepared to get datas
+     * @param array $params Array of parameters
      *
      * @return void
      **/
-    public static function displayData(array $data)
+    public static function displayData(array $data, array $params = [])
     {
         global $CFG_GLPI;
 
@@ -1796,7 +1797,9 @@ class Search
             'href'                => $href,
             'prehref'             => $prehref,
             'posthref'            => $globallinkto,
-            'showmassiveactions'  => ($search['showmassiveactions'] ?? true)
+            'push_history'        => $params['push_history'] ?? true,
+            'hide_controls'       => $params['hide_controls'] ?? false,
+            'showmassiveactions'  => ($params['showmassiveactions'] ?? $search['showmassiveactions'] ?? true)
                                   && $data['display_type'] != self::GLOBAL_SEARCH
                                   && ($itemtype == AllAssets::getType()
                                     || count(MassiveAction::getAllMassiveActions($item, $is_deleted))
@@ -2532,12 +2535,16 @@ class Search
         $p['actionname']   = 'search';
         $p['actionvalue']  = _sx('button', 'Search');
 
+        $p['hide_controls'] = false;
+        $p['showmassiveactions'] = true;
+        $p['extra_actions_templates'] = [];
+
         foreach ($params as $key => $val) {
             $p[$key] = $val;
         }
 
        // Itemtype name used in JS function names, etc
-        $normalized_itemtype = strtolower(str_replace('\\', '', $itemtype));
+        $normalized_itemtype = Toolbox::getNormalizedItemtype($itemtype);
         $rand_criteria = mt_rand();
         $main_block_class = '';
         $card_class = 'search-form card card-sm mb-4';
@@ -2584,6 +2591,10 @@ class Search
             ]);
         }
 
+        $hide_controls = isset($p['hide_controls']) && $p['hide_controls'];
+        $showmassiveactions = !isset($p['hide_controls']) || $p['showmassiveactions'];
+        echo '<input type="hidden" name="params[hide_controls]" value="' . ($hide_controls ? "1" : "0") . '">';
+        echo '<input type="hidden" name="params[showmassiveactions]" value="' . ($showmassiveactions ? "1" : "0") . '">';
         echo "<div class='card-footer d-flex search_actions'>";
         $linked = self::getMetaItemtypeAvailable($itemtype);
         echo "<button id='addsearchcriteria$rand_criteria' class='btn btn-sm btn-outline-secondary me-1' type='button'>
@@ -2629,6 +2640,13 @@ class Search
                   ><i class='ti ti-circle-x'></i></a>";
                 }
             }
+        }
+
+        $extra_actions_templates = $p['extra_actions_templates'] ?? [];
+        $twig = TemplateRenderer::getInstance();
+        foreach ($extra_actions_templates as $template => $t_params) {
+            \Toolbox::logDebug($template);
+            $twig->display($template, $t_params);
         }
         echo "</div>"; //.search_actions
 

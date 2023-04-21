@@ -39,6 +39,8 @@ use Glpi\Features\CacheableListInterface;
 use Glpi\Plugin\Hooks;
 use Glpi\RichText\RichText;
 use Glpi\RichText\UserMention;
+use Glpi\Search\FilterableInterface;
+use Glpi\Search\FilterableTrait;
 use Glpi\Socket;
 use Glpi\Toolbox\Sanitizer;
 
@@ -1963,6 +1965,15 @@ class CommonDBTM extends CommonGLPI
     {
         if (count($this->updates) > 0) {
             UserMention::handleUserMentions($this);
+        }
+
+        // Clear filter on itemtype change
+        if (
+            $this instanceof FilterableInterface
+            && $this->getItemtypeField() !== null
+            && in_array($this->getItemtypeField(), $this->updates)
+        ) {
+            $this->deleteFilter();
         }
     }
 
