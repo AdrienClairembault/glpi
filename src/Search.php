@@ -2645,7 +2645,6 @@ class Search
         $extra_actions_templates = $p['extra_actions_templates'] ?? [];
         $twig = TemplateRenderer::getInstance();
         foreach ($extra_actions_templates as $template => $t_params) {
-            \Toolbox::logDebug($template);
             $twig->display($template, $t_params);
         }
         echo "</div>"; //.search_actions
