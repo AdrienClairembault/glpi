@@ -107,8 +107,6 @@ if (!file_exists(GLPI_CONFIG_DIR . "/config_db.php")) {
 
     Auth::checkAlternateAuthSystems(true, $redirect);
 
-    $theme = $_SESSION['glpipalette'] ?? 'auror';
-
     $errors = "";
     if (isset($_GET['error']) && $redirect !== '') {
         switch ($_GET['error']) {
