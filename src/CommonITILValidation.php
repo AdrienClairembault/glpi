@@ -737,8 +737,8 @@ abstract class CommonITILValidation extends CommonDBChild
 
         global $CFG_GLPI;
 
-        $types            = ['user'  => User::getTypeName(1),
-            'group' => Group::getTypeName(1)
+        $types            = ['User'  => User::getTypeName(1),
+            'Group' => Group::getTypeName(1)
         ];
 
         $rand             = Dropdown::showFromArray(
@@ -1364,7 +1364,7 @@ abstract class CommonITILValidation extends CommonDBChild
      *  - users_id_validate       : ID of user validator
      *  - applyto
      *
-     * @return void Output is printed
+     * @return string|int Output if $options['display'] is false, else return rand
      **/
     public static function dropdownValidator(array $options = [])
     {
@@ -1391,14 +1391,14 @@ abstract class CommonITILValidation extends CommonDBChild
 
         $type  = '';
         if (isset($params['users_id_validate']['groups_id'])) {
-            $type = 'group';
+            $type = 'Group';
         } else if (!empty($params['users_id_validate'])) {
-            $type = 'user';
+            $type = 'User';
         }
 
         $out = Dropdown::showFromArray("validatortype", [
-            'user'  => User::getTypeName(1),
-            'group' => Group::getTypeName(1)
+            'User'  => User::getTypeName(1),
+            'Group' => Group::getTypeName(1)
         ], [
             'value'               => $type,
             'display_emptychoice' => true,

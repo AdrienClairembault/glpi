@@ -59,6 +59,7 @@ if (isset($_POST["validatortype"])) {
                 'value'  => $value,
                 'right'  => $_POST['right'],
                 'width'  => '100%',
+                'rand'   => $_POST['rand'],
             ]);
             break;
 
@@ -72,6 +73,7 @@ if (isset($_POST["validatortype"])) {
                 'value'  => $value,
                 'entity' => $_POST["entity"],
                 'width'  => '100%',
+                'rand'   => $_POST['rand'],
             ]);
 
             $param                        = ['validatortype' => 'list_users'];
@@ -80,6 +82,7 @@ if (isset($_POST["validatortype"])) {
             $param['right']               = $_POST['right'];
             $param['entity']              = $_POST["entity"];
             $param['groups_id']           = '__VALUE__';
+            $param['rand']                = $rand;
             Ajax::updateItemOnSelectEvent(
                 "dropdown_$name$rand",
                 "show_list_users",
@@ -134,8 +137,9 @@ if (isset($_POST["validatortype"])) {
                 $param['values'] =  array_keys($users);
             }
             $param['multiple'] = true;
-            $param['display'] = true;
-            $param['size']    = count($users);
+            $param['display']  = true;
+            $param['size']     = count($users);
+            $param['rand']     = $_POST['rand'];
 
             $rand  = Dropdown::showFromArray(
                 !empty($_POST['name']) ? $_POST['name'] : 'users_id_validate',

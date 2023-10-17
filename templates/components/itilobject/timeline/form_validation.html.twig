@@ -179,6 +179,19 @@
                 <h3 class="cart-title">{{ __("Validation request") }}</h3>
             </div>
             <div class="card-body">
+               {{ fields.dropdownField(
+                  'ITILValidationTemplate',
+                  'itilvalidationtemplates_id',
+                  '',
+                  _n('Template', 'Templates', 1),
+                  {
+                     'full_width': true,
+                     'on_change': 'itilvalidationtemplate_update' ~ rand ~ '(this.value);',
+                     'entity': item.fields['entities_id'],
+                     'rand': rand,
+                  },
+                ) }}
+
                 {{ fields.readOnlyField(
                     'approval_requester',
                     get_current_user().getFriendlyName(),
@@ -211,7 +224,8 @@
                             id: {{ subitem.fields['id'] }},
                             entity: {{ item.fields['entities_id'] }},
                             right: '{{ right }}',
-                            validatortype: "{{ subitem.fields['users_id_validate']['groups_id'] is defined ? 'Group' : (subitem.fields['users_id_validate'] is not empty ? 'User' : '') }}"
+                            validatortype: "{{ subitem.fields['users_id_validate']['groups_id'] is defined ? 'Group' : (subitem.fields['users_id_validate'] is not empty ? 'User' : '') }}",
+                            rand: '{{ rand }}',
                         });
                     </script>
                     {% else %}
@@ -222,7 +236,8 @@
                                 entity: {{ item.fields['entities_id'] }},
                                 right: '{{ right }}',
                                 validatortype: '__VALUE__',
-                                groups_id: 0
+                                groups_id: 0,
+                                rand: '{{ rand }}',
                             });
                     </script>
                     {% endif %}
@@ -298,5 +313,93 @@
             window.scrollTo(0,document.body.scrollHeight);
          </script>
       {% endif %}
+
+      <script type="text/javascript">
+         /**
+          * Wait for an element to be available in the DOM
+          * @param {string} selector The selector to wait for
+          */
+         function waitForElement(selector) {
+            return new Promise(resolve => {
+               if (document.querySelector(selector)) {
+                     return resolve(document.querySelector(selector));
+               }
+
+               const observer = new MutationObserver(() => {
+                     if (document.querySelector(selector)) {
+                        resolve(document.querySelector(selector));
+                        observer.disconnect();
+                     }
+               });
+
+               observer.observe(document.body, {
+                     childList: true,
+                     subtree: true
+               });
+            });
+         }
+
+         function itilvalidationtemplate_update{{ rand }}(value) {
+            $.ajax({
+               url: '{{ path('/ajax/itilvalidation.php') }}',
+               type: 'POST',
+               data: {
+                  validationtemplates_id: value,
+                  items_id: '{{ item.fields['id'] }}',
+                  itemtype: '{{ item.getType() }}'
+               }
+            }).done(function (data) {
+               if (data.content !== undefined) {
+                  // set textarea content
+                  if (validationtinymce = tinymce.get("comment_submission_{{ rand }}")) {
+                     validationtinymce.setContent(data.content);
+                  }
+               }
+
+               // reset validator type
+               $("#dropdown_validatortype{{ rand }}").trigger('setValue', "0");
+
+               if (data.validatortype !== undefined && data.validatortype !== null) {
+                  // set validator type
+                  $("#dropdown_validatortype{{ rand }}").trigger('setValue', data.validatortype);
+
+                  if (data.groups_id !== undefined && data.groups_id !== null) {
+                     waitForElement("#dropdown_groups_id{{ rand }}").then((elm) => {
+                        // set groups_id
+                        $("#dropdown_groups_id{{ rand }}").ready(function() {
+                           $("#dropdown_groups_id{{ rand }}").trigger('setValue', data.groups_id);
+                        });
+
+                        waitForElement("#dropdown_users_id_validate{{ rand }}").then((elm) => {
+                           // set items_id_target
+                           $("#dropdown_users_id_validate{{ rand }}").ready(function() {
+                              $("#dropdown_users_id_validate{{ rand }}").trigger('setValue', data.items_id_target);
+                           });
+                        });
+                     });
+                  } else if (data.items_id_target !== undefined && data.items_id_target !== null) {
+                     new Promise((resolve) => {
+                        // if dropdown_items_id_target exists, wait for it to be removed
+                        // is required because the dropdown is removed and recreated when the setValue is triggered
+                        if ($("#dropdown_users_id_validate__{{ rand }}").length > 0) {
+                           $("#dropdown_users_id_validate__{{ rand }}").on('remove', function() {
+                              resolve();
+                           });
+                        } else {
+                           resolve();
+                        }
+                     }).then(() => {
+                        waitForElement("#dropdown_users_id_validate__{{ rand }}").then((elm) => {
+                           // set items_id_target
+                           $("#dropdown_users_id_validate__{{ rand }}").ready(function() {
+                              $("#dropdown_users_id_validate__{{ rand }}").trigger('setValue', data.items_id_target);
+                           });
+                        });
+                     });
+                  }
+               }
+            });
+         }
+      </script>
    {% endif %}
 {% endblock %}

@@ -1092,6 +1092,7 @@ JAVASCRIPT;
                     'TaskTemplate' => null,
                     'SolutionType' => null,
                     'SolutionTemplate' => null,
+                    'ITILValidationTemplate' => null,
                     'RequestType' => null,
                     'ITILFollowupTemplate' => null,
                     'ProjectState' => null,
