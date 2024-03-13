@@ -4668,6 +4668,7 @@ abstract class CommonITILObject extends CommonDBTM
             'name'               => _n('Requester', 'Requesters', 1),
             'forcegroupby'       => true,
             'massiveaction'      => false,
+            'use_subquery'       => true,
             'joinparams'         => [
                 'beforejoin'         => [
                     'table'              => getTableForItemType($this->userlinkclass),
@@ -4695,6 +4696,7 @@ abstract class CommonITILObject extends CommonDBTM
             'name'               => _n('Requester group', 'Requester groups', 1),
             'forcegroupby'       => true,
             'massiveaction'      => false,
+            'use_subquery'       => true,
             'condition'          => ['is_requester' => 1],
             'joinparams'         => [
                 'beforejoin'         => [
@@ -4750,6 +4752,7 @@ abstract class CommonITILObject extends CommonDBTM
             'name'               => _n('Observer', 'Observers', 1),
             'forcegroupby'       => true,
             'massiveaction'      => false,
+            'use_subquery'       => true,
             'joinparams'         => [
                 'beforejoin'         => [
                     'table'              => getTableForItemType($this->userlinkclass),
@@ -4769,6 +4772,7 @@ abstract class CommonITILObject extends CommonDBTM
             'name'               => _n('Observer group', 'Observer groups', 1),
             'forcegroupby'       => true,
             'massiveaction'      => false,
+            'use_subquery'       => true,
             'condition'          => ['is_watcher' => 1],
             'joinparams'         => [
                 'beforejoin'         => [
@@ -4794,6 +4798,7 @@ abstract class CommonITILObject extends CommonDBTM
             'right'              => 'own_ticket',
             'name'               => __('Technician'),
             'forcegroupby'       => true,
+            'use_subquery'       => true,
             'massiveaction'      => false,
             'joinparams'         => [
                 'beforejoin'         => [
@@ -4813,6 +4818,7 @@ abstract class CommonITILObject extends CommonDBTM
             'datatype'           => 'dropdown',
             'name'               => __('Assigned to a supplier'),
             'forcegroupby'       => true,
+            'use_subquery'       => true,
             'massiveaction'      => false,
             'joinparams'         => [
                 'beforejoin'         => [
@@ -4832,6 +4838,7 @@ abstract class CommonITILObject extends CommonDBTM
             'datatype'           => 'dropdown',
             'name'               => __('Technician group'),
             'forcegroupby'       => true,
+            'use_subquery'       => true,
             'massiveaction'      => false,
             'condition'          => ['is_assign' => 1],
             'joinparams'         => [

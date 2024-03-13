@@ -1123,6 +1123,25 @@ final class SQLProvider implements SearchProviderInterface
             }
         }
 
+        // Is the current criteria on a linked children item ? (e.g. search
+        // option 65 for CommonITILObjects)
+        // These search options will need an additionnal subquery in their WHERE
+        // clause to ensure accurate results
+        // See https://github.com/glpi-project/glpi/pull/13684 for detailed examples
+        $should_use_subquery = $searchopt[$ID]["use_subquery"] ?? false;
+
+        // Default mode for most search types that use a subquery
+        $use_subquery_on_id_search = false;
+
+        // Special case for "contains" or "not contains" search type
+        $use_subquery_on_text_search = false;
+
+        // Special case when searching for an user (need to compare with login, firstname, ...)
+        $subquery_specific_username = false;
+
+        // The subquery operator will be "IN" or "NOT IN" depending on the context and criteria
+        $subquery_operator = "";
+
         $SEARCH = [];
         switch ($searchtype) {
             /** @noinspection PhpMissingBreakStatementInspection */
@@ -1156,23 +1175,79 @@ final class SQLProvider implements SearchProviderInterface
                         }
                     }
                 }
-                $SEARCH = [$nott ? "NOT LIKE" : "LIKE", self::makeTextSearchValue($val)];
+                if ($should_use_subquery) {
+                    // Subquery will be needed to get accurate results
+                    $use_subquery_on_text_search = true;
+
+                    // Potential negation will be handled by the subquery operator
+                    $SEARCH = [self::makeTextSearch($val, false)];
+                    $subquery_operator = $nott ? "NOT IN" : "IN";
+                } else {
+                    $SEARCH = [$nott ? "NOT LIKE" : "LIKE", self::makeTextSearchValue($val)];
+                }
                 break;
 
             case "equals":
                 $SEARCH = [$nott ? "<>" : "=", $val];
+                if ($should_use_subquery) {
+                    // Subquery will be needed to get accurate results
+                    $use_subquery_on_id_search = true;
+
+                    // Potential negation will be handled by the subquery operator
+                    $SEARCH = ["=", $val];
+                    $subquery_operator = $nott ? "NOT IN" : "IN";
+                } else {
+                    $SEARCH = [$nott ? "<>" : "=", $val];
+                }
                 break;
 
             case "notequals":
-                $SEARCH = [$nott ? "=" : "<>", $val];
+                if ($should_use_subquery) {
+                    // Subquery will be needed to get accurate results
+                    $use_subquery_on_id_search = true;
+
+                    // Potential negation will be handled by the subquery operator
+                    $SEARCH = ["=", $val];
+                    $subquery_operator = $nott ? "IN" : "NOT IN";
+                } else {
+                    $SEARCH = [$nott ? "=" : "<>", $val];
+                }
                 break;
 
             case "under":
-                $SEARCH = [$nott ? "NOT IN" : "IN", getSonsOf($inittable, $val)];
+                if ($should_use_subquery) {
+                    // Sometimes $val is not numeric (mygroups)
+                    // In this case we must set an invalid value and let the related
+                    // specific code handle in later on
+                    $sons = is_numeric($val) ? implode("','", getSonsOf($inittable, $val)) : 'not yet set';
+
+                    // Subquery will be needed to get accurate results
+                    $use_subquery_on_id_search = true;
+
+                    // Potential negation will be handled by the subquery operator
+                    $SEARCH = ["IN", $sons];
+                    $subquery_operator = $nott ? "NOT IN" : "IN";
+                } else {
+                    $SEARCH = [$nott ? "NOT IN" : "IN", getSonsOf($inittable, $val)];
+                }
                 break;
 
             case "notunder":
-                $SEARCH = [$nott ? "IN" : "NOT IN", getSonsOf($inittable, $val)];
+                if ($should_use_subquery) {
+                    // Sometimes $val is not numeric (mygroups)
+                    // In this case we must set an invalid value and let the related
+                    // specific code handle in later on
+                    $sons = is_numeric($val) ? implode("','", getSonsOf($inittable, $val)) : 'not yet set';
+
+                    // Subquery will be needed to get accurate results
+                    $use_subquery_on_id_search = true;
+
+                    // Potential negation will be handled by the subquery operator
+                    $SEARCH = ["IN", $sons];
+                    $subquery_operator = $nott ? "IN" : "NOT IN";
+                } else {
+                    $SEARCH = [$nott ? "IN" : "NOT IN", getSonsOf($inittable, $val)];
+                }
                 break;
 
             case "empty":
@@ -1247,14 +1322,21 @@ final class SQLProvider implements SearchProviderInterface
                 if ($val === 'myself') {
                     switch ($searchtype) {
                         case 'equals':
-                            return [
+                            $SEARCH = [
                                 "$table.id" => $_SESSION['glpiID']
                             ];
+                            break;
 
                         case 'notequals':
-                            return [
-                                "$table.id" => ['<>', $_SESSION['glpiID']]
-                            ];
+                            if ($use_subquery_on_id_search) {
+                                // Potential negation will be handled by the subquery operator
+                                $SEARCH = ["=", $_SESSION['glpiID']];
+                            } else {
+                                $SEARCH = [
+                                    "$table.id" => ['<>', $_SESSION['glpiID']]
+                                ];
+                            }
+                            break;
                     }
                 }
 
@@ -1279,7 +1361,7 @@ final class SQLProvider implements SearchProviderInterface
                     }
                     return [new QueryExpression(self::makeTextCriteria("`$table`.`$field`", $val, $nott, ''))];
                 }
-                if ($_SESSION["glpinames_format"] == \User::FIRSTNAME_BEFORE) {
+                if ($_SESSION["glpinames_format"] == User::FIRSTNAME_BEFORE) {
                     $name1 = 'firstname';
                     $name2 = 'realname';
                 } else {
@@ -1288,22 +1370,25 @@ final class SQLProvider implements SearchProviderInterface
                 }
 
                 if (in_array($searchtype, ['equals', 'notequals'])) {
-                    $criteria = [
-                        'OR' => []
-                    ];
-                    $append_criterion_with_search($criteria['OR'], "$table.id");
-                    if ($val == 0) {
-                        if ($searchtype === 'notequals') {
-                            $criteria['OR'][] = [
-                                'NOT' => ["$table.id" => null]
-                            ];
-                        } else {
-                            $criteria['OR'][] = [
-                                "$table.id" => null
-                            ];
-                        }
-                    }
-                    return $criteria;
+                    // Seems to be obsolete code that is no longer needed
+                    // We still want to break to get out of this specific section
+                    break;
+                    // $criteria = [
+                    //     'OR' => []
+                    // ];
+                    // $append_criterion_with_search($criteria['OR'], "$table.id");
+                    // if ($val == 0) {
+                    //     if ($searchtype === 'notequals') {
+                    //         $criteria['OR'][] = [
+                    //             'NOT' => ["$table.id" => null]
+                    //         ];
+                    //     } else {
+                    //         $criteria['OR'][] = [
+                    //             "$table.id" => null
+                    //         ];
+                    //     }
+                    // }
+                    // return $criteria;
                 } else if ($searchtype === 'empty') {
                     $criteria = [];
                     $append_criterion_with_search($criteria, "$table.id");
@@ -1332,12 +1417,28 @@ final class SQLProvider implements SearchProviderInterface
                         // Remove $tmplink (may have spaces around it) from front of $toadd
                         $toadd = preg_replace('/^\s*' . preg_quote($tmplink, '/') . '\s*/', '', $toadd);
                         if ($val === '^$') {
-                            return [
-                                'OR' => [
-                                    "$linktable.users_id" => null,
-                                    "$linktable.alternative_email" => null
-                                ]
-                            ];
+                            if ($use_subquery_on_text_search) {
+                                $subquery_specific_username = true;
+                                $subquery_specific_username_firstname_real_name = ['OR' => [
+                                    $name1 => $SEARCH,
+                                    $name2 => $SEARCH,
+                                    // $name2 => $SEARCH,
+                                ]];
+                                // $subquery_specific_username_anonymous = self::makeTextCriteria(
+                                //     "`alternative_email`",
+                                //     $val,
+                                //     false,
+                                //     'OR'
+                                // );
+                                break;
+                            } else {
+                                return [
+                                    'OR' => [
+                                        "$linktable.users_id" => null,
+                                        "$linktable.alternative_email" => null
+                                    ]
+                                ];
+                            }
                         }
                     }
                 }
@@ -1367,6 +1468,7 @@ final class SQLProvider implements SearchProviderInterface
                     ];
                 }
                 return $criteria;
+
 
             case "glpi_groups.completename":
                 if ($val === 'mygroups') {
