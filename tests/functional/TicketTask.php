@@ -36,6 +36,8 @@
 namespace tests\units;
 
 use DbTestCase;
+use QueryExpression;
+use Search;
 
 /* Test for inc/tickettask.class.php */
 
@@ -534,5 +536,81 @@ class TicketTask extends DbTestCase
         $this->integer($task->fields['actiontime'])->isEqualTo(7200);
         $this->string($task->fields['begin'])->isEqualTo($date_begin_string);
         $this->string($task->fields['end'])->isEqualTo($date_begin->add(new \DateInterval('PT2H'))->format('Y-m-d H:i:s'));
+    }
+
+    public function testAddDefaultWhereTakeEntitiesIntoAccount(): void
+    {
+        $this->login();
+        $this->setEntity('_test_child_2', false);
+
+        // Add followups in an entity our user can see
+        $number_of_visible_followups = $this->countVisibleTasksForLoggedInUser();
+        $this->createTaskInEntityForType('_test_child_2', \Ticket::class);
+        $this->createTaskInEntityForType('_test_child_2', \Problem::class);
+        $this->createTaskInEntityForType('_test_child_2', \Change::class);
+        $this->integer(
+            $this->countVisibleTasksForLoggedInUser()
+        )->isEqualTo($number_of_visible_followups + 3); // 3 new followup found
+
+        // Add followups in a visible that our user can't see
+        $number_of_visible_followups = $this->countVisibleTasksForLoggedInUser();
+        $this->createTaskInEntityForType('_test_root_entity', \Ticket::class);
+        $this->createTaskInEntityForType('_test_root_entity', \Problem::class);
+        $this->createTaskInEntityForType('_test_root_entity', \Change::class);
+        $this->integer(
+            $this->countVisibleTasksForLoggedInUser()
+        )->isEqualTo($number_of_visible_followups); // No new followups found
+    }
+
+    private function countVisibleTasksForLoggedInUser(): int
+    {
+        /** @var \DBMysql $DB */
+        global $DB;
+
+        $number_of_tasks = 0;
+        $task_classes = [
+            \TicketTask::class,
+            \ChangeTask::class,
+            \ProblemTask::class,
+        ];
+
+        foreach ($task_classes as $task_class) {
+            $already_linked_tables = [];
+            $results = $DB->request([
+                'COUNT' => 'number_of_tasks',
+                'FROM' => $task_class::getTable(),
+                'JOIN' => [
+                    new QueryExpression(
+                        Search::addDefaultJoin(
+                            $task_class,
+                            $task_class::getTable(),
+                            $already_linked_tables
+                        )
+                    )
+                ],
+                'WHERE' => new QueryExpression(
+                    Search::addDefaultWhere($task_class)
+                ),
+            ]);
+
+            $number_of_tasks += (int) iterator_to_array($results)[0]['number_of_tasks'];
+        }
+
+        return $number_of_tasks;
+    }
+
+    private function createTaskInEntityForType(
+        string $entity_name,
+        string $itemtype
+    ): void {
+        $itil = $this->createItem($itemtype, [
+            'entities_id' => getItemByTypeName('Entity', $entity_name, true),
+            'name'        => 'Test ticket',
+            'content'     => '',
+        ]);
+        $this->createItem($itemtype . "Task", [
+            $itemtype::getForeignKeyField() => $itil->getID(),
+            'content'  => 'Test task',
+        ]);
     }
 }

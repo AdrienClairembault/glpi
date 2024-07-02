@@ -653,7 +653,7 @@ HTML
             $this->countVisibleFollowupsForLoggedInUser()
         )->isEqualTo($number_of_visible_followups + 3); // 3 new followup found
 
-        // Add followups in a visible that our user can't see
+        // Add followups in an entity that our user can't see
         $number_of_visible_followups = $this->countVisibleFollowupsForLoggedInUser();
         $this->createFollowupInEntityForType('_test_root_entity', Ticket::class);
         $this->createFollowupInEntityForType('_test_root_entity', Problem::class);

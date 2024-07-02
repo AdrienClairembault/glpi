@@ -4524,6 +4524,24 @@ JAVASCRIPT;
                 $condition = SavedSearch::addVisibilityRestrict();
                 break;
 
+            case 'ChangeTask':
+            case 'ProblemTask':
+                /** @var CommonITILTask $task */
+                $task = new $itemtype();
+                $parent_itemtype = $task->getItilObjectItemType();
+
+                // Build base condition using entity restrictions
+                // TODO 11.0: merge into common behavior that can be used by all CommonDBChild
+                $entity_restrictions = [];
+                $entity_restrictions[] = getEntitiesRestrictRequest(
+                    '',
+                    $parent_itemtype::getTable(),
+                    'entities_id',
+                    ''
+                );
+                $condition = "(" . implode(" OR ", $entity_restrictions) . ")";
+                break;
+
             case 'TicketTask':
                // Filter on is_private
                 $allowed_is_private = [];
@@ -4540,8 +4558,19 @@ JAVASCRIPT;
                     break;
                 }
 
+                // Build base condition using entity restrictions
+                // TODO 11.0: merge into common behavior that can be used by all CommonDBChild
+                $entity_restrictions = [];
+                $entity_restrictions[] = getEntitiesRestrictRequest(
+                    '',
+                    Ticket::getTable(),
+                    'entities_id',
+                    ''
+                );
+                $condition = "(" . implode(" OR ", $entity_restrictions) . ")";
+
                 $in = "IN ('" . implode("','", $allowed_is_private) . "')";
-                $condition = "(`glpi_tickettasks`.`is_private` $in ";
+                $condition .= " AND (`glpi_tickettasks`.`is_private` $in ";
 
                // Check for assigned or created tasks
                 $condition .= "OR `glpi_tickettasks`.`users_id` = " . Session::getLoginUserID() . " ";
@@ -5871,6 +5900,21 @@ JAVASCRIPT;
                         ]
                     );
                 }
+                break;
+
+            case TicketTask::class:
+            case ChangeTask::class:
+            case ProblemTask::class:
+                /** @var CommonITILTask $task */
+                $task = new $itemtype();
+
+                $out .= self::addLeftJoin(
+                    $itemtype,
+                    $ref_table,
+                    $already_link_tables,
+                    $task->getItilObjectItemType()::getTable(),
+                    $task->getItilObjectItemType()::getForeignKeyField(),
+                );
                 break;
 
             default:
