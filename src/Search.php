@@ -4530,16 +4530,8 @@ JAVASCRIPT;
                 $task = new $itemtype();
                 $parent_itemtype = $task->getItilObjectItemType();
 
-                // Build base condition using entity restrictions
-                // TODO 11.0: merge into common behavior that can be used by all CommonDBChild
-                $entity_restrictions = [];
-                $entity_restrictions[] = getEntitiesRestrictRequest(
-                    '',
-                    $parent_itemtype::getTable(),
-                    'entities_id',
-                    ''
-                );
-                $condition = "(" . implode(" OR ", $entity_restrictions) . ")";
+                $parent_request = self::getfilterParentItemsRequest($parent_itemtype);
+                $condition = $itemtype::getTablefield($parent_itemtype::getForeignKeyField()) . " IN ($parent_request)";
                 break;
 
             case 'TicketTask':
@@ -4560,14 +4552,9 @@ JAVASCRIPT;
 
                 // Build base condition using entity restrictions
                 // TODO 11.0: merge into common behavior that can be used by all CommonDBChild
-                $entity_restrictions = [];
-                $entity_restrictions[] = getEntitiesRestrictRequest(
-                    '',
-                    Ticket::getTable(),
-                    'entities_id',
-                    ''
-                );
-                $condition = "(" . implode(" OR ", $entity_restrictions) . ")";
+                $parent_request = self::getfilterParentItemsRequest(Ticket::class);
+                $condition = TicketTask::getTablefield(Ticket::getForeignKeyField()) . " IN ($parent_request)";
+                $condition = "1=1";
 
                 $in = "IN ('" . implode("','", $allowed_is_private) . "')";
                 $condition .= " AND (`glpi_tickettasks`.`is_private` $in ";
@@ -4578,12 +4565,11 @@ JAVASCRIPT;
 
                // Check for parent item visibility unless the user can see all the
                // possible parents
-                if (!Session::haveRight('ticket', Ticket::READALL)) {
-                    $condition .= "AND " . TicketTask::buildParentCondition();
-                }
+                // if (!Session::haveRight('ticket', Ticket::READALL)) {
+                //     $condition .= "AND " . TicketTask::buildParentCondition();
+                // }
 
                 $condition .= ")";
-
                 break;
 
             case 'ITILFollowup':
@@ -4663,6 +4649,33 @@ JAVASCRIPT;
        /* Hook to restrict user right on current itemtype */
         list($itemtype, $condition) = Plugin::doHookFunction('add_default_where', [$itemtype, $condition]);
         return $condition;
+    }
+
+    public static function getfilterParentItemsRequest(string $parent_itemtype): string
+    {
+        $item = new $parent_itemtype();
+
+        $already_joined = [];
+        $parent_request = "SELECT {$parent_itemtype::getTableField('id')} FROM {$parent_itemtype::getTable()}" ;
+        $parent_request .= Search::addDefaultJoin(
+            $parent_itemtype,
+            $parent_itemtype::getTable(),
+            $already_joined
+        );
+        $default_where = Search::addDefaultWhere($parent_itemtype);
+        if (empty($default_where)) {
+            $default_where = "1=1";
+        }
+        $parent_request .= " WHERE ($default_where) ";
+        $parent_request .= getEntitiesRestrictRequest(
+            'AND',
+            $parent_itemtype::getTable(),
+            '',
+            '',
+            $item->maybeRecursive() && $item->isField('is_recursive')
+        );
+
+        return $parent_request;
     }
 
     /**
@@ -5900,21 +5913,6 @@ JAVASCRIPT;
                         ]
                     );
                 }
-                break;
-
-            case TicketTask::class:
-            case ChangeTask::class:
-            case ProblemTask::class:
-                /** @var CommonITILTask $task */
-                $task = new $itemtype();
-
-                $out .= self::addLeftJoin(
-                    $itemtype,
-                    $ref_table,
-                    $already_link_tables,
-                    $task->getItilObjectItemType()::getTable(),
-                    $task->getItilObjectItemType()::getForeignKeyField(),
-                );
                 break;
 
             default:

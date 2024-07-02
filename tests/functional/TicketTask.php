@@ -543,23 +543,51 @@ class TicketTask extends DbTestCase
         $this->login();
         $this->setEntity('_test_child_2', false);
 
-        // Add followups in an entity our user can see
-        $number_of_visible_followups = $this->countVisibleTasksForLoggedInUser();
+        // Demonstrate that tasks in a visible entity are found correctly
+        $number_of_visible_tasks = $this->countVisibleTasksForLoggedInUser();
         $this->createTaskInEntityForType('_test_child_2', \Ticket::class);
         $this->createTaskInEntityForType('_test_child_2', \Problem::class);
         $this->createTaskInEntityForType('_test_child_2', \Change::class);
         $this->integer(
             $this->countVisibleTasksForLoggedInUser()
-        )->isEqualTo($number_of_visible_followups + 3); // 3 new followup found
+        )->isEqualTo($number_of_visible_tasks + 3); // 3 new tasks found
 
-        // Add followups in a visible that our user can't see
-        $number_of_visible_followups = $this->countVisibleTasksForLoggedInUser();
+        // Demonstrate that tasks in a non visible entity are not found
+        $number_of_visible_tasks = $this->countVisibleTasksForLoggedInUser();
         $this->createTaskInEntityForType('_test_root_entity', \Ticket::class);
         $this->createTaskInEntityForType('_test_root_entity', \Problem::class);
         $this->createTaskInEntityForType('_test_root_entity', \Change::class);
         $this->integer(
             $this->countVisibleTasksForLoggedInUser()
-        )->isEqualTo($number_of_visible_followups); // No new followups found
+        )->isEqualTo($number_of_visible_tasks); // No new tasks found
+    }
+
+    public function testAddDefaultWhereTakeParentVisibilityIntoAccount(): void
+    {
+        $this->login();
+        $this->setEntity('_test_root_entity', false);
+
+        // Demonstrate that an user will all rights will see new tasks
+        $number_of_visible_tasks = $this->countVisibleTasksForLoggedInUser();
+        $this->createTaskInEntityForType('_test_root_entity', \Ticket::class);
+        // $this->createTaskInEntityForType('_test_root_entity', \Problem::class);
+        // $this->createTaskInEntityForType('_test_root_entity', \Change::class);
+        $this->integer(
+            $this->countVisibleTasksForLoggedInUser()
+        )->isEqualTo($number_of_visible_tasks + 1);
+
+        // Remove rights to demonstrate that the new taks wont be found this time
+        $_SESSION["glpiactiveprofile"]["change"] = 0;
+        $_SESSION["glpiactiveprofile"]["problem"] = 0;
+        $_SESSION["glpiactiveprofile"]["ticket"] = 0;
+        $number_of_visible_tasks = $this->countVisibleTasksForLoggedInUser(); // Reset counter
+
+        $this->createTaskInEntityForType('_test_root_entity', \Ticket::class);
+        // $this->createTaskInEntityForType('_test_root_entity', \Problem::class);
+        // $this->createTaskInEntityForType('_test_root_entity', \Change::class);
+        $this->integer(
+            $this->countVisibleTasksForLoggedInUser()
+        )->isEqualTo($number_of_visible_tasks + 0); // No new tasks found
     }
 
     private function countVisibleTasksForLoggedInUser(): int
@@ -575,19 +603,9 @@ class TicketTask extends DbTestCase
         ];
 
         foreach ($task_classes as $task_class) {
-            $already_linked_tables = [];
             $results = $DB->request([
                 'COUNT' => 'number_of_tasks',
                 'FROM' => $task_class::getTable(),
-                'JOIN' => [
-                    new QueryExpression(
-                        Search::addDefaultJoin(
-                            $task_class,
-                            $task_class::getTable(),
-                            $already_linked_tables
-                        )
-                    )
-                ],
                 'WHERE' => new QueryExpression(
                     Search::addDefaultWhere($task_class)
                 ),
@@ -608,9 +626,11 @@ class TicketTask extends DbTestCase
             'name'        => 'Test ticket',
             'content'     => '',
         ]);
-        $this->createItem($itemtype . "Task", [
+        $id = $this->createItem($itemtype . "Task", [
             $itemtype::getForeignKeyField() => $itil->getID(),
             'content'  => 'Test task',
+            'users_id' => 2,
+            'users_id_tech' => 2,
         ]);
     }
 }
