@@ -48,6 +48,7 @@ use Profile;
 use Glpi\Session\SessionInfo;
 use User;
 
+/** @implements ControlTypeInterface<AllowListConfig> */
 final class AllowList implements ControlTypeInterface
 {
     #[Override]
@@ -113,10 +114,6 @@ final class AllowList implements ControlTypeInterface
         JsonFieldInterface $config,
         FormAccessParameters $parameters
     ): AccessVote {
-        if (!$config instanceof AllowListConfig) {
-            throw new \InvalidArgumentException("Invalid config class");
-        }
-
         if (!$parameters->isAuthenticated()) {
             return AccessVote::Abstain;
         }

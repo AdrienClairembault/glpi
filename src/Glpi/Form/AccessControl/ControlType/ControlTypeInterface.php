@@ -41,6 +41,9 @@ use Glpi\Form\AccessControl\FormAccessControl;
 use Glpi\Form\AccessControl\FormAccessParameters;
 use Glpi\Form\Form;
 
+/**
+ * @template T of JsonFieldInterface
+ */
 interface ControlTypeInterface
 {
     /**
@@ -94,7 +97,7 @@ interface ControlTypeInterface
      *
      * @param array $input
      *
-     * @return JsonFieldInterface
+     * @return T
      */
     public function createConfigFromUserInput(array $input): JsonFieldInterface;
 
@@ -102,7 +105,7 @@ interface ControlTypeInterface
     /**
      * Check if the current user can answer the given form.
      *
-     * @param JsonFieldInterface $config
+     * @param T $config
      * @param FormAccessParameters $parameters
      *
      * @return AccessVote
@@ -115,7 +118,7 @@ interface ControlTypeInterface
     /**
      * Define if an unauthenticated user can view the form.
      *
-     * @param JsonFieldInterface $config
+     * @param T $config
      * @return bool
      */
     public function allowUnauthenticated(JsonFieldInterface $config): bool;
