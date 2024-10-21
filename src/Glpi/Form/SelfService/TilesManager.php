@@ -85,7 +85,7 @@ final class TilesManager
             illustration: "view-feed.svg",
             // TODO: replace this default tile by something more useful, rss
             // feeds are already displayed on the home page using a tab
-            link: "/Home"
+            link: "/Helpdesk"
         );
 
         return $tiles;

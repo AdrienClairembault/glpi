@@ -1572,7 +1572,7 @@ class Auth extends CommonGLPI
             if ($_SESSION['glpiactiveprofile']['create_ticket_on_login']) {
                 Html::redirect($CFG_GLPI['root_doc'] . "/ServiceCatalog");
             }
-            Html::redirect($CFG_GLPI['root_doc'] . "/Home");
+            Html::redirect($CFG_GLPI['root_doc'] . "/Helpdesk");
         } else {
             if ($_SESSION['glpiactiveprofile']['create_ticket_on_login']) {
                 Html::redirect(Ticket::getFormURL());

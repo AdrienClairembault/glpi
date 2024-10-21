@@ -1546,7 +1546,7 @@ HTML;
 
         $menu = [
             'home' => [
-                'default' => '/Home',
+                'default' => '/Helpdesk',
                 'title'   => __('Home'),
                 'icon'    => 'fas fa-home',
             ],

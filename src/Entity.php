@@ -3066,7 +3066,7 @@ class Entity extends CommonTreeDropdown
 
         $base_path = $CFG_GLPI['root_doc'] . "/front/central.php";
         if (Session::getCurrentInterface() === 'helpdesk') {
-            $base_path = $CFG_GLPI["root_doc"] . "/Home";
+            $base_path = $CFG_GLPI["root_doc"] . "/Helpdesk";
         }
 
         $ancestors = getAncestorsOf('glpi_entities', $_SESSION['glpiactive_entity']);

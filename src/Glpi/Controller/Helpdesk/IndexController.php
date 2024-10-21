@@ -45,7 +45,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use User;
 use Session;
 
-final class HomeController extends AbstractController
+final class IndexController extends AbstractController
 {
     private TilesManager $tiles_manager;
 
@@ -56,7 +56,7 @@ final class HomeController extends AbstractController
 
     #[SecurityStrategy(Firewall::STRATEGY_HELPDESK_ACCESS)]
     #[Route(
-        "/Home",
+        "/Helpdesk",
         name: "glpi_selfservice_home",
         methods: "GET"
     )]
@@ -72,7 +72,7 @@ final class HomeController extends AbstractController
 
         // Will rename the file to "home.html.twig" later, don't want to remove
         // the original file yet.
-        return $this->render('pages/self-service/home.html.twig', [
+        return $this->render('pages/self-service/index.html.twig', [
             'title' => __("Home"),
             'menu'  => ['helpdesk-home'],
             'tiles' => $this->tiles_manager->getTiles(),

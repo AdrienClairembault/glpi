@@ -63,8 +63,8 @@ Cypress.Commands.add('login', (username = 'e2e_tests', password = 'glpi') => {
             // cy.findByRole('combobox', {name: "Login source"}).select2('local', { force: true });
 
             cy.findByRole('button', {name: "Sign in"}).click();
-            // After logging in, the url should contain /front/central.php or /Home
-            cy.url().should('match', /(\/front\/central.php|\/Home)/);
+            // After logging in, the url should contain /front/central.php or /Helpdesk
+            cy.url().should('match', /(\/front\/central.php|\/Helpdesk)/);
         },
         {
             validate: () => {
