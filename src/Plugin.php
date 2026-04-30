@@ -197,6 +197,16 @@ class Plugin extends CommonDBTM
     private static ?array $local_i18n_folders = null;
 
     /**
+     * Request-level cache mapping a plugin key to its resolved absolute directory
+     * (or `null` when the plugin is not found in any of the configured plugin
+     * directories). Avoids repeating the {@see self::getPluginDirectories()}
+     * traversal across the methods involved in plugin loading.
+     *
+     * @var array<string, string|null>
+     */
+    private static array $plugin_directories_cache = [];
+
+    /**
      * Store additional infos for each plugins
      *
      * @var array
@@ -337,6 +347,35 @@ class Plugin extends CommonDBTM
     }
 
     /**
+     * Resolve a plugin key to its absolute directory.
+     *
+     * The result is cached for the duration of the request to avoid repeating
+     * the {@see self::getPluginDirectories()} traversal in every plugin-loading
+     * code path (load(), loadPluginSetupFile(), loadLang(), ...).
+     *
+     * @return string|null Absolute plugin directory, or `null` if the plugin
+     *                     does not exist in any configured base directory.
+     */
+    protected static function getPluginDirectory(string $plugin_key): ?string
+    {
+        if (array_key_exists($plugin_key, self::$plugin_directories_cache)) {
+            return self::$plugin_directories_cache[$plugin_key];
+        }
+
+        foreach (static::getPluginDirectories() as $base_dir) {
+            if (!is_dir($base_dir)) {
+                continue;
+            }
+            $plugin_directory = "$base_dir/$plugin_key";
+            if (file_exists($plugin_directory)) {
+                return self::$plugin_directories_cache[$plugin_key] = $plugin_directory;
+            }
+        }
+
+        return self::$plugin_directories_cache[$plugin_key] = null;
+    }
+
+    /**
      * Boot active plugins.
      */
     public function bootPlugins(): void
@@ -459,68 +498,58 @@ class Plugin extends CommonDBTM
             throw new RuntimeException('Loading plugin files is forbidden when plugins execution is suspended.');
         }
 
-        $loaded = false;
-        foreach (static::getPluginDirectories() as $base_dir) {
-            if (!is_dir($base_dir)) {
-                continue;
-            }
+        $plugin_directory = self::getPluginDirectory($plugin_key);
+        if ($plugin_directory === null) {
+            return;
+        }
 
-            $plugin_directory = "$base_dir/$plugin_key";
+        if (!(new self())->loadPluginSetupFile($plugin_key)) {
+            return;
+        }
 
-            if (!file_exists($plugin_directory)) {
-                continue;
-            }
+        if (!in_array($plugin_key, self::$loaded_plugins)) {
+            (new self())->registerPluginAutoloader($plugin_key, $plugin_directory);
 
-            if ((new self())->loadPluginSetupFile($plugin_key)) {
-                $loaded = true;
-                if (!in_array($plugin_key, self::$loaded_plugins)) {
-                    (new self())->registerPluginAutoloader($plugin_key, $plugin_directory);
+            // Init plugin
+            self::$loaded_plugins[] = $plugin_key;
+            $init_function = "plugin_init_$plugin_key";
+            if (function_exists($init_function)) {
+                try {
+                    $init_function();
+                } catch (HttpException|RedirectException|SessionExpiredException $e) {
+                    // These exceptions should not result in deactivating the plugin when thrown from its init function.
+                    // Indeed, they should be thrown back to trigger their default behaviour.
+                    //
+                    // - `HttpException`: corresponds to a specific response, the plugin developer probably expects it to be sent;
+                    // - `RedirectException`: corresponds to redirect response, the plugin developer probably expects it to be effective;
+                    // - `SessionExpiredException`: as long as a session check fails, we should redirect to the login page.
+                    throw $e;
+                } catch (Throwable $e) {
+                    global $PHPLOGGER;
+                    $PHPLOGGER->error(
+                        sprintf(
+                            'Error while loading plugin %s: %s',
+                            $plugin_key,
+                            $e->getMessage()
+                        ),
+                        ['exception' => $e]
+                    );
 
-                    // Init plugin
-                    self::$loaded_plugins[] = $plugin_key;
-                    $init_function = "plugin_init_$plugin_key";
-                    if (function_exists($init_function)) {
-                        try {
-                            $init_function();
-                        } catch (HttpException|RedirectException|SessionExpiredException $e) {
-                            // These exceptions should not result in deactivating the plugin when thrown from its init function.
-                            // Indeed, they should be thrown back to trigger their default behaviour.
-                            //
-                            // - `HttpException`: corresponds to a specific response, the plugin developer probably expects it to be sent;
-                            // - `RedirectException`: corresponds to redirect response, the plugin developer probably expects it to be effective;
-                            // - `SessionExpiredException`: as long as a session check fails, we should redirect to the login page.
-                            throw $e;
-                        } catch (Throwable $e) {
-                            global $PHPLOGGER;
-                            $PHPLOGGER->error(
-                                sprintf(
-                                    'Error while loading plugin %s: %s',
-                                    $plugin_key,
-                                    $e->getMessage()
-                                ),
-                                ['exception' => $e]
-                            );
-
-                            // Plugin has errored, so it should be disabled if it isn't already
-                            $plugin = new self();
-                            if ($plugin->isActivated($plugin_key)) {
-                                // We don't want to override another status like TOBECONFIGURED or NOTUPDATED
-                                $plugin->getFromDBbyDir($plugin_key);
-                                $plugin->unactivate($plugin->getID());
-                            }
-                            continue;
-                        }
-                        self::loadLang($plugin_key);
+                    // Plugin has errored, so it should be disabled if it isn't already
+                    $plugin = new self();
+                    if ($plugin->isActivated($plugin_key)) {
+                        // We don't want to override another status like TOBECONFIGURED or NOTUPDATED
+                        $plugin->getFromDBbyDir($plugin_key);
+                        $plugin->unactivate($plugin->getID());
                     }
+                    return;
                 }
+                self::loadLang($plugin_key);
             }
-            if ($withhook) {
-                self::includeHook($plugin_key);
-            }
+        }
 
-            if ($loaded) {
-                break;
-            }
+        if ($withhook) {
+            self::includeHook($plugin_key);
         }
     }
 
@@ -587,11 +616,9 @@ class Plugin extends CommonDBTM
 
         // New localisation system
         $mofile = false;
-        foreach (static::getPluginDirectories() as $base_dir) {
-            if (!is_dir($base_dir)) {
-                continue;
-            }
-            $locales_dir = "$base_dir/$plugin_key/locales/";
+        $plugin_directory = self::getPluginDirectory($plugin_key);
+        if ($plugin_directory !== null) {
+            $locales_dir = $plugin_directory . '/locales/';
             if (
                 array_key_exists($trytoload, $CFG_GLPI["languages"])
                 && file_exists($locales_dir . $CFG_GLPI["languages"][$trytoload][1])
@@ -605,10 +632,6 @@ class Plugin extends CommonDBTM
                 $mofile = $locales_dir . $CFG_GLPI["languages"][$CFG_GLPI["language"]][1];
             } elseif (file_exists($locales_dir . "en_GB.mo")) {
                 $mofile = $locales_dir . "en_GB.mo";
-            }
-
-            if ($mofile !== false) {
-                break;
             }
         }
 
@@ -2067,29 +2090,30 @@ class Plugin extends CommonDBTM
             return false;
         }
 
-        foreach (static::getPluginDirectories() as $base_dir) {
-            if (!is_dir($base_dir)) {
-                continue;
-            }
-            /**
-             * Plugin setup file is safe for inclusion.
-             * @psalm-taint-escape include
-             */
-            $file_path = sprintf('%s/%s/setup.php', $base_dir, $plugin_key);
-
-            if (file_exists($file_path)) {
-                // Includes are made inside a function to prevent included files to override
-                // variables used in this function.
-                // For example, if the included files contains a $key variable, it will
-                // replace the $key variable used here.
-                $include_fct = function () use ($file_path) {
-                    include_once($file_path);
-                };
-                $include_fct();
-                return true;
-            }
+        $plugin_directory = self::getPluginDirectory($plugin_key);
+        if ($plugin_directory === null) {
+            return false;
         }
-        return false;
+
+        /**
+         * Plugin setup file is safe for inclusion.
+         * @psalm-taint-escape include
+         */
+        $file_path = $plugin_directory . '/setup.php';
+
+        if (!file_exists($file_path)) {
+            return false;
+        }
+
+        // Includes are made inside a function to prevent included files to override
+        // variables used in this function.
+        // For example, if the included files contains a $key variable, it will
+        // replace the $key variable used here.
+        $include_fct = function () use ($file_path) {
+            include_once($file_path);
+        };
+        $include_fct();
+        return true;
     }
 
     /**
