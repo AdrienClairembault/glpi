@@ -188,6 +188,15 @@ class Plugin extends CommonDBTM
     private static bool $force_plugins_execution = false;
 
     /**
+     * Request-level cache of subdirectories found in {@see GLPI_LOCAL_I18N_DIR}.
+     * Computed once per request to avoid repeating scandir + per-entry is_dir
+     * for every loaded plugin in {@see self::loadLang()}.
+     *
+     * @var string[]|null
+     */
+    private static ?array $local_i18n_folders = null;
+
+    /**
      * Store additional infos for each plugins
      *
      * @var array
@@ -612,18 +621,24 @@ class Plugin extends CommonDBTM
             );
         }
 
-        $plugin_folders = is_dir(GLPI_LOCAL_I18N_DIR) ? scandir(GLPI_LOCAL_I18N_DIR) : [];
-        $plugin_folders = array_filter($plugin_folders, function ($dir) use ($plugin_key) {
-            if (!is_dir(GLPI_LOCAL_I18N_DIR . "/$dir")) {
-                return false;
+        if (self::$local_i18n_folders === null) {
+            self::$local_i18n_folders = [];
+            if (is_dir(GLPI_LOCAL_I18N_DIR)) {
+                foreach (scandir(GLPI_LOCAL_I18N_DIR) as $entry) {
+                    if ($entry === '.' || $entry === '..') {
+                        continue;
+                    }
+                    if (is_dir(GLPI_LOCAL_I18N_DIR . "/$entry")) {
+                        self::$local_i18n_folders[] = $entry;
+                    }
+                }
             }
+        }
 
-            if ($dir == $plugin_key) {
-                return true;
-            }
-
-            return str_starts_with($dir, $plugin_key . '_');
-        });
+        $plugin_folders = array_filter(
+            self::$local_i18n_folders,
+            static fn($dir) => $dir === $plugin_key || str_starts_with($dir, $plugin_key . '_')
+        );
 
         foreach ($plugin_folders as $plugin_folder) {
             $mofile = GLPI_LOCAL_I18N_DIR . "/$plugin_folder/$coretrytoload.mo";
