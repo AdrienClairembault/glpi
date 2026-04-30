@@ -207,6 +207,17 @@ class Plugin extends CommonDBTM
     private static array $plugin_directories_cache = [];
 
     /**
+     * Shared Composer {@see ClassLoader} used to autoload classes from every
+     * plugin's `src/` directory. Created and registered on the SPL autoload
+     * stack the first time a plugin is loaded; each additional plugin only
+     * adds one PSR-4 prefix to it, instead of registering a brand new
+     * autoloader. This avoids growing the autoload chain by one entry per
+     * plugin (which would otherwise slow down every class lookup made during
+     * the rest of the request).
+     */
+    private static ?ClassLoader $plugins_classloader = null;
+
+    /**
      * Store additional infos for each plugins
      *
      * @var array
@@ -449,13 +460,17 @@ class Plugin extends CommonDBTM
         }
 
         $psr4_dir = $plugin_directory . '/src/';
-        if (is_dir($psr4_dir)) {
-            $psr4_autoloader = new ClassLoader();
-            $psr4_autoloader->addPsr4(NS_PLUG . ucfirst($plugin_key) . '\\', $psr4_dir);
-            $psr4_autoloader->register();
-
-            self::$autoloaded_plugins[] = $plugin_key;
+        if (!is_dir($psr4_dir)) {
+            return;
         }
+
+        if (self::$plugins_classloader === null) {
+            self::$plugins_classloader = new ClassLoader();
+            self::$plugins_classloader->register();
+        }
+        self::$plugins_classloader->addPsr4(NS_PLUG . ucfirst($plugin_key) . '\\', $psr4_dir);
+
+        self::$autoloaded_plugins[] = $plugin_key;
     }
 
     /**
