@@ -54,6 +54,9 @@ use function Safe\realpath;
  */
 final class DbUtils
 {
+    /** @var array<string, string|array<string, string>> Per-request cache for getUserName() results. */
+    public static array $user_name_cache = [];
+
     /**
      * Return foreign key field name for a table
      *
@@ -1788,6 +1791,11 @@ final class DbUtils
      */
     public function getUserName($ID, $link = 0, $disable_anon = false)
     {
+        $cache_key = serialize([$ID, $link, $disable_anon]);
+        if (array_key_exists($cache_key, self::$user_name_cache)) {
+            return self::$user_name_cache[$cache_key];
+        }
+
         $username   = "";
         $user       = new User();
         $valid_user = false;
@@ -1808,22 +1816,23 @@ final class DbUtils
 
         if ($link == 1) {
             Toolbox::deprecated('Usage of `$link` parameter is deprecated. Use `getUserLink()` instead.');
-            return $valid_user
+            $result = $valid_user
                 ? sprintf('<a title="%s" href="%s">%s</a>', htmlescape($username), User::getFormURLWithID($ID), htmlescape($username))
                 : htmlescape($username);
+            return self::$user_name_cache[$cache_key] = $result;
         }
 
         if ($link == 2) {
             Toolbox::deprecated('Usage of `$link` parameter is deprecated. Use `User::getInforCard()` instead.');
 
-            return [
+            return self::$user_name_cache[$cache_key] = [
                 'name'    => $username,
                 'link'    => $valid_user ? $user->getLinkUrl() : '',
                 'comment' => $valid_user ? $user->getInfoCard() : '',
             ];
         }
 
-        return $username;
+        return self::$user_name_cache[$cache_key] = $username;
     }
 
     /**

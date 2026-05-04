@@ -613,6 +613,8 @@ trait PlanningEvent
                         $item_fk           => $data['id'],
                         'id'               => $data['id'],
                         'users_id'         => $data["users_id"],
+                        'entities_id'      => $event_obj->getEntityID(),
+                        'link'             => $event_obj->getLink(['icon' => true, 'forceid' => true]),
                         'state'            => $data["state"],
                         'background'       => $has_bg ? $data['background'] : false,
                         'name'             => $data['name'],
@@ -751,10 +753,8 @@ trait PlanningEvent
             );
         }
 
-        $parent = getItemForItemtype($val['itemtype']);
-        $parent->getFromDB($val[$parent->getForeignKeyField()]);
-        $html .= $parent->getLink(['icon' => true, 'forceid' => true]) . "<br>";
-        $html .= "<span>" . Entity::badgeCompletenameById($parent->getEntityID()) . "</span><br>";
+        $html .= ($val['link'] ?? '') . "<br>";
+        $html .= "<span>" . Entity::badgeCompletenameById($val['entities_id'] ?? 0) . "</span><br>";
         return $html;
     }
 

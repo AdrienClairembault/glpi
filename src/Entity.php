@@ -118,6 +118,9 @@ class Entity extends CommonTreeDropdown implements
     public const HELPDESK_TITLE_DEFAULT = "default";
     public const HELPDESK_TITLE_CUSTOM = "custom";
 
+    /** @var array<int, string|null> Per-request cache for badgeCompletenameById() results. */
+    public static array $completename_cache = [];
+
     // Array of "right required to update" => array of fields allowed
     // Missing field here couldn't be updated (no right)
     private static array $field_right = [
@@ -3112,6 +3115,10 @@ class Entity extends CommonTreeDropdown implements
      */
     public static function badgeCompletenameById(int $entity_id): ?string
     {
+        if (array_key_exists($entity_id, self::$completename_cache)) {
+            return self::$completename_cache[$entity_id];
+        }
+
         global $DB;
         $it = $DB->request([
             'SELECT' => 'completename',
@@ -3120,9 +3127,9 @@ class Entity extends CommonTreeDropdown implements
             'LIMIT'  => 1,
         ]);
         if ($data = $it->current()) {
-            return self::badgeCompletename($data['completename']);
+            return self::$completename_cache[$entity_id] = self::badgeCompletename($data['completename']);
         }
-        return null;
+        return self::$completename_cache[$entity_id] = null;
     }
 
     /**
