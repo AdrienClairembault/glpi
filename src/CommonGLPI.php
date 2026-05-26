@@ -462,7 +462,7 @@ class CommonGLPI implements CommonGLPIInterface
                     !in_array('add', $forbidden)
                     && $item->canCreate()
                 ) {
-                    if ($item->maybeTemplate()) {
+                    if ($item->supportsTemplates()) {
                         $menu['links']['add'] = '/front/setup.templates.php?' . 'itemtype=' . $type
                                           . '&add=1';
                         if (!in_array('template', $forbidden)) {

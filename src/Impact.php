@@ -974,7 +974,7 @@ HTML;
             $base_request['WHERE']["$table.is_deleted"] = 0;
         }
 
-        if ($item->mayBeTemplate()) {
+        if ($item->supportsTemplates()) {
             $base_request['WHERE']["$table.is_template"] = 0;
         }
 

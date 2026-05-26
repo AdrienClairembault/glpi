@@ -159,7 +159,7 @@ class State extends CommonTreeDropdown
                     if ($item->maybeDeleted()) {
                         $WHERE["$table.is_deleted"] = 0;
                     }
-                    if ($item->maybeTemplate()) {
+                    if ($item->supportsTemplates()) {
                         $WHERE["$table.is_template"] = 0;
                     }
                     $WHERE += getEntitiesRestrictCriteria($table);

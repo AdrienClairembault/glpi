@@ -37,6 +37,7 @@ use Glpi\DBAL\QueryExpression;
 use Glpi\Features\AssignableItem;
 use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\Clonable;
+use Glpi\Features\SupportTemplates;
 
 /// Class Domain
 class Domain extends CommonDBTM implements AssignableItemInterface
@@ -48,6 +49,7 @@ class Domain extends CommonDBTM implements AssignableItemInterface
         prepareInputForUpdate as prepareInputForUpdateAssignableItem;
         post_updateItem as post_updateItemAssignableItem;
     }
+    use SupportTemplates;
 
     public static string $rightname = 'domain';
     protected static array $forward_entity_to = ['DomainRecord'];

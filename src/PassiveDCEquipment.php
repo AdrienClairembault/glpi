@@ -39,6 +39,7 @@ use Glpi\Features\Clonable;
 use Glpi\Features\DCBreadcrumb;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 use Glpi\Socket;
 
 /**
@@ -51,6 +52,7 @@ class PassiveDCEquipment extends CommonDBTM implements AssignableItemInterface, 
     use Clonable;
     use DCBreadcrumb;
     use Glpi\Features\State;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory = true;

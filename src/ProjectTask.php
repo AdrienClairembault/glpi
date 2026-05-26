@@ -40,6 +40,7 @@ use Glpi\DBAL\QueryExpression;
 use Glpi\DBAL\QueryFunction;
 use Glpi\DBAL\QuerySubQuery;
 use Glpi\Features\PlanningEvent;
+use Glpi\Features\SupportTemplates;
 use Glpi\Features\Teamwork;
 use Glpi\Features\TeamworkInterface;
 use Glpi\RichText\RichText;
@@ -61,6 +62,7 @@ class ProjectTask extends CommonDBChild implements CalDAVCompatibleItemInterface
     use PlanningEvent;
     use VobjectConverterTrait;
     use Teamwork;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory = true;

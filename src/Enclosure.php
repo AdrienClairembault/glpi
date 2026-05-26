@@ -40,6 +40,7 @@ use Glpi\Features\Clonable;
 use Glpi\Features\DCBreadcrumb;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 
 /**
  * Enclosure Class
@@ -53,6 +54,7 @@ class Enclosure extends CommonDBTM implements AssignableItemInterface, DCBreadcr
     use AssignableItem {
         prepareInputForAdd as prepareInputForAddAssignableItem;
     }
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

@@ -515,7 +515,7 @@ class RuleImportAsset extends Rule
             ];
 
             // do not reconcile if it's a template
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $it_criteria['WHERE'][] = ['is_template' =>  0];
             }
 

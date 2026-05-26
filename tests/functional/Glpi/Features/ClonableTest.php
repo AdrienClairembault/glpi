@@ -70,7 +70,7 @@ class ClonableTest extends DbTestCase
                 'entities_id' => $this->getTestRootEntity(true),
                 'content' => '',
             ], ['content']);
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $specific_actions = \MassiveAction::getAllMassiveActions($class, false, $item, $item->getID());
                 $this->assertTrue(array_key_exists($ma_prefix . 'create_template', $specific_actions));
             }

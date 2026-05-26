@@ -2568,4 +2568,30 @@ class CommonDBTMTest extends DbTestCase
 
         $this->assertEquals($expected_result, $template->can($template->getID(), CREATE, $input));
     }
+
+    public function testsupportsTemplates()
+    {
+        global $DB;
+
+        $classes = $this->getClasses();
+
+        foreach ($classes as $class) {
+            $item = getItemForItemtype($class);
+            if (!$item instanceof CommonDBTM) {
+                continue;
+            }
+
+            if (!$DB->tableExists($item->getTable())) {
+                continue;
+            }
+
+            $item->getEmpty();
+
+            $this->assertEquals(
+                $item->supportsTemplates(),
+                isset($item->fields['is_template']),
+                "supportsTemplates is not set correctly for $class",
+            );
+        }
+    }
 }

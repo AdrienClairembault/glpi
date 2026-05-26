@@ -4498,7 +4498,7 @@ final class SQLProvider implements SearchProviderInterface
         }
 
         // Remove template items
-        if ($data['item'] && $data['item']->maybeTemplate()) {
+        if ($data['item'] && $data['item']->supportsTemplates()) {
             $LINK = " AND ";
             if ($first) {
                 $LINK  = " ";
@@ -4644,7 +4644,7 @@ final class SQLProvider implements SearchProviderInterface
                             }
 
                             // Remove template items
-                            if ($citem->maybeTemplate()) {
+                            if ($citem->supportsTemplates()) {
                                 $query_num .= " AND `$ctable`.`is_template` = 0 ";
                             }
                         } else {// Ref table case
@@ -4756,7 +4756,7 @@ final class SQLProvider implements SearchProviderInterface
                         }
 
                         // Remove template items
-                        if ($citem->maybeTemplate()) {
+                        if ($citem->supportsTemplates()) {
                             $tmpquery .= " AND `$ctable`.`is_template` = 0 ";
                         }
 

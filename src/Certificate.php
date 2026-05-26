@@ -40,6 +40,7 @@ use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\Clonable;
 use Glpi\Features\StateInterface;
 
+use Glpi\Features\SupportTemplates;
 use function Safe\strtotime;
 
 /**
@@ -55,6 +56,7 @@ class Certificate extends CommonDBTM implements AssignableItemInterface, StateIn
         prepareInputForAdd as prepareInputForAddAssignableItem;
         post_updateItem as post_updateItemAssignableItem;
     }
+    use SupportTemplates;
 
     public bool $dohistory           = true;
     public static string $rightname           = "certificate";

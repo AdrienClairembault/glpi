@@ -532,7 +532,7 @@ class FieldUnicity extends CommonDropdown
         }
 
         $where = [];
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $where[$item::getTable() . '.is_template'] = 0;
         }
 

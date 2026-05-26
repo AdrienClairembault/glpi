@@ -41,6 +41,7 @@ use Glpi\Features\AssignableItem;
 use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\Clonable;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 
 /**
  * SoftwareLicense Class
@@ -57,6 +58,7 @@ class SoftwareLicense extends CommonTreeDropdown implements AssignableItemInterf
         post_addItem as post_addItemAssignableItem;
         post_updateItem as post_updateItemAssignableItem;
     }
+    use SupportTemplates;
 
     /// TODO move to CommonDBChild ?
     // From CommonDBTM

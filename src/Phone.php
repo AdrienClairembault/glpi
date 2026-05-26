@@ -40,6 +40,7 @@ use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\Clonable;
 use Glpi\Features\Inventoriable;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 use Glpi\Socket;
 
 /**
@@ -54,6 +55,7 @@ class Phone extends CommonDBTM implements AssignableItemInterface, StateInterfac
     use AssignableItem {
         prepareInputForAdd as prepareInputForAddAssignableItem;
     }
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

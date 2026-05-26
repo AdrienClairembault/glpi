@@ -866,7 +866,7 @@ class Provider
         if ($item->maybeDeleted()) {
             $where["$c_table.is_deleted"] = 0;
         }
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $where["$c_table.is_template"] = 0;
         }
 

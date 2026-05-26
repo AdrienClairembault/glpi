@@ -653,7 +653,7 @@ class MassiveAction
 
                 if ($cancreate && Toolbox::hasTrait($itemtype, Clonable::class)) {
                     $actions[$self_pref . 'clone'] = "<i class='ti ti-copy'></i>" . _sx('button', 'Clone');
-                    if ($item->maybeTemplate()) {
+                    if ($item->supportsTemplates()) {
                         $actions[$self_pref . 'create_template'] = "<i class='ti ti-copy'></i>" . _sx('button', 'Create template');
                     }
                 }

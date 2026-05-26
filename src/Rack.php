@@ -39,6 +39,7 @@ use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\DCBreadcrumb;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 
 /**
  * Rack Class
@@ -52,6 +53,7 @@ class Rack extends CommonDBTM implements AssignableItemInterface, DCBreadcrumbIn
         prepareInputForUpdate as prepareInputForUpdateAssignableItem;
         getEmpty as getEmptyAssignableItem;
     }
+    use SupportTemplates;
 
     public const FRONT    = 0;
     public const REAR     = 1;

@@ -42,6 +42,7 @@ use Glpi\Features\DCBreadcrumb;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\Inventoriable;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 
 /**
  * Monitor Class
@@ -56,6 +57,7 @@ class Monitor extends CommonDBTM implements AssignableItemInterface, DCBreadcrum
     use AssignableItem {
         prepareInputForAdd as prepareInputForAddAssignableItem;
     }
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

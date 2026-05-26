@@ -2938,7 +2938,7 @@ HTML;
         if ($item->maybeDeleted()) {
             $where["$table.is_deleted"] = 0;
         }
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $where["$table.is_template"] = 0;
         }
 
@@ -3830,7 +3830,7 @@ HTML;
         if ($item->maybeDeleted()) {
             $where["$table.is_deleted"] = 0;
         }
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $where["$table.is_template"] = 0;
         }
 
@@ -4023,7 +4023,7 @@ HTML;
             $where['is_deleted'] = 0;
         }
 
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $where['is_template'] = 0;
         }
 
@@ -4208,7 +4208,7 @@ HTML;
                 if ($item->maybeDeleted()) {
                     $criteria['WHERE']['is_deleted'] = 0;
                 }
-                if ($item->maybeTemplate()) {
+                if ($item->supportsTemplates()) {
                     $criteria['WHERE']['is_template'] = 0;
                 }
                 if (in_array($itemtype, $CFG_GLPI["helpdesk_visible_types"])) {
@@ -4340,7 +4340,7 @@ HTML;
                         if ($item->maybeDeleted()) {
                             $criteria['WHERE']['is_deleted'] = 0;
                         }
-                        if ($item->maybeTemplate()) {
+                        if ($item->supportsTemplates()) {
                             $criteria['WHERE']['is_template'] = 0;
                         }
 
@@ -4431,7 +4431,7 @@ HTML;
                     if ($item->maybeDeleted()) {
                         $criteria['WHERE']['is_deleted'] = 0;
                     }
-                    if ($item->maybeTemplate()) {
+                    if ($item->supportsTemplates()) {
                         $criteria['WHERE']['is_template'] = 0;
                     }
 
@@ -4546,7 +4546,7 @@ HTML;
                 if ($item->maybeDeleted()) {
                     $criteria['WHERE']['is_deleted'] = 0;
                 }
-                if ($item->maybeTemplate()) {
+                if ($item->supportsTemplates()) {
                     $criteria['WHERE']['is_template'] = 0;
                 }
 
@@ -4592,7 +4592,7 @@ HTML;
                     if ($item->maybeDeleted()) {
                         $criteria['WHERE']["$itemtable.is_deleted"] = 0;
                     }
-                    if ($item->maybeTemplate()) {
+                    if ($item->supportsTemplates()) {
                         $criteria['WHERE']["$itemtable.is_template"] = 0;
                     }
 

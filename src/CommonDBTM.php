@@ -3312,6 +3312,11 @@ class CommonDBTM extends CommonGLPI
         return true;
     }
 
+    public function supportsTemplates(): bool
+    {
+        return false;
+    }
+
 
     /**
      * Can the item type be a template ?
@@ -3320,7 +3325,7 @@ class CommonDBTM extends CommonGLPI
      **/
     public function maybeTemplate()
     {
-
+        \Toolbox::deprecated('Use supportsTemplates instead. Override it to return true if your itemtype has a is_template column.');
         if (!isset($this->fields['id'])) {
             $this->getEmpty();
         }
@@ -3335,7 +3340,7 @@ class CommonDBTM extends CommonGLPI
      **/
     public function isTemplate()
     {
-        if ($this->maybeTemplate()) {
+        if ($this->supportsTemplates()) {
             return (bool) $this->fields["is_template"];
         }
         return false;
@@ -4586,7 +4591,7 @@ class CommonDBTM extends CommonGLPI
                         $where[] = getEntitiesRestrictCriteria(static::getTable(), '', $entities);
 
                         $tmp = clone $this;
-                        if ($tmp->maybeTemplate()) {
+                        if ($tmp->supportsTemplates()) {
                             $where['is_template'] = 0;
                         }
 
@@ -5263,7 +5268,7 @@ class CommonDBTM extends CommonGLPI
             return false;
         }
 
-        if (!$item->maybeTemplate()) {
+        if (!$item->supportsTemplates()) {
             return false;
         }
 

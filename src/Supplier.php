@@ -497,7 +497,7 @@ class Supplier extends CommonDBTM
             'glpi_infocoms.itemtype'      => $itemtype,
             'glpi_infocoms.suppliers_id'  => $this->getID(),
         ];
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $where[$itemtable . '.is_template'] = 0;
         }
         $criteria['WHERE'] = $where + getEntitiesRestrictCriteria($linktable);

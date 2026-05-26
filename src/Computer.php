@@ -41,6 +41,7 @@ use Glpi\Features\DCBreadcrumb;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\Inventoriable;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 use Glpi\Socket;
 
 /**
@@ -57,6 +58,7 @@ class Computer extends CommonDBTM implements AssignableItemInterface, DCBreadcru
         prepareInputForAdd as prepareInputForAddAssignableItem;
         post_updateItem as post_updateItemAssignableItem;
     }
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

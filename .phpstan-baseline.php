@@ -1910,7 +1910,7 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/CommonDBRelation.php',
 ];
 $ignoreErrors[] = [
-	'message' => '#^Cannot call method maybeTemplate\\(\\) on CommonDBTM\\|false\\.$#',
+	'message' => '#^Cannot call method supportsTemplates\\(\\) on CommonDBTM\\|false\\.$#',
 	'identifier' => 'method.nonObject',
 	'count' => 1,
 	'path' => __DIR__ . '/src/CommonDBRelation.php',
@@ -4358,7 +4358,7 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Dropdown.php',
 ];
 $ignoreErrors[] = [
-	'message' => '#^Cannot call method maybeTemplate\\(\\) on CommonDBTM\\|false\\.$#',
+	'message' => '#^Cannot call method supportsTemplates\\(\\) on CommonDBTM\\|false\\.$#',
 	'identifier' => 'method.nonObject',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Dropdown.php',
@@ -7784,7 +7784,7 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Glpi/Dashboard/Provider.php',
 ];
 $ignoreErrors[] = [
-	'message' => '#^Cannot call method maybeTemplate\\(\\) on CommonDBTM\\|null\\.$#',
+	'message' => '#^Cannot call method supportsTemplates\\(\\) on CommonDBTM\\|null\\.$#',
 	'identifier' => 'method.nonObject',
 	'count' => 1,
 	'path' => __DIR__ . '/src/Glpi/Dashboard/Provider.php',
@@ -17222,7 +17222,7 @@ $ignoreErrors[] = [
 	'path' => __DIR__ . '/src/Report.php',
 ];
 $ignoreErrors[] = [
-	'message' => '#^Cannot call method maybeTemplate\\(\\) on CommonDBTM\\|false\\.$#',
+	'message' => '#^Cannot call method supportsTemplates\\(\\) on CommonDBTM\\|false\\.$#',
 	'identifier' => 'method.nonObject',
 	'count' => 2,
 	'path' => __DIR__ . '/src/Report.php',

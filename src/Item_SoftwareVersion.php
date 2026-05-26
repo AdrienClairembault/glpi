@@ -115,7 +115,7 @@ class Item_SoftwareVersion extends CommonDBRelation
         /** @var CommonDBTM $item */
         $item = getItemForItemtype($itemtype);
         if (
-            (!isset($input['is_template_item']) && $item->maybeTemplate())
+            (!isset($input['is_template_item']) && $item->supportsTemplates())
             || (!isset($input['is_deleted_item']) && $item->maybeDeleted())
         ) {
             if ($item->getFromDB($input['items_id'])) {
@@ -323,7 +323,7 @@ class Item_SoftwareVersion extends CommonDBRelation
             if ($item->maybeDeleted()) {
                 $request['WHERE']["$itemtable.is_deleted"] = 0;
             }
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $request['WHERE']["$itemtable.is_template"] = 0;
             }
             $count += $DB->request($request)->current()['cpt'];
@@ -406,7 +406,7 @@ class Item_SoftwareVersion extends CommonDBRelation
             if ($item->maybeDeleted()) {
                 $request['WHERE']["$itemtable.is_deleted"] = 0;
             }
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $request['WHERE']["$itemtable.is_template"] = 0;
             }
             $count += $DB->request($request)->current()['cpt'];

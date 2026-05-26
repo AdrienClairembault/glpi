@@ -421,7 +421,7 @@ class Item_SoftwareLicense extends CommonDBRelation
             if ($item->maybeDeleted()) {
                 $request['WHERE']["$itemtable.is_deleted"] = 0;
             }
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $request['WHERE']["$itemtable.is_template"] = 0;
             }
             $count += $DB->request($request)->current()['cpt'];
@@ -500,7 +500,7 @@ class Item_SoftwareLicense extends CommonDBRelation
             if ($item->maybeDeleted()) {
                 $request['WHERE']["$itemtable.is_deleted"] = 0;
             }
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $request['WHERE']["$itemtable.is_template"] = 0;
             }
             $count += $DB->request($request)->current()['cpt'];

@@ -5065,7 +5065,7 @@ HTML;
                     'GROUPBY' => "$itemtable.id",
                 ];
 
-                if ($item->maybeTemplate()) {
+                if ($item->supportsTemplates()) {
                     $iterator_params['WHERE']['is_template'] = 0;
                 }
                 if ($item->maybeDeleted()) {

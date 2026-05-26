@@ -38,6 +38,7 @@ use Glpi\Features\AssetImage;
 use Glpi\Features\AssignableItem;
 use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\Clonable;
+use Glpi\Features\SupportTemplates;
 use Glpi\Features\TreeBrowse;
 use Glpi\Features\TreeBrowseInterface;
 use Glpi\Search\DefaultSearchRequestInterface;
@@ -55,6 +56,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
         prepareInputForUpdate as prepareInputForUpdateAssignableItem;
         getEmpty as getEmptyAssignableItem;
     }
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

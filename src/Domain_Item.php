@@ -310,7 +310,7 @@ TWIG, $twig_params);
                 ] + getEntitiesRestrictCriteria($itemTable, '', '', $item->maybeRecursive()),
             ];
 
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $linked_criteria['WHERE']["$itemTable.is_template"] = 0;
             }
 

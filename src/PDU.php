@@ -39,6 +39,7 @@ use Glpi\Features\Clonable;
 use Glpi\Features\DCBreadcrumb;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 
 /**
  * PDU Class
@@ -52,6 +53,7 @@ class PDU extends CommonDBTM implements AssignableItemInterface, DCBreadcrumbInt
     /** @use Clonable<static> */
     use Clonable;
     use Glpi\Features\State;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

@@ -43,9 +43,11 @@ The present file will list all changes made to the project; according to the
 - `countDistinctElementsInTable` / `DbUtils::countDistinctElementsInTable()` method signatures changed.
 - `getAllDataFromTable` / `DbUtils::getAllDataFromTable()` method signatures changed.
 - Methods in `Dbutils` and the global counterparts in `src/autoload/dbutils-aliases.php` now have strict type declarations except for methods that have been deprecated.
+- Items that have a `is_template` column must use the `SupportTemplates` trait so that GLPI knows about it. This replace a dynamic check that would manually look for this column in the database, costing performances when iterating over many types.
 
 #### Deprecated
 - Usage of coma separated list of fields in `ORDER BY` clause.
+- `CommonDBTM::maybeTemplate()`, use `CommonDBTM::supportsTemplates()` instead.
 - `CommonITILSatisfaction::showSatisactionForm()`, use `CommonITILSatisfaction::showSatisfactionForm()` instead.
 - `Glpi\Features\Inventoriable::showInventoryInfo()`
 - `Glpi\Features\Inventoriable::displayAgentInformation()`

@@ -477,7 +477,7 @@ TWIG, $twig_params);
                     ];
                 }
 
-                if ($item->maybeTemplate()) {
+                if ($item->supportsTemplates()) {
                     $params['WHERE'][] = [$itemtable . '.is_template' => 0];
                 }
                 $params['WHERE'] += getEntitiesRestrictCriteria($itemtable, '', '', $item->maybeRecursive());

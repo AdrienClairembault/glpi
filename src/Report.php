@@ -215,7 +215,7 @@ TWIG, $twig_params);
             ];
 
             $itemtype_object = getItemForItemtype($itemtype);
-            if ($itemtype_object->maybeTemplate()) {
+            if ($itemtype_object->supportsTemplates()) {
                 $criteria["WHERE"]["$table_item.is_template"] = 0;
             }
 
@@ -333,7 +333,7 @@ TWIG, $twig_params);
             ];
 
             $itemtype_object = getItemForItemtype($itemtype);
-            if ($itemtype_object->maybeTemplate()) {
+            if ($itemtype_object->supportsTemplates()) {
                 $criteria["WHERE"]["$table_item.is_template"] = 0;
             }
 

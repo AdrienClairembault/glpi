@@ -41,6 +41,7 @@ use Glpi\DBAL\QueryUnion;
 use Glpi\Features\Clonable;
 use Glpi\Features\Kanban;
 use Glpi\Features\KanbanInterface;
+use Glpi\Features\SupportTemplates;
 use Glpi\Features\Teamwork;
 use Glpi\Features\TeamworkInterface;
 use Glpi\Plugin\Hooks;
@@ -53,6 +54,7 @@ class Project extends CommonDBTM implements ExtraVisibilityCriteria, KanbanInter
     /** @use Clonable<Project> */
     use Clonable;
     use Teamwork;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

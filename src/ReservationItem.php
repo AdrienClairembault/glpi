@@ -1006,7 +1006,7 @@ TWIG, $twig_params);
             $criteria['WHERE'] += getEntitiesRestrictCriteria($item_table, '', '', $item->maybeRecursive());
         }
 
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $criteria['WHERE']["$item_table.is_template"] = 0;
         }
 

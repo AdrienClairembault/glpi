@@ -39,6 +39,7 @@ use Glpi\DBAL\QueryFunction;
 use Glpi\Features\Clonable;
 use Glpi\Features\StateInterface;
 
+use Glpi\Features\SupportTemplates;
 use function Safe\strtotime;
 
 /**
@@ -49,6 +50,7 @@ class Contract extends CommonDBTM implements StateInterface
     /** @use Clonable<static> */
     use Clonable;
     use Glpi\Features\State;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory                   = true;

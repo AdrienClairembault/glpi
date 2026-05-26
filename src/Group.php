@@ -616,7 +616,7 @@ class Group extends CommonTreeDropdown
                     $item->maybeRecursive()
                 );
             }
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $restrict[$itemtype]['is_template'] = 0;
             }
             if ($item->maybeDeleted()) {

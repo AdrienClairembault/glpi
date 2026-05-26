@@ -39,6 +39,7 @@ use Glpi\DBAL\QueryFunction;
 use Glpi\DBAL\QuerySubQuery;
 use Glpi\DBAL\QueryUnion;
 use Glpi\Features\Clonable;
+use Glpi\Features\SupportTemplates;
 
 /**
  * Budget class
@@ -47,6 +48,7 @@ class Budget extends CommonDropdown
 {
     /** @use Clonable<static> */
     use Clonable;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory           = true;
@@ -365,7 +367,7 @@ class Budget extends CommonDropdown
                 $criteria['SELECT'][] = new QueryExpression('NULL', 'devices_id');
             }
             $criteria['SELECT'][] = 'glpi_infocoms.value';
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $criteria['WHERE'][$item_table . '.is_template'] = 0;
             }
 
@@ -420,7 +422,7 @@ class Budget extends CommonDropdown
             };
             $criteria['SELECT'][] = $item->maybeDeleted() ? "$item_table.is_deleted" : '0 AS is_deleted';
 
-            if ($item->maybeTemplate()) {
+            if ($item->supportsTemplates()) {
                 $criteria['WHERE'][$item_table . '.is_template'] = 0;
             }
 

@@ -201,7 +201,7 @@ class GenericFormController extends AbstractController
     {
         $form_options = $object->getFormOptionsFromUrl($request->query->all());
         $form_options['formoptions'] = 'data-track-changes=true';
-        if ($object->maybeTemplate()) {
+        if ($object->supportsTemplates()) {
             $form_options['withtemplate'] = $request->query->get('withtemplate', '');
         }
 
@@ -218,7 +218,7 @@ class GenericFormController extends AbstractController
     private function displayModal(mixed $object, Request $request): Response
     {
         $form_options = [];
-        if ($object->maybeTemplate()) {
+        if ($object->supportsTemplates()) {
             $form_options['withtemplate'] = $request->query->get('withtemplate', '');
         }
 

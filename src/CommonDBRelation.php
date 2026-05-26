@@ -2009,7 +2009,7 @@ abstract class CommonDBRelation extends CommonDBConnexity
             $params['WHERE'][static::getTable() . '.itemtype'] = $itemtype;
         }
 
-        if ($item->maybeTemplate()) {
+        if ($item->supportsTemplates()) {
             $params['WHERE'][$item->getTable() . '.is_template'] = 0;
         }
 

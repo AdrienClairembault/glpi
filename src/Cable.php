@@ -39,6 +39,7 @@ use Glpi\Features\AssignableItemInterface;
 use Glpi\Features\Clonable;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Features\StateInterface;
+use Glpi\Features\SupportTemplates;
 use Glpi\Socket;
 use Glpi\SocketModel;
 
@@ -51,6 +52,7 @@ class Cable extends CommonDBTM implements AssignableItemInterface, StateInterfac
     /** @use Clonable<static> */
     use Clonable;
     use Glpi\Features\State;
+    use SupportTemplates;
 
     // From CommonDBTM
     public bool $dohistory         = true;
