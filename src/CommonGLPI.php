@@ -450,10 +450,11 @@ class CommonGLPI implements CommonGLPIInterface
 
         if ($item instanceof CommonDBTM) {
             if ($item->canView()) {
+                $search_url = $item->getSearchURL(false);
                 $menu['title']           = $item->getMenuName();
                 $menu['shortcut']        = $item->getMenuShorcut();
-                $menu['page']            = $item->getSearchURL(false);
-                $menu['links']['search'] = $item->getSearchURL(false);
+                $menu['page']            = $search_url;
+                $menu['links']['search'] = $search_url;
                 $menu['links']['lists']  = "";
                 $menu['lists_itemtype']  = $item::class;
                 $menu['icon']            = $item->getIcon();

@@ -212,9 +212,6 @@ class Dashboard extends CommonDBTM
             return true;
         }
 
-        // check access rights defined using sharing feature
-        $this->load();
-
         $rights = self::convertRights($this->rights ?? []);
         $result = self::checkRights($rights);
         Profiler::getInstance()->stop(__METHOD__);

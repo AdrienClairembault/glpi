@@ -105,6 +105,7 @@ abstract class CommonDropdown extends CommonDBTM
                 return [];
             }
 
+            $search_url = DropdownDefinition::getSearchURL(false);
             $menu['title']             = static::getTypeName(Session::getPluralNumber());
             $menu['shortcut']          = 'n';
             $menu['page']              = '/front/dropdown.php';
@@ -112,15 +113,15 @@ abstract class CommonDropdown extends CommonDBTM
             $menu['config']['default'] = '/front/dropdown.php';
 
             $menu['links']   = [
-                DropdownDefinition::class => DropdownDefinition::getSearchURL(false),
+                DropdownDefinition::class => $search_url,
             ];
             $menu['options'] = [
                 DropdownDefinition::class => [
                     'icon'  => DropdownDefinition::getIcon(),
                     'title' => DropdownDefinition::getTypeName(Session::getPluralNumber()),
-                    'page'  => DropdownDefinition::getSearchURL(false),
+                    'page'  => $search_url,
                     'links' => [
-                        'search' => DropdownDefinition::getSearchURL(false),
+                        'search' => $search_url,
                         'add'    => DropdownDefinition::getFormURL(false),
                     ],
                 ],
