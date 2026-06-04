@@ -283,6 +283,9 @@ final class ResourceAccessor
         if (!$item->can($items_id, UPDATE, $input)) {
             return AbstractController::getAccessDeniedErrorResponse();
         }
+        if (!$item->validateUserInputForUpdate($input)) {
+            return new JSONResponse(['message' => 'Invalid input.'], 400);
+        }
         $result = $item->update($input);
 
         if ($result === false) {
@@ -322,6 +325,9 @@ final class ResourceAccessor
         $item = self::getItemFromSchema($schema);
         if (!$item->can($item->getID(), CREATE, $input)) {
             return AbstractController::getAccessDeniedErrorResponse();
+        }
+        if (!$item->validateUserInputForAdd($input)) {
+            return new JSONResponse(['message' => 'Invalid input.'], 400);
         }
         $items_id = $item->add($input);
         [$controller, $method] = $get_route;

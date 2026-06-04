@@ -138,6 +138,17 @@ class GenericFormController extends AbstractController
             throw new AccessDeniedHttpException();
         }
 
+        // POST action user input validation
+        $is_valid = match ($form_action) {
+            'add'    => $object->validateUserInputForAdd($post_data),
+            'update' => $object->validateUserInputForUpdate($post_data),
+            default  => true,
+        };
+
+        if (!$is_valid) {
+            throw new BadRequestHttpException("Invalid input.");
+        }
+
         // POST action execution
         $action_result = match ($form_action) {
             'add' => $object->add($post_data),

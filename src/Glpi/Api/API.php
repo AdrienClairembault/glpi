@@ -1937,6 +1937,10 @@ abstract class API
                     //add current item
                     $message = '';
                     try {
+                        if (!$item->validateUserInputForAdd($object)) {
+                            $this->returnError("Invalid input.");
+                            return;
+                        }
                         $new_id = $item->add($object);
                         $message = $this->getGlpiLastMessage();
                     } catch (RuntimeException $e) {
@@ -2079,6 +2083,10 @@ abstract class API
                         $message = '';
                         try {
                             $object = $this->inputObjectToArray($object);
+                            if (!$item->validateUserInputForUpdate($object)) {
+                                $this->returnError("Invalid input.");
+                                return;
+                            }
                             $update_return = $item->update($object);
                             $message = $this->getGlpiLastMessage();
                         } catch (RuntimeException $e) {

@@ -6774,4 +6774,16 @@ class CommonDBTM extends CommonGLPI
             yield $item;
         }
     }
+
+    /** @param array<string, mixed> $input */
+    public function validateUserInputForAdd(array $input): bool
+    {
+        return true;
+    }
+
+    /** @param array<string, mixed> $input */
+    public function validateUserInputForUpdate(array $input): bool
+    {
+        return true;
+    }
 }

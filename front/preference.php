@@ -36,6 +36,7 @@
 require_once(__DIR__ . '/_check_webserver_config.php');
 
 use Glpi\Event;
+use Glpi\Exception\Http\BadRequestHttpException;
 use Glpi\Security\TOTPManager;
 
 $user = new User();
@@ -60,6 +61,9 @@ if (
     isset($_POST["update"])
     && ($_POST["id"] == Session::getLoginUserID())
 ) {
+    if (!$user->validateUserInputForUpdate($_POST)) {
+        throw new BadRequestHttpException("Invalid input.");
+    }
     $user->update($_POST);
     Event::log(
         $_POST["id"],
