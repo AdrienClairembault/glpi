@@ -49,6 +49,7 @@ try {
 }
 
 $user = new User();
+// @phpstan-ignore glpi.missingRightsCheck
 $success = $user->update(
     [
         'id' => Session::getLoginUserID(),

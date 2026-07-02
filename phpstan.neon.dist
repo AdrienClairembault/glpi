@@ -6,6 +6,14 @@ includes:
     - .phpstan-baseline.missingType.iterableValue.php
     - .phpstan-baseline.specific.php
 
+services:
+    # Flags CommonDBTM write operations in front/ and ajax/ scripts that are not
+    # preceded by a rights check. See Glpi\Tools\PHPStan\Rules\MissingRightsCheckRule.
+    -
+        class: Glpi\Tools\PHPStan\Rules\MissingRightsCheckRule
+        tags:
+            - phpstan.rules.rule
+
 parameters:
     level: 8
     bootstrapFiles:

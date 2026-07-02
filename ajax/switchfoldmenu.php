@@ -39,6 +39,7 @@ header('Content-Type: application/json; charset=UTF-8');
 Html::header_nocache();
 
 $user = new User();
+// @phpstan-ignore glpi.missingRightsCheck
 $success = $user->update(
     [
         'id'        => Session::getLoginUserID(),

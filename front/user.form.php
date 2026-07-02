@@ -160,6 +160,7 @@ if (isset($_GET['getvcard'])) {
     }
     Html::back();
 } elseif (isset($_POST['language'])) {
+    // @phpstan-ignore glpi.missingRightsCheck
     $user->update(
         [
             'id'        => Session::getLoginUserID(),

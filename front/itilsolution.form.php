@@ -101,6 +101,7 @@ if ($handled) {
         ]);
         if ($existing->numrows() == 0) {
             $kb_item_item = new KnowbaseItem_Item();
+            // @phpstan-ignore glpi.missingRightsCheck
             $kb_item_item->add($params);
         }
     }

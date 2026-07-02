@@ -80,6 +80,7 @@ if (array_key_exists('update', $_POST)) {
             $error_messages = [__('The two passwords do not match')];
         } elseif ($user->validatePassword($input['password'], $error_messages)) {
             // Password validation was successfull
+            // @phpstan-ignore glpi.missingRightsCheck
             if ($user->update($input)) {
                 $success = true;
             } else {
