@@ -32,7 +32,25 @@
 
 import { expect, test } from '../../fixtures/glpi_fixture';
 import { Profiles } from '../../utils/Profiles';
-import type { FrameLocator, Locator } from '@playwright/test';
+import { getWorkerEntityId, getWorkerUserId } from '../../utils/WorkerEntities';
+import type { Api } from '../../utils/Api';
+import type { FrameLocator, Locator, Page } from '@playwright/test';
+
+async function openDisplayPreferences(page: Page): Promise<FrameLocator>
+{
+    await page.getByRole('button', { name: 'Select default items to show' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    return page.frameLocator('[data-testid="display-preference-iframe"]');
+}
+
+// Each tab keeps its own copy of the form in the DOM once it has been visited,
+// so every locator must be scoped to the tab that is currently displayed.
+// `getByRole()` only matches elements exposed in the accessibility tree, which
+// leaves out the hidden panels of the other tabs.
+function getActiveTab(frame: FrameLocator): Locator
+{
+    return frame.getByRole('tabpanel');
+}
 
 // The Global View and Personal View forms are rendered as bootstrap tabs of
 // the same page: once loaded, both stay in the DOM at the same time, only
@@ -44,7 +62,7 @@ function getAddOptionDropdown(frame: FrameLocator): Locator
     // Select2 hides the original, labelled <select> and renders the visible
     // combobox into a sibling <span>.
     // eslint-disable-next-line playwright/no-raw-locators
-    return frame
+    return getActiveTab(frame)
         .getByLabel('Select an option to add', { exact: true })
         .locator('+ span')
         .getByRole('combobox')
@@ -57,6 +75,14 @@ async function goToTab(frame: FrameLocator, name: string): Promise<void>
     // its tabs as a <select> (mobile layout) instead of the usual nav-tabs.
     // eslint-disable-next-line playwright/no-raw-locators
     await frame.locator('#tabspanel-select').selectOption({ label: name });
+
+    // The panel content is fetched by ajax: wait for it, otherwise the callers
+    // would look at a still empty panel and wrongly conclude that an option is
+    // absent from this tab.
+    // eslint-disable-next-line playwright/no-raw-locators
+    await expect(getActiveTab(frame).locator('.display_preference_config'))
+        .toBeVisible()
+    ;
 }
 
 async function getAddOptionChoices(frame: FrameLocator): Promise<string[]>
@@ -79,7 +105,7 @@ async function getAddOptionChoices(frame: FrameLocator): Promise<string[]>
 function getOptionRow(frame: FrameLocator, name: string): Locator
 {
     // eslint-disable-next-line playwright/no-raw-locators
-    return frame.locator('li[data-opt-id]').filter({ hasText: name });
+    return getActiveTab(frame).locator('li[data-opt-id]').filter({ hasText: name });
 }
 
 async function addOption(frame: FrameLocator, name: string): Promise<void>
@@ -87,7 +113,7 @@ async function addOption(frame: FrameLocator, name: string): Promise<void>
     const dropdown = getAddOptionDropdown(frame);
     await dropdown.click();
     await frame.getByRole('listbox').getByRole('option', { name: name, exact: true }).click();
-    await frame.getByRole('button', { name: 'Add' }).click();
+    await getActiveTab(frame).getByRole('button', { name: 'Add' }).click();
     await expect(getOptionRow(frame, name)).toBeVisible();
 }
 
@@ -115,7 +141,7 @@ async function removeOptionIfPresent(frame: FrameLocator, tab: string, name: str
 async function ensurePersonalViewExists(frame: FrameLocator): Promise<boolean>
 {
     await goToTab(frame, 'Personal View');
-    const create_button = frame.getByRole('button', { name: 'Create' });
+    const create_button = getActiveTab(frame).getByRole('button', { name: 'Create' });
     const add_dropdown = getAddOptionDropdown(frame);
     await expect(create_button.or(add_dropdown)).toBeVisible();
 
@@ -132,7 +158,7 @@ async function ensurePersonalViewExists(frame: FrameLocator): Promise<boolean>
 async function deletePersonalView(frame: FrameLocator): Promise<void>
 {
     await goToTab(frame, 'Personal View');
-    await frame.getByRole('button', { name: 'Delete personal view', exact: true }).click();
+    await getActiveTab(frame).getByRole('button', { name: 'Delete personal view', exact: true }).click();
 }
 
 async function deletePersonalViewIfCreated(frame: FrameLocator, created: boolean): Promise<void>
@@ -147,9 +173,7 @@ test('Global and personal display preference forms have independent "add option"
     await profile.set(Profiles.SuperAdmin);
     await page.goto('/front/computer.php');
 
-    await page.getByRole('button', { name: 'Select default items to show' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    const frame = page.frameLocator('[data-testid="display-preference-iframe"]');
+    const frame = await openDisplayPreferences(page);
 
     const created_personal_view = await ensurePersonalViewExists(frame);
     const personal_choices = await getAddOptionChoices(frame);
@@ -186,4 +210,149 @@ test('Global and personal display preference forms have independent "add option"
         await removeOptionIfPresent(frame, 'Personal View', personal_only_option);
         await deletePersonalViewIfCreated(frame, created_personal_view);
     }
+});
+
+// Migrated from tests/cypress/e2e/search/display_preferences.cy.js
+const PENDING_REASON = 'Pending reason';
+const GLOBAL_VIEW = 'Global View';
+const HELPDESK_VIEW = 'Helpdesk View';
+
+function getColumnHeader(page: Page, name: string): Locator
+{
+    return page.getByRole('columnheader', { name: name, exact: true });
+}
+
+/**
+ * The header row of a search list is hidden while the list has no result, and
+ * hidden elements are not exposed in the accessibility tree, so an assertion
+ * on a missing column would pass for the wrong reason on an empty list.
+ */
+async function expectSearchListIsNotEmpty(page: Page): Promise<void>
+{
+    await expect(page.getByRole('columnheader').first()).toBeVisible();
+}
+
+/**
+ * The cypress version created a ticket so the ticket list has something to
+ * display. It must be visible in the helpdesk interface too, which only lists
+ * the tickets of the current user, and the `api` fixture is authenticated as
+ * its own account: set the worker user as the requester explicitly.
+ */
+async function createTicketVisibleToWorker(api: Api): Promise<void>
+{
+    await api.createItem('Ticket', {
+        name: 'Display preferences test ticket',
+        content: 'Display preferences test ticket',
+        entities_id: getWorkerEntityId(),
+        _users_id_requester: getWorkerUserId(),
+    });
+}
+
+/**
+ * A previous crashed run may have left the option behind on either view. The
+ * cypress version purged it through the API in a `before()` hook, which would
+ * delete rows another worker is using: do it through the modal instead, so
+ * only this test's own itemtype and option are touched.
+ */
+async function resetBothViews(frame: FrameLocator): Promise<void>
+{
+    await removeOptionIfPresent(frame, GLOBAL_VIEW, PENDING_REASON);
+    await removeOptionIfPresent(frame, HELPDESK_VIEW, PENDING_REASON);
+}
+
+test.describe('Ticket display preference scopes', () => {
+    // Both tests write the same option to the same shared, global
+    // (`users_id = 0`) display preferences of the Ticket itemtype, one for the
+    // central interface and one for the helpdesk one, and each asserts that the
+    // other interface was left untouched. `fullyParallel` would run them in two
+    // workers at the same time, where they would see each other's writes.
+    test.describe.configure({ mode: 'serial' });
+
+    test('can add a column to the global view', async ({ page, profile, api }) => {
+        await profile.set(Profiles.SuperAdmin);
+        await createTicketVisibleToWorker(api);
+
+        await page.goto('/front/ticket.php');
+        const frame = await openDisplayPreferences(page);
+        await resetBothViews(frame);
+
+        await goToTab(frame, GLOBAL_VIEW);
+        await addOption(frame, PENDING_REASON);
+
+        try {
+            // The column must now be part of the central ticket list.
+            await page.reload();
+            await expect(getColumnHeader(page, PENDING_REASON)).toBeVisible();
+
+            // ... but the helpdesk interface must be left untouched.
+            await profile.set(Profiles.SelfService);
+            await page.goto('/front/ticket.php');
+            await expectSearchListIsNotEmpty(page);
+            await expect(getColumnHeader(page, PENDING_REASON))
+                .not.toBeAttached()
+            ;
+
+            // The same scoping must be visible in the configuration itself.
+            await profile.set(Profiles.SuperAdmin);
+            await page.goto('/front/ticket.php');
+            const config = await openDisplayPreferences(page);
+
+            await goToTab(config, GLOBAL_VIEW);
+            await expect(getOptionRow(config, PENDING_REASON)).toBeVisible();
+
+            await goToTab(config, HELPDESK_VIEW);
+            await expect(getOptionRow(config, PENDING_REASON))
+                .not.toBeAttached()
+            ;
+        } finally {
+            // Restore the global preferences shared by every worker.
+            await profile.set(Profiles.SuperAdmin);
+            await page.goto('/front/ticket.php');
+            await resetBothViews(await openDisplayPreferences(page));
+        }
+    });
+
+    test('can add a column to the helpdesk view', async ({ page, profile, api }) => {
+        await profile.set(Profiles.SuperAdmin);
+        await createTicketVisibleToWorker(api);
+
+        await page.goto('/front/ticket.php');
+        const frame = await openDisplayPreferences(page);
+        await resetBothViews(frame);
+
+        await goToTab(frame, HELPDESK_VIEW);
+        await addOption(frame, PENDING_REASON);
+
+        try {
+            // The central ticket list must be left untouched.
+            await page.reload();
+            await expectSearchListIsNotEmpty(page);
+            await expect(getColumnHeader(page, PENDING_REASON))
+                .not.toBeAttached()
+            ;
+
+            // ... while the helpdesk interface now displays the column.
+            await profile.set(Profiles.SelfService);
+            await page.goto('/front/ticket.php');
+            await expect(getColumnHeader(page, PENDING_REASON)).toBeVisible();
+
+            // The same scoping must be visible in the configuration itself.
+            await profile.set(Profiles.SuperAdmin);
+            await page.goto('/front/ticket.php');
+            const config = await openDisplayPreferences(page);
+
+            await goToTab(config, HELPDESK_VIEW);
+            await expect(getOptionRow(config, PENDING_REASON)).toBeVisible();
+
+            await goToTab(config, GLOBAL_VIEW);
+            await expect(getOptionRow(config, PENDING_REASON))
+                .not.toBeAttached()
+            ;
+        } finally {
+            // Restore the global preferences shared by every worker.
+            await profile.set(Profiles.SuperAdmin);
+            await page.goto('/front/ticket.php');
+            await resetBothViews(await openDisplayPreferences(page));
+        }
+    });
 });
