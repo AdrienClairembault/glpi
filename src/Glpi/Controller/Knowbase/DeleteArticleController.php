@@ -35,17 +35,19 @@
 namespace Glpi\Controller\Knowbase;
 
 use Glpi\Controller\AbstractController;
-use Glpi\Controller\CrudControllerTrait;
+use Glpi\Exception\Http\AccessDeniedHttpException;
+use Glpi\Exception\Http\BadRequestHttpException;
+use Glpi\Exception\Http\NotFoundHttpException;
 use KnowbaseItem;
+use RuntimeException;
 use Session;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class DeleteArticleController extends AbstractController
 {
-    use CrudControllerTrait;
-
     #[Route(
         "/Knowbase/KnowbaseItem/{id}/Delete",
         name: "knowbase_article_delete",
@@ -54,13 +56,46 @@ final class DeleteArticleController extends AbstractController
             'id' => '\d+',
         ]
     )]
-    public function __invoke(int $id): Response
+    public function __invoke(int $id, Request $request): Response
     {
-        $this->delete(KnowbaseItem::class, $id);
+        $item = new KnowbaseItem();
+        if (!$item->getFromDB($id)) {
+            throw new NotFoundHttpException();
+        }
+
+        $input = ['id' => $id];
+        if (!$item->can($id, DELETE, $input)) {
+            throw new AccessDeniedHttpException();
+        }
+
+        $impact = $item->getDeletionImpact();
+
+        // The cascade is never implicit. A page rendered before someone else
+        // added children under the article would otherwise destroy a branch the
+        // user never saw, see `DeleteModalController` for the confirmation.
+        if ($impact->isCascade() && !$request->getPayload()->getBoolean('delete_descendants')) {
+            throw new BadRequestHttpException();
+        }
+        // All or nothing: the model refuses a partial cascade too, this only
+        // turns it into an answer instead of a flash message.
+        if ($impact->isBlocked()) {
+            throw new AccessDeniedHttpException();
+        }
+
+        if ($impact->isCascade()) {
+            $input[KnowbaseItem::DELETE_DESCENDANTS] = true;
+        }
+        if (!$item->delete($input)) {
+            throw new RuntimeException("Failed to delete item");
+        }
+
         Session::addMessageAfterRedirect(__s('Item successfully deleted.'));
 
         return new JsonResponse([
             'redirect' => KnowbaseItem::getSearchURL(),
+            // The article itself included: the caller uses this to know whether
+            // the page it stands on still exists.
+            'deleted_ids' => $impact->deletable_ids,
         ]);
     }
 }

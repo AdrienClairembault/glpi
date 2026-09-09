@@ -166,6 +166,77 @@ final class KnowbaseItem_KnowbaseItem extends CommonDBRelation
         return $descendants;
     }
 
+    /**
+     * Whether the article hosts at least one child.
+     *
+     * Cheap on purpose: it gates the choice between the plain delete
+     * confirmation and the cascade modal, see `KnowbaseItem::getAsideActions()`,
+     * and thus runs for every article whose actions menu is opened.
+     */
+    public static function hasChildren(int $article_id): bool
+    {
+        if ($article_id <= 0) {
+            return false;
+        }
+
+        return countElementsInTable(self::getTable(), [
+            'knowbaseitems_id_parent' => $article_id,
+        ]) > 0;
+    }
+
+    /**
+     * The edges that reach the given articles, in a single query.
+     *
+     * Not visibility-filtered, for the same reason as `getDescendantIds()`: an
+     * invisible parent still holds its child in the knowledge base.
+     *
+     * @param int[] $child_ids
+     *
+     * @return array<int, int[]> child id => parent ids
+     */
+    public static function getParentsOf(array $child_ids): array
+    {
+        return self::getEdges($child_ids, 'knowbaseitems_id', 'knowbaseitems_id_parent');
+    }
+
+    /**
+     * The edges that leave the given articles, in a single query.
+     *
+     * @param int[] $parent_ids
+     *
+     * @return array<int, int[]> parent id => child ids
+     */
+    public static function getChildrenOf(array $parent_ids): array
+    {
+        return self::getEdges($parent_ids, 'knowbaseitems_id_parent', 'knowbaseitems_id');
+    }
+
+    /**
+     * @param int[] $ids
+     *
+     * @return array<int, int[]> value of $from_field => values of $to_field
+     */
+    private static function getEdges(array $ids, string $from_field, string $to_field): array
+    {
+        /** @var DBmysql $DB */
+        global $DB;
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $edges = [];
+        foreach ($DB->request([
+            'SELECT' => [$from_field, $to_field],
+            'FROM'   => self::getTable(),
+            'WHERE'  => [$from_field => $ids],
+        ]) as $row) {
+            $edges[(int) $row[$from_field]][] = (int) $row[$to_field];
+        }
+
+        return $edges;
+    }
+
     /** True if $parent_id is a direct parent of $child_id. */
     public static function isParentOf(int $parent_id, int $child_id): bool
     {

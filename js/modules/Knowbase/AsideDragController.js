@@ -536,6 +536,12 @@ export class GlpiKnowbaseAsideDragController
                 `Knowbase/Aside/Article/${encodeURIComponent(id)}/Move`,
                 { from_parent_id, to_parent_id: intent.to_parent_id },
             );
+            // One parent may have lost its last child, the other may have
+            // gained its first one: their kebab menus describe that, see the
+            // aside controller's move listener.
+            document.dispatchEvent(new CustomEvent('glpi:kb:article-moved', {
+                detail: { article_ids: [from_parent_id, intent.to_parent_id] },
+            }));
         } catch {
             // `post()` already toasted: undo the move, restoring a dropped duplicate too.
             // The captured sibling may have moved during the request, and `insertBefore`

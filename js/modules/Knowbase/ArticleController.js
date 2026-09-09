@@ -36,6 +36,7 @@ import { get, post } from "/js/modules/Ajax.js";
 import { DocumentLinkController } from "/js/modules/Knowbase/DocumentLinkController.js";
 import { LinkItemFormController } from "/js/modules/Knowbase/LinkItemFormController.js";
 import { GlpiKnowbaseArticleSidePanelController } from "/js/modules/Knowbase/ArticleSidePanelController.js";
+import { GlpiKnowbaseDeleteModalController } from "/js/modules/Knowbase/DeleteModalController.js";
 import { GlpiKnowbaseServiceCatalogPanelController } from "/js/modules/Knowbase/ServiceCatalogPanelController.js";
 import { highlightComments } from "/js/modules/Knowbase/CommentHighlighter.js";
 import { ReadModeSelectionBubble } from "/js/modules/Knowbase/ReadModeSelectionBubble.js";
@@ -703,9 +704,13 @@ export class GlpiKnowbaseArticleController
     #openModal(id, key, title, icon = null)
     {
         const is_schedule = key === 'SidePanel/schedule-visibility';
+        const is_delete = key === 'DeleteModal';
         const modal_title = icon ? `<i class="${icon} me-2" aria-hidden="true"></i>${title}` : title;
         glpi_ajax_dialog({
             url: `${CFG_GLPI.root_doc}/Knowbase/${id}/${key}`,
+            // The helper posts by default; the delete modal only renders, so
+            // its route is GET-only.
+            method: is_delete ? 'get' : 'post',
             title: modal_title,
             dialogclass: is_schedule ? 'modal-sm' : 'modal-lg',
             show: (e) => {
@@ -715,6 +720,8 @@ export class GlpiKnowbaseArticleController
                     new GlpiKnowbaseServiceCatalogPanelController(e.target.closest('.modal'));
                 } else if (is_schedule) {
                     this.#initScheduleVisibilityDialog(e.target.closest('.modal'));;
+                } else if (is_delete) {
+                    new GlpiKnowbaseDeleteModalController(e.target.closest('.modal'));
                 }
             },
         });

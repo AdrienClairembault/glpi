@@ -33,6 +33,7 @@
 /* global _, glpi_ajax_dialog, glpi_confirm_danger, glpi_toast_error */
 
 import { get, post } from "/js/modules/Ajax.js";
+import { GlpiKnowbaseDeleteModalController } from "/js/modules/Knowbase/DeleteModalController.js";
 import { GlpiKnowbaseMoveModalController } from "/js/modules/Knowbase/MoveModalController.js";
 import { parentIdOf } from "/js/modules/Knowbase/AsideTree.js";
 import {
@@ -116,6 +117,65 @@ export class GlpiKnowbaseAsideController
         this.#initCreateArticle();
         this.#initActions();
         this.#initToggle();
+        this.#initMoveListener();
+    }
+
+    /**
+     * A drag reparents an article without reloading the page, so the kebab
+     * menus of the two parents involved no longer describe them.
+     */
+    #initMoveListener()
+    {
+        document.addEventListener('glpi:kb:article-moved', (e) => {
+            for (const id of e.detail?.article_ids ?? []) {
+                this.#invalidateActions(parseInt(id));
+            }
+        });
+    }
+
+    /**
+     * Forget an article's kebab menu, cached one and rendered ones alike, so
+     * the next hover fetches it again.
+     *
+     * The delete entry depends on whether the article hosts children: a menu
+     * built when it had none would offer the plain confirmation for an article
+     * that now takes a whole branch with it, and the endpoint refuses that.
+     *
+     * @param {number} id
+     */
+    #invalidateActions(id)
+    {
+        if (!Number.isInteger(id) || id <= 0) {
+            return;
+        }
+
+        this.#actions_cache.delete(id);
+
+        const menus = this.#aside.querySelectorAll(
+            `[data-glpi-kb-article-id="${CSS.escape(id)}"] `
+            + `[data-glpi-kb-actions-menu][data-glpi-kb-actions-loaded]`,
+        );
+        // The loading state the menu goes back to, see `render_actions_menu_placeholder()`.
+        const loading = this.#aside
+            .querySelector('[data-glpi-kb-actions-menu-template]')
+            ?.content.querySelector('[data-glpi-kb-actions-loading]');
+
+        for (const menu of menus) {
+            // Same guard as `#findEmptyMenus()`: a row nests its children's own
+            // menus, which describe other articles.
+            if (menu.closest('[data-glpi-kb-article-id]')?.dataset.glpiKbArticleId !== String(id)) {
+                continue;
+            }
+            // Emptied, never removed: Bootstrap's dropdown keeps a reference to
+            // the menu element it was built with, and a replacement would never
+            // be shown. Dropping the loaded flag is what `#populateMenus()`
+            // looks for, so the next hover fetches the menu again.
+            menu.replaceChildren();
+            if (loading) {
+                menu.append(loading.cloneNode(true));
+            }
+            menu.removeAttribute('data-glpi-kb-actions-loaded');
+        }
     }
 
     #initCategoryToggle()
@@ -962,6 +1022,8 @@ export class GlpiKnowbaseAsideController
             show: (e) => {
                 if (key === 'MoveModal') {
                     new GlpiKnowbaseMoveModalController(e.target.closest('.modal'));
+                } else if (key === 'DeleteModal') {
+                    new GlpiKnowbaseDeleteModalController(e.target.closest('.modal'));
                 }
             },
         });

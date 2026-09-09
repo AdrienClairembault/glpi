@@ -133,12 +133,19 @@ export function toggleField(id, field, value)
 /**
  * Delete an article.
  *
+ * An article that hosts children takes the whole branch with it, and the
+ * endpoint refuses such a deletion unless the caller asked for it: only the
+ * delete modal, which states the impact, may pass `delete_descendants`.
+ *
  * @param {number} id
+ * @param {boolean} delete_descendants
  * @returns {Promise<Response>}
  */
-export function deleteArticle(id)
+export function deleteArticle(id, delete_descendants = false)
 {
-    return post(`Knowbase/KnowbaseItem/${id}/Delete`, {});
+    return post(`Knowbase/KnowbaseItem/${id}/Delete`, {
+        delete_descendants: delete_descendants,
+    });
 }
 
 /**

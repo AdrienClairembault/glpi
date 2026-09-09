@@ -43,6 +43,7 @@ use Glpi\Form\Category;
 use Glpi\Form\ServiceCatalog\ServiceCatalogLeafInterface;
 use Glpi\Knowbase\Aside\Article;
 use Glpi\Knowbase\Aside\Builder;
+use Glpi\Knowbase\DeletionImpact;
 use Glpi\Knowbase\EditorAction;
 use Glpi\Knowbase\EditorActionSeparator;
 use Glpi\Knowbase\EditorActionType;
@@ -83,6 +84,17 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
 
     // Special value meaning "no parent filter applied" (see `getListRequest()`/`showList()`).
     public const int SEEALL = -1;
+
+    /**
+     * Input flag that turns a deletion into a cascade deletion: the descendants
+     * that the deletion would leave outside the knowledge base are deleted too,
+     * instead of being attached back to the root article, see `delete()`.
+     *
+     * Opt-in on purpose. `delete()` is also reached by the REST API, by the
+     * massive actions and by the console, and a single call there must not
+     * destroy a whole branch without the caller asking for it.
+     */
+    public const string DELETE_DESCENDANTS = '_delete_descendants';
 
     public static string $rightname   = 'knowbase';
 
@@ -648,6 +660,206 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
 
         // Load parent articles
         $this->load1NTableData(KnowbaseItem_KnowbaseItem::class, '_parents');
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     */
+    #[Override]
+    public function delete(array $input, $force = false, $history = true)
+    {
+        /** @var DBmysql $DB */
+        global $DB;
+
+        if (!(bool) ($input[self::DELETE_DESCENDANTS] ?? false)) {
+            return parent::delete($input, $force, $history);
+        }
+
+        if (!$this->getFromDB($input[static::getIndexName()] ?? 0)) {
+            return false;
+        }
+
+        // The root article cannot be deleted, so neither can the knowledge base
+        // below it. Refused here rather than by `pre_deleteItem()`, which only
+        // gets its say once the descendants are gone.
+        if ($this->isRoot()) {
+            unset($input[self::DELETE_DESCENDANTS]);
+
+            return parent::delete($input, $force, $history);
+        }
+
+        $impact = $this->getDeletionImpact();
+        if ($impact->isBlocked()) {
+            Session::addMessageAfterRedirect(
+                msg: __s('You are not allowed to delete every sub-article of this article.'),
+                message_type: ERROR,
+            );
+
+            return false;
+        }
+
+        // All or nothing: a cascade that stops halfway leaves the deleted
+        // branch without the article that gave it its meaning.
+        $DB->beginTransaction();
+        try {
+            foreach ($impact->getDeletableDescendantIds() as $descendant_id) {
+                $descendant = new self();
+                if (
+                    !$descendant->getFromDB($descendant_id)
+                    // No cascade flag: the descendants are already listed, and
+                    // each of them is deleted after its own children.
+                    || !$descendant->delete(['id' => $descendant_id], true, $history)
+                ) {
+                    $DB->rollBack();
+
+                    return false;
+                }
+            }
+
+            // The article itself goes last, through the standard code path: its
+            // hooks and its cleanup stay in place.
+            unset($input[self::DELETE_DESCENDANTS]);
+            if (!parent::delete($input, $force, $history)) {
+                $DB->rollBack();
+
+                return false;
+            }
+        } catch (Throwable $e) {
+            $DB->rollBack();
+
+            throw $e;
+        }
+
+        $DB->commit();
+
+        return true;
+    }
+
+    /**
+     * What deleting this article with the cascade flag would really delete, see
+     * `self::DELETE_DESCENDANTS`.
+     *
+     * An article may have several parents, so losing one ancestor does not
+     * necessarily take it out of the knowledge base: a descendant belongs to the
+     * cascade only when every one of its parents is deleted too.
+     */
+    public function getDeletionImpact(): DeletionImpact
+    {
+        $id = $this->getID();
+
+        // Not visibility-filtered: an article that the user cannot see is still
+        // deleted by the cascade, so it has to be counted, see
+        // `KnowbaseItem_KnowbaseItem::getDescendantIds()`.
+        $subtree = KnowbaseItem_KnowbaseItem::getDescendantIds($id);
+        // The root article must always exist; a cycle is the only way for it to
+        // show up here, but the guard costs nothing.
+        if (self::hasRoot()) {
+            unset($subtree[self::getRootId()]);
+        }
+
+        $parents_of = KnowbaseItem_KnowbaseItem::getParentsOf(array_keys($subtree));
+
+        // Start from the whole subtree, then give back every article that keeps
+        // a parent outside of it. Removing one may in turn save its own
+        // children, hence the loop until nothing moves.
+        $deletable = $subtree;
+        do {
+            $saved = [];
+            foreach (array_keys($deletable) as $article_id) {
+                if ($article_id === $id) {
+                    continue; // the article the deletion starts from
+                }
+                foreach ($parents_of[$article_id] ?? [] as $parent_id) {
+                    if (!isset($deletable[$parent_id])) {
+                        $saved[$article_id] = true;
+                        break;
+                    }
+                }
+            }
+            foreach (array_keys($saved) as $article_id) {
+                unset($deletable[$article_id]);
+            }
+        } while ($saved !== []);
+
+        $deletable_ids = $this->orderForDeletion($deletable);
+
+        return new DeletionImpact(
+            article_id: $id,
+            deletable_ids: $deletable_ids,
+            kept_ids: array_values(array_diff(
+                array_keys($subtree),
+                array_keys($deletable),
+            )),
+            // The article itself is left out: its own deletion is gated by the
+            // caller, and every caller checks it its own way (`DELETE` for the
+            // controller, `PURGE` for the actions menu).
+            blocked_ids: $this->getBlockedIds(array_diff($deletable_ids, [$id])),
+        );
+    }
+
+    /**
+     * Order a set of articles so that no article is deleted before its own
+     * children: `cleanDBonPurge()` would otherwise attach them back to the root
+     * article just to delete them right after.
+     *
+     * @param array<int, true> $deletable
+     *
+     * @return int[]
+     */
+    private function orderForDeletion(array $deletable): array
+    {
+        $children_of = KnowbaseItem_KnowbaseItem::getChildrenOf(array_keys($deletable));
+
+        $ordered   = [];
+        $remaining = $deletable;
+        while ($remaining !== []) {
+            $leaves = [];
+            foreach (array_keys($remaining) as $article_id) {
+                foreach ($children_of[$article_id] ?? [] as $child_id) {
+                    if (isset($remaining[$child_id])) {
+                        continue 2; // not a leaf yet
+                    }
+                }
+                $leaves[] = $article_id;
+            }
+
+            if ($leaves === []) {
+                // Writes forbid cycles; if one made it into the database anyway,
+                // deleting the rest in any order still beats looping forever.
+                return array_merge($ordered, array_keys($remaining));
+            }
+
+            foreach ($leaves as $article_id) {
+                unset($remaining[$article_id]);
+                $ordered[] = $article_id;
+            }
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * The articles of the given set that the current user may not delete.
+     *
+     * `PURGE` is the right the delete action is gated on, see
+     * `getAsideActions()`, and a knowledge base article has no soft deletion:
+     * the deletion really is a purge.
+     *
+     * @param int[] $article_ids
+     *
+     * @return int[]
+     */
+    private function getBlockedIds(array $article_ids): array
+    {
+        $blocked = [];
+        foreach ($article_ids as $article_id) {
+            $article = new self();
+            if (!$article->getFromDB($article_id) || !$article->can($article_id, PURGE)) {
+                $blocked[] = $article_id;
+            }
+        }
+
+        return $blocked;
     }
 
     public function pre_deleteItem()
@@ -1835,15 +2047,33 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
             );
         }
         if ($this->can($this->fields['id'], PURGE)) {
-            $management[] = new EditorAction(
-                label: __("Delete article"),
-                icon: "ti ti-trash",
-                type: EditorActionType::DELETE_ARTICLE,
-                params: [
-                    'id' => $this->fields['id'],
-                ],
-                is_danger: true,
-            );
+            // An article that hosts children may take a whole branch with it:
+            // the modal is the only place that states what the deletion really
+            // deletes, and it asks the user to type the article name back. A
+            // leaf article keeps the plain confirmation, see
+            // `getDeletionImpact()` and `self::DELETE_DESCENDANTS`.
+            $management[] = KnowbaseItem_KnowbaseItem::hasChildren($this->getID())
+                ? new EditorAction(
+                    label: __("Delete article"),
+                    icon: "ti ti-trash",
+                    type: EditorActionType::OPEN_MODAL,
+                    params: [
+                        'id'    => $this->fields['id'],
+                        'key'   => 'DeleteModal',
+                        'title' => __("Delete article"),
+                        'icon'  => 'ti ti-trash',
+                    ],
+                    is_danger: true,
+                )
+                : new EditorAction(
+                    label: __("Delete article"),
+                    icon: "ti ti-trash",
+                    type: EditorActionType::DELETE_ARTICLE,
+                    params: [
+                        'id' => $this->fields['id'],
+                    ],
+                    is_danger: true,
+                );
         }
 
         if ($management !== [] && $toggles !== []) {

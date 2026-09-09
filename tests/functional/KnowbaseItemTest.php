@@ -3013,6 +3013,202 @@ HTML,
         $this->assertSame([$other_parent->getID()], $this->getParentIds($shared_child->getID()));
     }
 
+    public function testCascadeDeletionRemovesTheWholeBranch(): void
+    {
+        $this->login();
+
+        $parent      = $this->makeArticleForDeletion();
+        $child       = $this->makeArticleForDeletion([$parent]);
+        $grand_child = $this->makeArticleForDeletion([$child]);
+
+        // Deleting an article deletes its own relations too, and the cascade
+        // goes through the very same code path for every descendant.
+        $comment = $this->createItem(KnowbaseItem_Comment::class, [
+            'knowbaseitems_id' => $grand_child,
+            'users_id'         => Session::getLoginUserID(),
+            'comment'          => 'Comment ' . __FUNCTION__,
+        ]);
+
+        $article = new KnowbaseItem();
+        $this->assertTrue($article->getFromDB($parent));
+        $this->assertTrue($article->delete([
+            'id'                              => $parent,
+            KnowbaseItem::DELETE_DESCENDANTS  => true,
+        ]));
+
+        foreach ([$parent, $child, $grand_child] as $deleted_id) {
+            $this->assertFalse((new KnowbaseItem())->getFromDB($deleted_id));
+            $this->assertSame([], $this->getParentIds($deleted_id));
+        }
+        $this->assertFalse((new KnowbaseItem_Comment())->getFromDB($comment->getID()));
+    }
+
+    public function testCascadeDeletionKeepsTheDescendantsThatHaveAnotherParent(): void
+    {
+        $this->login();
+
+        $parent       = $this->makeArticleForDeletion();
+        $other_parent = $this->makeArticleForDeletion();
+        $child        = $this->makeArticleForDeletion([$parent]);
+        // Reachable from outside of the deleted branch: it must survive.
+        $shared       = $this->makeArticleForDeletion([$child, $other_parent]);
+        // Saved by its own parent being saved, one step further down.
+        $shared_child = $this->makeArticleForDeletion([$shared]);
+
+        $article = new KnowbaseItem();
+        $this->assertTrue($article->getFromDB($parent));
+
+        $impact = $article->getDeletionImpact();
+        // Children before their parents: `cleanDBonPurge()` must never see a
+        // child it would attach back to the root article.
+        $this->assertSame([$child, $parent], $impact->deletable_ids);
+        $this->assertEqualsCanonicalizing([$shared, $shared_child], $impact->kept_ids);
+
+        $this->assertTrue($article->delete([
+            'id'                             => $parent,
+            KnowbaseItem::DELETE_DESCENDANTS => true,
+        ]));
+
+        $this->assertFalse((new KnowbaseItem())->getFromDB($parent));
+        $this->assertFalse((new KnowbaseItem())->getFromDB($child));
+        $this->assertTrue((new KnowbaseItem())->getFromDB($shared));
+        $this->assertTrue((new KnowbaseItem())->getFromDB($shared_child));
+
+        // The survivors keep the parents that saved them: neither of them is
+        // attached back to the root article.
+        $this->assertSame([$other_parent], $this->getParentIds($shared));
+        $this->assertSame([$shared], $this->getParentIds($shared_child));
+    }
+
+    public function testDeletionWithoutTheCascadeFlagLeavesTheDescendantsAlone(): void
+    {
+        $this->login();
+        $root_id = KnowbaseItem::getRootId();
+
+        $parent = $this->makeArticleForDeletion();
+        $child  = $this->makeArticleForDeletion([$parent]);
+
+        // The cascade is opt-in: the REST API, the massive actions and the
+        // console keep attaching the orphans back to the root article.
+        $article = new KnowbaseItem();
+        $this->assertTrue($article->getFromDB($parent));
+        $this->assertTrue($article->delete(['id' => $parent]));
+
+        $this->assertTrue((new KnowbaseItem())->getFromDB($child));
+        $this->assertSame([$root_id], $this->getParentIds($child));
+    }
+
+    public function testCascadeDeletionOfTheRootArticleIsRefusedBeforeItStarts(): void
+    {
+        $this->login();
+        $root_id = KnowbaseItem::getRootId();
+
+        // Attached to the root article, as every parentless article is.
+        $child = $this->makeArticleForDeletion();
+
+        $root = new KnowbaseItem();
+        $this->assertTrue($root->getFromDB($root_id));
+        $this->assertFalse($root->delete([
+            'id'                             => $root_id,
+            KnowbaseItem::DELETE_DESCENDANTS => true,
+        ]));
+        $this->hasSessionMessages(
+            ERROR,
+            ['The root article of the knowledge base cannot be deleted.'],
+        );
+
+        // The knowledge base below it is untouched.
+        $this->assertTrue((new KnowbaseItem())->getFromDB($root_id));
+        $this->assertTrue((new KnowbaseItem())->getFromDB($child));
+        $this->assertSame([$root_id], $this->getParentIds($child));
+    }
+
+    public function testCascadeDeletionIsRefusedWhenASubArticleCannotBeDeleted(): void
+    {
+        $this->login();
+
+        $parent = $this->makeArticleForDeletion();
+        $child  = $this->makeArticleForDeletion([$parent]);
+
+        // Everything is created before the rights drop, so creation itself
+        // stays allowed. Deleting a knowledge base article is a purge.
+        $this->setEntity('_test_root_entity', true);
+        $_SESSION['glpiactiveprofile']['knowbase'] = READ | UPDATE | DELETE;
+
+        $article = new KnowbaseItem();
+        $this->assertTrue($article->getFromDB($parent));
+
+        $impact = $article->getDeletionImpact();
+        $this->assertSame([$child], $impact->blocked_ids);
+        $this->assertTrue($impact->isBlocked());
+
+        $this->assertFalse($article->delete([
+            'id'                             => $parent,
+            KnowbaseItem::DELETE_DESCENDANTS => true,
+        ]));
+        $this->hasSessionMessages(
+            ERROR,
+            ['You are not allowed to delete every sub-article of this article.'],
+        );
+
+        // All or nothing: the article the deletion started from is still there.
+        $this->assertTrue((new KnowbaseItem())->getFromDB($parent));
+        $this->assertTrue((new KnowbaseItem())->getFromDB($child));
+    }
+
+    public function testDeleteActionOpensTheConfirmationModalForAnArticleWithChildren(): void
+    {
+        $this->login();
+
+        $parent = $this->makeArticleForDeletion();
+        $leaf   = $this->makeArticleForDeletion([$parent]);
+
+        // A whole branch goes away: the modal is the only place that states it.
+        $this->assertSame(
+            EditorActionType::OPEN_MODAL,
+            $this->getDeleteAction($parent)->type,
+        );
+        $this->assertSame('DeleteModal', $this->getDeleteAction($parent)->params['key']);
+
+        // Nothing else goes away: the plain confirmation dialog is enough.
+        $this->assertSame(
+            EditorActionType::DELETE_ARTICLE,
+            $this->getDeleteAction($leaf)->type,
+        );
+    }
+
+    private function getDeleteAction(int $article_id): EditorAction
+    {
+        $article = new KnowbaseItem();
+        $this->assertTrue($article->getFromDB($article_id));
+
+        $actions = array_values(array_filter(
+            $article->getAsideActions(),
+            static fn(object $action): bool => $action instanceof EditorAction
+                && $action->label === 'Delete article',
+        ));
+        $this->assertCount(1, $actions);
+
+        return $actions[0];
+    }
+
+    /**
+     * Deleting an article is a purge, and `canPurgeItem()` checks the entity:
+     * unlike the tests that bypass the rights, these articles have to live in
+     * an entity the test session really works in.
+     *
+     * @param int[] $parents
+     */
+    private function makeArticleForDeletion(array $parents = []): int
+    {
+        return $this->createItem(KnowbaseItem::class, [
+            'name'        => 'Deletion ' . $this->getUniqueString(),
+            'answer'      => '<p>x</p>',
+            'entities_id' => $this->getTestRootEntity(true),
+            '_parents'    => $parents,
+        ])->getID();
+    }
+
     /**
      * @return int[]
      */

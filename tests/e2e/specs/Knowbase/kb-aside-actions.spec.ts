@@ -204,3 +204,87 @@ test('Can delete an article from the aside dots menu without leaving the page', 
     await expect(kb.getAsideTreeArticleRow(target_id)).toHaveCount(0);
     await expect(page).toHaveURL(new RegExp(`knowbaseitem\\.form\\.php\\?id=${viewed_id}(\\D|$)`));
 });
+
+test('Deleting a parent article from the aside dots menu takes its children with it', async ({ page, profile, api }) => {
+    await profile.set(Profiles.SuperAdmin);
+    const kb = new KnowbaseItemPage(page);
+
+    const viewed_id = await api.knowbase.createArticle({
+        name: getUniqueName(`Aside viewed`),
+        answer: "My answer",
+    });
+    const parent_name = getUniqueName(`Aside parent`);
+    const parent_id = await api.createItem('KnowbaseItem', {
+        name: parent_name,
+        entities_id: getWorkerEntityId(),
+        answer: '<p>My answer</p>',
+    });
+    const child_id = await api.createItem('KnowbaseItem', {
+        name: getUniqueName(`Aside child`),
+        entities_id: getWorkerEntityId(),
+        answer: '<p>My answer</p>',
+        _parents: [parent_id],
+    });
+
+    await kb.goto(viewed_id);
+    await expect(kb.getAsideTreeArticleRow(parent_id)).toBeVisible();
+
+    await kb.doOpenAsideArticleMenu(parent_id);
+    await kb.getAsideArticleAction(parent_id, 'Delete article').click();
+
+    // The plain confirmation is not offered for an article that hosts children.
+    const modal = kb.getDialog('Delete article');
+    await expect(modal.getByText('This action also deletes 1 sub-article.')).toBeVisible();
+    await modal
+        .getByRole('textbox', { name: 'Name of the article to delete' })
+        .fill(parent_name);
+    await modal.getByRole('button', { name: 'Delete', exact: true }).click();
+
+    // The whole branch leaves the tree, and we stay on the article we were
+    // viewing: it is not part of the branch.
+    await expect(kb.getAsideTreeArticleRow(parent_id)).toHaveCount(0);
+    await expect(kb.getAsideTreeArticleRow(child_id)).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`knowbaseitem\\.form\\.php\\?id=${viewed_id}(\\D|$)`));
+});
+
+test('A dots menu is rebuilt after a drag gave the article a child', async ({ page, profile, api }) => {
+    await profile.set(Profiles.SuperAdmin);
+    const kb = new KnowbaseItemPage(page);
+
+    const viewed_id = await api.knowbase.createArticle({
+        name: getUniqueName(`Aside viewed`),
+        answer: "My answer",
+    });
+    const host_name = getUniqueName(`Aside host`);
+    const host_id = await api.knowbase.createArticle({
+        name: host_name,
+        answer: "My answer",
+    });
+    const moved_name = getUniqueName(`Aside moved`);
+    await api.knowbase.createArticle({
+        name: moved_name,
+        answer: "My answer",
+    });
+
+    await kb.goto(viewed_id);
+
+    // The menu is fetched once and cached: opened here, the host has no child
+    // yet, so its deletion needs no confirmation modal.
+    await kb.doOpenAsideArticleMenu(host_id);
+    await expect(
+        kb.getAsideArticleAction(host_id, 'Delete article')
+    ).toHaveAttribute('data-glpi-kb-action', 'DELETE_ARTICLE');
+    await page.keyboard.press('Escape');
+
+    await Promise.all([
+        page.waitForResponse('**/Knowbase/Aside/Article/*/Move'),
+        kb.doDragArticleOnto(moved_name, host_name),
+    ]);
+
+    // The host now takes a child with it when deleted, and its menu says so
+    // without a reload.
+    await kb.doOpenAsideArticleMenu(host_id);
+    await expect(
+        kb.getAsideArticleAction(host_id, 'Delete article')
+    ).toHaveAttribute('data-glpi-kb-action', 'OPEN_MODAL');
+});
