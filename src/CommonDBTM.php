@@ -50,6 +50,7 @@ use Glpi\Features\Clonable;
 use Glpi\Features\DCBreadcrumbInterface;
 use Glpi\Locale\LanguageRegistry;
 use Glpi\Plugin\Hooks;
+use Glpi\Repository\Repository;
 use Glpi\RichText\RichText;
 use Glpi\RichText\UserMention;
 use Glpi\Search\FilterableInterface;
@@ -332,37 +333,8 @@ class CommonDBTM extends CommonGLPI
      **/
     public function getFromDB($ID)
     {
-        global $DB;
-        // Make new database object and fill variables
-
-        if ((string) $ID === '') {
-            return false;
-        }
-
-        $iterator = $DB->request([
-            'FROM'   => static::getTable(),
-            'WHERE'  => [
-                static::getTable() . '.' . static::getIndexName() => Toolbox::cleanInteger($ID),
-            ],
-            'LIMIT'  => 1,
-        ]);
-
-        if (count($iterator) === 1) {
-            $this->fields = $iterator->current();
-            $this->post_getFromDB();
-            return true;
-        } elseif (count($iterator) > 1) {
-            throw new TooManyResultsException(
-                sprintf(
-                    '`%1$s::getFromDB()` expects to get one result, %2$s found in query "%3$s".',
-                    static::class,
-                    count($iterator),
-                    $iterator->getSql()
-                )
-            );
-        }
-
-        return false;
+        return Repository::getInstance()->getById(static::class, $ID);
+        // TODO: deprecate.
     }
 
     /**
