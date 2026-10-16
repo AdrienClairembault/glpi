@@ -40,6 +40,7 @@ use Entity;
 use Glpi\Application\ImportMapGenerator;
 use Glpi\Config\ConfigContainer;
 use Glpi\Locale\LanguageRegistry;
+use Glpi\Security\ContentSecurityPolicy;
 use Glpi\Toolbox\FrontEnd;
 use Glpi\UI\Theme;
 use Glpi\UI\ThemeManager;
@@ -354,7 +355,7 @@ class FrontEndAssetsExtension extends AbstractExtension
     {
         $import_map = ImportMapGenerator::getInstance()->generate();
 
-        return '<script type="importmap">' . json_encode(
+        return '<script type="importmap" nonce="' . htmlescape(ContentSecurityPolicy::getNonce()) . '">' . json_encode(
             $import_map,
             JSON_PRETTY_PRINT
         ) . '</script>';

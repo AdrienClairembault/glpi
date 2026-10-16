@@ -35,6 +35,8 @@
 
 namespace Glpi\Application\View\Extension;
 
+use Glpi\Application\View\NodeVisitor\CspNonceNodeVisitor;
+use Glpi\Security\ContentSecurityPolicy;
 use GLPIKey;
 use Session;
 use Twig\Extension\AbstractExtension;
@@ -51,6 +53,14 @@ class SecurityExtension extends AbstractExtension
         return [
             new TwigFunction('csrf_token', [Session::class, 'getNewCSRFToken']), // TODO: delete in GLPI 13
             new TwigFunction('idor_token', [Session::class, 'getNewIDORToken']),
+            new TwigFunction('csp_nonce', [ContentSecurityPolicy::class, 'getNonce']),
+        ];
+    }
+
+    public function getNodeVisitors(): array
+    {
+        return [
+            new CspNonceNodeVisitor(),
         ];
     }
 

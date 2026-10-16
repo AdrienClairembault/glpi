@@ -1351,6 +1351,55 @@ function getAjaxCsrfToken() {
     return "";
 }
 
+/**
+ * Returns the Content-Security-Policy nonce of the current page.
+ *
+ * HTML fragments loaded by AJAX requests may contain `<script>` tags that must carry the nonce of the current page
+ * to be executed. The nonce is therefore sent in a `X-Glpi-Csp-Nonce` header on every same-origin AJAX request,
+ * so the server can use it in the returned fragment.
+ *
+ * The nonce is read from the `<script>` tag that loaded this file, as it cannot be altered by any injected HTML.
+ *
+ * @returns {string}
+ */
+var getCspNonce = (function () {
+    const nonce = document.currentScript !== null ? document.currentScript.nonce : '';
+    if (!nonce) {
+        return () => '';
+    }
+
+    const header_name = 'X-Glpi-Csp-Nonce';
+
+    // jQuery requests: `$.ajax()`, `$.get()`, `$.post()`, `$(...).load()`, ...
+    $.ajaxPrefilter((options, original_options, jqXHR) => {
+        if (!options.crossDomain) {
+            jqXHR.setRequestHeader(header_name, nonce);
+        }
+    });
+
+    // `fetch()` requests.
+    const native_fetch = window.fetch;
+    window.fetch = function (resource, options = {}) {
+        const url = resource instanceof Request ? resource.url : String(resource);
+        let is_same_origin = false;
+        try {
+            is_same_origin = new URL(url, window.location.href).origin === window.location.origin;
+        } catch {
+            // Invalid URL, let the native function handle the error.
+        }
+        if (!is_same_origin) {
+            // Never leak the nonce to another origin.
+            return native_fetch.call(this, resource, options);
+        }
+
+        const headers = new Headers(options.headers ?? (resource instanceof Request ? resource.headers : undefined));
+        headers.set(header_name, nonce);
+        return native_fetch.call(this, resource, { ...options, headers: headers });
+    };
+
+    return () => nonce;
+})();
+
 // init tooltips
 $(
     function() {

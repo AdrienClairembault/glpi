@@ -70,6 +70,7 @@
     define('GLPI_ALLOW_IFRAME_IN_RICH_TEXT', $random_val([false, true]));
     define('GLPI_CALDAV_IMPORT_STATE', $random_val([0, 1, 2]));
     define('GLPI_CENTRAL_WARNINGS', $random_val([false, true]));
+    define('GLPI_CSP_MODE', $random_val(['disabled', 'report-only', 'enforce']));
     define('GLPI_DOCUMENTATION_ROOT_URL', 'https://links.glpi-project.org');
     define('GLPI_DISABLE_ONLY_FULL_GROUP_BY_SQL_MODE', $random_val([false, true]));
     define('GLPI_DISABLE_REAUTH', $random_val([false, true]));

@@ -40,6 +40,7 @@ use Glpi\Altcha\AltchaManager;
 use Glpi\Error\ErrorHandler;
 use Glpi\Log\AccessLogHandler;
 use Glpi\Log\ErrorLogHandler;
+use Glpi\Security\ContentSecurityPolicy;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -125,6 +126,7 @@ final class SystemConfigurator
 
                 // Security constants
                 'GLPI_ALLOW_IFRAME_IN_RICH_TEXT' => false,
+                'GLPI_CSP_MODE' => ContentSecurityPolicy::MODE_REPORT_ONLY, // Content-Security-Policy mode: `disabled`, `report-only` or `enforce`
                 'GLPI_SERVERSIDE_URL_ALLOWED_PRIVATE_NETWORKS_CONTEXTS' => [
                     // By default, GLPI does not allow URLs to be requested server-side if they are targetting a private network.
                     // To enable private network request for specific contexts, add them here.

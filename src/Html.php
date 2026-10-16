@@ -53,6 +53,7 @@ use Glpi\Inventory\Inventory;
 use Glpi\Kernel\Kernel;
 use Glpi\Locale\LanguageRegistry;
 use Glpi\Plugin\Hooks;
+use Glpi\Security\ContentSecurityPolicy;
 use Glpi\Security\SecurityConfig;
 use Glpi\System\Log\LogViewer;
 use Glpi\Toolbox\FrontEnd;
@@ -4671,7 +4672,11 @@ HTML;
     {
         $script = "\n" . '//<![CDATA[' . "\n\n" . $script . "\n\n" . '//]]>' . "\n";
 
-        return sprintf('<script type="text/javascript">%s</script>', $script);
+        return sprintf(
+            '<script type="text/javascript" nonce="%s">%s</script>',
+            htmlescape(ContentSecurityPolicy::getNonce()),
+            $script
+        );
     }
 
 
@@ -4711,7 +4716,12 @@ HTML;
         // Convert filesystem path to URL path (fix issues with Windows directory separator)
         $url = str_replace(DIRECTORY_SEPARATOR, '/', $url);
 
-        return sprintf('<script type="%s" src="%s"></script>', htmlescape($type), htmlescape($url));
+        return sprintf(
+            '<script type="%s" src="%s" nonce="%s"></script>',
+            htmlescape($type),
+            htmlescape($url),
+            htmlescape(ContentSecurityPolicy::getNonce())
+        );
     }
 
 

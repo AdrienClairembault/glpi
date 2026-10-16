@@ -57,6 +57,7 @@ use Glpi\Kernel\Listener\RequestListener\ConfigureTrustedProxies;
 use Glpi\Kernel\Listener\RequestListener\ErrorHandlerRequestListener;
 use Glpi\Kernel\Listener\RequestListener\FlushBootErrors;
 use Glpi\Kernel\Listener\RequestListener\FrontEndAssetsListener;
+use Glpi\Kernel\Listener\RequestListener\InitializeContentSecurityPolicy;
 use Glpi\Kernel\Listener\RequestListener\LegacyItemtypeRouteListener;
 use Glpi\Kernel\Listener\RequestListener\LegacyRouterListener;
 use Glpi\Kernel\Listener\RequestListener\PluginsRouterListener;
@@ -65,6 +66,7 @@ use Glpi\Kernel\Listener\RequestListener\RedirectLegacyRouteListener;
 use Glpi\Kernel\Listener\RequestListener\SessionActivityListener;
 use Glpi\Kernel\Listener\RequestListener\SessionCheckCookieListener;
 use Glpi\Kernel\Listener\RequestListener\SessionVariables;
+use Glpi\Kernel\Listener\ResponseListener\ContentSecurityPolicyListener;
 
 final class ListenersPriority
 {
@@ -92,6 +94,10 @@ final class ListenersPriority
         // Trusted proxies must be configured before anything reads the client IP, host or scheme of the request.
         // It is done on the request event to not affect the CLI context.
         ConfigureTrustedProxies::class     => 990,
+
+        // Initializes the Content-Security-Policy nonces.
+        // It must be executed before anything renders HTML, error pages included.
+        InitializeContentSecurityPolicy::class => 985,
 
         // Static assets must be served without executing anything else.
         // Keep the listener on top priority.
@@ -164,6 +170,11 @@ final class ListenersPriority
 
         // Applies the security strategy of the controller (authentication, profile rights, ...).
         FirewallStrategyListener::class => 10,
+    ];
+
+    public const RESPONSE_LISTENERS_PRIORITIES = [
+        // Adds the Content-Security-Policy header to HTML responses.
+        ContentSecurityPolicyListener::class => 0,
     ];
 
     private function __construct() {}
